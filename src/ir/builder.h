@@ -19,6 +19,10 @@ struct Builder {
 
   Builder() = default;
 
+  void switch_function(std::string function_name);
+
+  void switch_basic_block(BasicBlockID basic_block_id);
+
   TypePtr make_i32_type() { return std::make_shared<Type>(type::Integer{32}); }
 
   TypePtr make_i1_type() { return std::make_shared<Type>(type::Integer{1}); }

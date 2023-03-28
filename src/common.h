@@ -1,6 +1,7 @@
 #ifndef SYC_COMMON_H_
 #define SYC_COMMON_H_
 
+#include <algorithm>
 #include <list>
 #include <map>
 #include <memory>

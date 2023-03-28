@@ -1,4 +1,5 @@
 #include "ir/operand.h"
+#include <sstream>
 #include "ir/type.h"
 
 namespace syc {
@@ -13,7 +14,17 @@ std::string Operand::to_string() const {
           [](const Immediate& k) {
             return std::visit(
                 overloaded{[](int v) { return std::to_string(v); },
-                           [](float v) { return std::to_string(v); }},
+                           [](float v) {
+                             // convert float to double and hexadecimal integer
+                             // form to meet the requirement of llvm
+                             double v_double = static_cast<double>(v);
+                             uint64_t v_hexadecimal =
+                                 *reinterpret_cast<uint64_t*>(&v_double);
+                             std::stringstream ss;
+                             ss << "0x" << std::hex << std::uppercase
+                                << v_hexadecimal;
+                             return ss.str();
+                           }},
                 k.value);
           },
           [](const Parameter& k) { return "%" + k.name; },

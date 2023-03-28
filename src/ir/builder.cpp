@@ -9,6 +9,19 @@
 namespace syc {
 namespace ir {
 
+void Builder::switch_function(std::string function_name) {
+  curr_function = context.get_function(function_name);
+}
+
+void Builder::switch_basic_block(BasicBlockID basic_block_id) {
+  if (std::find(curr_function->basic_block_list.begin(),
+                curr_function->basic_block_list.end(),
+                basic_block_id) == curr_function->basic_block_list.end()) {
+    throw std::runtime_error("Basic block not found in function.");
+  }
+  curr_basic_block = context.get_basic_block(basic_block_id);
+}
+
 OperandID Builder::make_operand(TypePtr type, OperandKind kind) {
   auto id = context.get_next_operand_id();
   auto operand =
