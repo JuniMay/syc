@@ -15,8 +15,10 @@ void Function::remove_basic_block(BasicBlockID basic_block_id) {
   basic_block_list.remove(basic_block_id);
 }
 
-void Function::insert_basic_block_after(BasicBlockID basic_block_id,
-                                        BasicBlockID insert_after_id) {
+void Function::insert_basic_block_after(
+  BasicBlockID basic_block_id,
+  BasicBlockID insert_after_id
+) {
   auto it = basic_block_list.begin();
   while (it != basic_block_list.end()) {
     if (*it == insert_after_id) {
@@ -28,8 +30,10 @@ void Function::insert_basic_block_after(BasicBlockID basic_block_id,
   throw std::runtime_error("insert_after_id not found");
 }
 
-void Function::insert_basic_block_before(BasicBlockID basic_block_id,
-                                         BasicBlockID insert_before_id) {
+void Function::insert_basic_block_before(
+  BasicBlockID basic_block_id,
+  BasicBlockID insert_before_id
+) {
   auto it = basic_block_list.begin();
   while (it != basic_block_list.end()) {
     if (*it == insert_before_id) {
@@ -43,12 +47,12 @@ void Function::insert_basic_block_before(BasicBlockID basic_block_id,
 
 std::string Function::to_string(Context& context) {
   std::string result =
-      "define " + type::to_string(return_type) + " @" + name + "(";
+    "define " + type::to_string(return_type) + " @" + name + "(";
   for (auto operand_id : parameter_ids) {
     auto operand = context.get_operand(operand_id);
 
-    result += type::to_string(operand->get_type()) + " " +
-              operand->to_string() + ", ";
+    result +=
+      type::to_string(operand->get_type()) + " " + operand->to_string() + ", ";
   }
 
   if (parameter_ids.size() > 0) {

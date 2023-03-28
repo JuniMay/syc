@@ -44,87 +44,110 @@ struct Builder {
   /// This will return the ID of the operand.
   OperandID make_operand(TypePtr type, OperandKind kind);
 
-  OperandID make_immediate_operand(TypePtr type,
-                                   std::variant<int, float> value);
+  OperandID
+  make_immediate_operand(TypePtr type, std::variant<int, float> value);
 
   OperandID make_parameter_operand(TypePtr type, std::string name);
 
-  OperandID make_global_operand(TypePtr type,
-                                std::string name,
-                                bool is_constant,
-                                bool is_zero_initialized,
-                                std::vector<OperandID> initializer);
+  OperandID make_global_operand(
+    TypePtr type,
+    std::string name,
+    bool is_constant,
+    bool is_zero_initialized,
+    std::vector<OperandID> initializer
+  );
 
   OperandID make_arbitrary_operand(TypePtr type);
 
   /// Make a binary instruction and add it to the current block.
-  InstructionID add_binary_instruction(instruction::BinaryOp op,
-                                       OperandID dst_id,
-                                       OperandID lhs_id,
-                                       OperandID rhs_id);
+  InstructionID add_binary_instruction(
+    instruction::BinaryOp op,
+    OperandID dst_id,
+    OperandID lhs_id,
+    OperandID rhs_id
+  );
 
   /// Make an icmp instruction and add it to the current block.
-  InstructionID add_icmp_instruction(instruction::ICmpCond cond,
-                                     OperandID dst_id,
-                                     OperandID lhs_id,
-                                     OperandID rhs_id);
+  InstructionID add_icmp_instruction(
+    instruction::ICmpCond cond,
+    OperandID dst_id,
+    OperandID lhs_id,
+    OperandID rhs_id
+  );
 
   /// Make a fcmp instruction and add it to the current block.
-  InstructionID add_fcmp_instruction(instruction::FCmpCond cond,
-                                     OperandID dst_id,
-                                     OperandID lhs_id,
-                                     OperandID rhs_id);
+  InstructionID add_fcmp_instruction(
+    instruction::FCmpCond cond,
+    OperandID dst_id,
+    OperandID lhs_id,
+    OperandID rhs_id
+  );
 
   /// Make a cast instruction and add it to the current block.
-  InstructionID add_cast_instruction(instruction::CastOp op,
-                                     OperandID dst_id,
-                                     OperandID src_id);
+  InstructionID add_cast_instruction(
+    instruction::CastOp op,
+    OperandID dst_id,
+    OperandID src_id
+  );
 
   /// Make a sext instruction and add it to the current block.
   InstructionID add_ret_instruction(
-      std::optional<OperandID> maybe_value_id = std::nullopt);
+    std::optional<OperandID> maybe_value_id = std::nullopt
+  );
 
   /// Make a conditional branch instruction and add it to the current block.
-  InstructionID add_condbr_instruction(OperandID cond_id,
-                                       BasicBlockID then_block_id,
-                                       BasicBlockID else_block_id);
+  InstructionID add_condbr_instruction(
+    OperandID cond_id,
+    BasicBlockID then_block_id,
+    BasicBlockID else_block_id
+  );
 
   /// Make an unconditional branch instruction and add it to the current block.
   InstructionID add_br_instruction(BasicBlockID block_id);
 
   /// Make a phi instruction and add it to the current block.
   InstructionID add_phi_instruction(
-      OperandID dst_id,
-      std::vector<std::tuple<OperandID, BasicBlockID>> incoming_list);
+    OperandID dst_id,
+    std::vector<std::tuple<OperandID, BasicBlockID>> incoming_list
+  );
 
   /// Make a alloca instruction and add it to the current block.
   InstructionID add_alloca_instruction(
-      OperandID dst_id,
-      TypePtr allocated_type,
-      std::optional<OperandID> maybe_size_id,
-      std::optional<OperandID> maybe_align_id,
-      std::optional<OperandID> maybe_addrspace_id);
+    OperandID dst_id,
+    TypePtr allocated_type,
+    std::optional<OperandID> maybe_size_id,
+    std::optional<OperandID> maybe_align_id,
+    std::optional<OperandID> maybe_addrspace_id
+  );
 
   /// Make a load instruction and add it to the current block.
-  InstructionID add_load_instruction(OperandID dst_id,
-                                     OperandID ptr_id,
-                                     std::optional<OperandID> maybe_align);
+  InstructionID add_load_instruction(
+    OperandID dst_id,
+    OperandID ptr_id,
+    std::optional<OperandID> maybe_align
+  );
 
   /// Make a store instruction and add it to the current block.
-  InstructionID add_store_instruction(OperandID value_id,
-                                      OperandID ptr_id,
-                                      std::optional<OperandID> maybe_align);
+  InstructionID add_store_instruction(
+    OperandID value_id,
+    OperandID ptr_id,
+    std::optional<OperandID> maybe_align
+  );
 
   /// Make a call instruction and add it to the current block.
-  InstructionID add_call_instruction(std::optional<OperandID> maybe_dst_id,
-                                     std::string function_name,
-                                     std::vector<OperandID> arg_ids);
+  InstructionID add_call_instruction(
+    std::optional<OperandID> maybe_dst_id,
+    std::string function_name,
+    std::vector<OperandID> arg_ids
+  );
 
   /// Make a getelementptr instruction and add it to the current block.
-  InstructionID add_getelementptr_instruction(OperandID dst_id,
-                                              TypePtr basis_type,
-                                              OperandID ptr_id,
-                                              std::vector<OperandID> index_ids);
+  InstructionID add_getelementptr_instruction(
+    OperandID dst_id,
+    TypePtr basis_type,
+    OperandID ptr_id,
+    std::vector<OperandID> index_ids
+  );
 
   /// Create a new block for the current function and set the current block to
   /// the newly created block.
@@ -132,9 +155,11 @@ struct Builder {
 
   /// Add a function with given name, operands and return type to the context.
   /// All the operands must be parameters.
-  void add_function(std::string function_name,
-                    std::vector<OperandID> parameter_ids,
-                    TypePtr return_type);
+  void add_function(
+    std::string function_name,
+    std::vector<OperandID> parameter_ids,
+    TypePtr return_type
+  );
 
   std::string to_string() const;
 };

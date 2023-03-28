@@ -20,11 +20,15 @@ struct Function {
 
   void remove_basic_block(BasicBlockID basic_block_id);
 
-  void insert_basic_block_after(BasicBlockID basic_block_id,
-                                BasicBlockID insert_after_id);
+  void insert_basic_block_after(
+    BasicBlockID basic_block_id,
+    BasicBlockID insert_after_id
+  );
 
-  void insert_basic_block_before(BasicBlockID basic_block_id,
-                                 BasicBlockID insert_before_id);
+  void insert_basic_block_before(
+    BasicBlockID basic_block_id,
+    BasicBlockID insert_before_id
+  );
 
   std::string to_string(Context& context);
 };

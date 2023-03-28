@@ -53,8 +53,12 @@ struct Operand {
   /// IDs of the instructions that use this operand.
   std::vector<InstructionID> use_ids;
 
+  /// Get the stringified representation of the operand (in llvm ir).
   std::string to_string() const;
 
+  /// Get the type of the operand.
+  /// Note that global variables/constants have a pointer of the type.
+  /// If the type is directly accessed, it will not be wrapped into a pointer.
   TypePtr get_type();
 };
 

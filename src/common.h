@@ -44,7 +44,7 @@ struct Label;
 };  // namespace type
 
 using Type = std::
-    variant<type::Void, type::Integer, type::Float, type::Array, type::Pointer>;
+  variant<type::Void, type::Integer, type::Float, type::Array, type::Pointer>;
 
 using TypePtr = std::shared_ptr<Type>;
 
@@ -70,19 +70,20 @@ struct Call;
 
 }  // namespace instruction
 
-using InstructionKind = std::variant<instruction::Binary,
-                                     instruction::ICmp,
-                                     instruction::FCmp,
-                                     instruction::Cast,
-                                     instruction::Ret,
-                                     instruction::CondBr,
-                                     instruction::Br,
-                                     instruction::Phi,
-                                     instruction::Alloca,
-                                     instruction::Load,
-                                     instruction::Store,
-                                     instruction::Call,
-                                     instruction::GetElementPtr>;
+using InstructionKind = std::variant<
+  instruction::Binary,
+  instruction::ICmp,
+  instruction::FCmp,
+  instruction::Cast,
+  instruction::Ret,
+  instruction::CondBr,
+  instruction::Br,
+  instruction::Phi,
+  instruction::Alloca,
+  instruction::Load,
+  instruction::Store,
+  instruction::Call,
+  instruction::GetElementPtr>;
 
 struct Instruction;
 
@@ -97,10 +98,11 @@ struct Arbitrary;
 
 }  // namespace operand
 
-using OperandKind = std::variant<operand::Arbitrary,
-                                 operand::Immediate,
-                                 operand::Parameter,
-                                 operand::Global>;
+using OperandKind = std::variant<
+  operand::Arbitrary,
+  operand::Immediate,
+  operand::Parameter,
+  operand::Global>;
 
 struct Operand;
 
