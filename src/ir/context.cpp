@@ -42,31 +42,19 @@ void Context::register_function(std::shared_ptr<Function> function) {
 }
 
 OperandPtr Context::get_operand(OperandID id) {
-  if (operand_table.find(id) == operand_table.end()) {
-    throw std::runtime_error("Operand ID not found.");
-  }
-  return operand_table[id];
+  return operand_table.at(id);
 }
 
 InstructionPtr Context::get_instruction(InstructionID id) {
-  if (instruction_table.find(id) == instruction_table.end()) {
-    throw std::runtime_error("Instruction ID not found.");
-  }
-  return instruction_table[id];
+  return instruction_table.at(id);
 }
 
 BasicBlockPtr Context::get_basic_block(BasicBlockID id) {
-  if (basic_block_table.find(id) == basic_block_table.end()) {
-    throw std::runtime_error("BasicBlock ID not found.");
-  }
-  return basic_block_table[id];
+  return basic_block_table.at(id);
 }
 
 FunctionPtr Context::get_function(std::string function_name) {
-  if (function_table.find(function_name) == function_table.end()) {
-    throw std::runtime_error("Function name not found.");
-  }
-  return function_table[function_name];
+  return function_table.at(function_name);
 }
 
 std::string Context::to_string() {

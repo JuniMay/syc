@@ -13,6 +13,8 @@ struct BasicBlock {
   std::string parent_function_name;
 
   std::list<InstructionID> instruction_list;
+
+  std::string get_label() const { return ".bb_" + std::to_string(id); }
 };
 
 }  // namespace backend

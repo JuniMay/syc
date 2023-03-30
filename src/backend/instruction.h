@@ -1,6 +1,7 @@
 #ifndef SYC_BACKEND_INSTRUCTION_H_
 #define SYC_BACKEND_INSTRUCTION_H_
 
+#include "backend/context.h"
 #include "common.h"
 
 namespace syc {
@@ -46,6 +47,9 @@ struct FloatLoad {
   OperandID imm_id;
 };
 
+/// Store instruction
+/// Note that in S-type instruction, rs1 is the base register and rs2 is the
+/// source register.
 struct Store {
   enum Op {
     /// Store byte
@@ -58,9 +62,9 @@ struct Store {
     SD,
   };
   Op op;
-  /// Source register
+  /// Base register
   OperandID rs1_id;
-  /// Base register for address calculation
+  /// Source resgiter
   OperandID rs2_id;
   /// Immediate
   OperandID imm_id;
@@ -101,10 +105,12 @@ struct FloatConvert {
     D,
     W,
     WU,
+    L,
     LU,
   };
 
-  Fmt fmt;
+  Fmt dst_fmt;
+  Fmt src_fmt;
 
   OperandID rd_id;
   OperandID rs_id;
@@ -125,7 +131,6 @@ struct Binary {
     SRAW,
 
     XOR,
-    OR,
     OR,
     AND,
 
@@ -176,7 +181,7 @@ struct BinaryImm {
   /// Destination register
   OperandID rd_id;
   /// Source register
-  OperandID rs1_id;
+  OperandID rs_id;
   /// Immediate
   OperandID imm_id;
 };
@@ -193,7 +198,7 @@ struct FloatBinary {
     FMIN,
     FMAX,
     FEQ,
-    DLT,
+    FLT,
     FLE,
   };
 
@@ -216,7 +221,7 @@ struct FloatMulAdd {
   enum Op {
     FMADD,
     FMSUB,
-    SNMSUB,
+    FNMSUB,
     FNMADD,
   };
 
@@ -277,12 +282,12 @@ struct Call {
 
 struct Branch {
   enum Op {
-    Beq,
-    Bne,
-    Blt,
-    Bge,
-    Bltu,
-    Bgeu,
+    BEQ,
+    BNE,
+    BLT,
+    BGE,
+    BLTU,
+    BGEU,
   };
   Op op;
   OperandID rs1_id;
@@ -293,11 +298,13 @@ struct Branch {
 
 }  // namespace instruction
 
-struct Instrution {
+struct Instruction {
   InstructionID id;
   InstructionKind kind;
 
   BasicBlockID parent_block_id;
+
+  std::string to_string(Context& context);
 };
 
 }  // namespace backend

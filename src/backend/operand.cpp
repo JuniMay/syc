@@ -11,5 +11,15 @@ void Operand::add_use(InstructionID use_id) {
   use_id_list.push_back(use_id);
 }
 
+std::string Operand::to_string() const {
+  return std::visit(
+    overloaded{
+      [](const Immediate& immediate) { return immediate.to_string(); },
+      [](const Register& reg) { return reg.to_string(); },
+      [](const VirtualRegister& vreg) { return vreg.to_string(); }},
+    kind
+  );
+}
+
 }  // namespace backend
 }  // namespace syc

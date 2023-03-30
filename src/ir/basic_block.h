@@ -28,7 +28,7 @@ struct BasicBlock {
     InstructionID before_instruction_id
   );
 
-  std::string get_label() { return "bb_" + std::to_string(id); }
+  std::string get_label() const { return "bb_" + std::to_string(id); }
 
   std::string to_string(Context& context);
 

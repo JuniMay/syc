@@ -18,6 +18,8 @@ struct Operand {
   void set_def(InstructionID def_id);
 
   void add_use(InstructionID use_id);
+
+  std::string to_string() const;
 };
 
 }  // namespace backend
