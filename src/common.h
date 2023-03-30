@@ -188,6 +188,8 @@ struct Operand;
 
 using OperandPtr = std::shared_ptr<Operand>;
 
+struct Function;
+
 }  // namespace backend
 
 }  // namespace syc
