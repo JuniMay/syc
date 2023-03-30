@@ -136,6 +136,11 @@ TEST_CASE("IR Builder", "[ir]") {
     auto ret_instr_id = builder.add_ret_instruction(operand_2_id);
 
     REQUIRE(
+      builder.context.get_instruction(ret_instr_id)->parent_block_id ==
+      test_fn_entry_block_id
+    );
+
+    REQUIRE(
       builder.context.get_operand(operand_0_id)->def_id == instruction_0_id
     );
 
@@ -145,26 +150,30 @@ TEST_CASE("IR Builder", "[ir]") {
 
     REQUIRE(
       std::find(
-        param_1->use_ids.begin(), param_1->use_ids.end(), instruction_0_id
-      ) != param_1->use_ids.end()
+        param_1->use_id_list.begin(), param_1->use_id_list.end(),
+        instruction_0_id
+      ) != param_1->use_id_list.end()
     );
     REQUIRE(
       std::find(
-        param_2->use_ids.begin(), param_2->use_ids.end(), instruction_0_id
-      ) != param_2->use_ids.end()
+        param_2->use_id_list.begin(), param_2->use_id_list.end(),
+        instruction_0_id
+      ) != param_2->use_id_list.end()
     );
     REQUIRE(
       std::find(
-        param_3->use_ids.begin(), param_3->use_ids.end(), instruction_1_id
-      ) != param_3->use_ids.end()
+        param_3->use_id_list.begin(), param_3->use_id_list.end(),
+        instruction_1_id
+      ) != param_3->use_id_list.end()
     );
 
     auto operand_1 = builder.context.get_operand(operand_1_id);
     REQUIRE(operand_1->def_id == instruction_1_id);
     REQUIRE(
       std::find(
-        operand_1->use_ids.begin(), operand_1->use_ids.end(), instruction_2_id
-      ) != operand_1->use_ids.end()
+        operand_1->use_id_list.begin(), operand_1->use_id_list.end(),
+        instruction_2_id
+      ) != operand_1->use_id_list.end()
     );
 
     std::cout << builder.context.to_string();
@@ -239,6 +248,43 @@ TEST_CASE("IR Builder", "[ir]") {
 
     std::cout << builder.context.to_string();
 
+    REQUIRE(
+      builder.context.get_instruction(cond_instruction_id)->parent_block_id ==
+      entry_block_id
+    );
+    REQUIRE(
+      builder.context.get_instruction(condbr_instruction_id)->parent_block_id ==
+      entry_block_id
+    );
+    REQUIRE(
+      builder.context.get_instruction(sitofp_instruction_id_1)
+        ->parent_block_id == then_block_id
+    );
+    REQUIRE(
+      builder.context.get_instruction(br_instruction_id_1)->parent_block_id ==
+      then_block_id
+    );
+    REQUIRE(
+      builder.context.get_instruction(sitofp_instruction_id_2)
+        ->parent_block_id == else_block_id
+    );
+    REQUIRE(
+      builder.context.get_instruction(fmul_instruction_id)->parent_block_id ==
+      else_block_id
+    );
+    REQUIRE(
+      builder.context.get_instruction(br_instruction_id_2)->parent_block_id ==
+      else_block_id
+    );
+    REQUIRE(
+      builder.context.get_instruction(phi_instruction_id)->parent_block_id ==
+      final_block_id
+    );
+    REQUIRE(
+      builder.context.get_instruction(ret_instruction_id)->parent_block_id ==
+      final_block_id
+    );
+
     auto entry_block = builder.context.get_basic_block(entry_block_id);
     auto then_block = builder.context.get_basic_block(then_block_id);
     auto else_block = builder.context.get_basic_block(else_block_id);
@@ -246,44 +292,44 @@ TEST_CASE("IR Builder", "[ir]") {
 
     REQUIRE(
       std::find(
-        then_block->use_ids.begin(), then_block->use_ids.end(),
+        then_block->use_id_list.begin(), then_block->use_id_list.end(),
         condbr_instruction_id
-      ) != then_block->use_ids.end()
+      ) != then_block->use_id_list.end()
     );
 
     REQUIRE(
       std::find(
-        else_block->use_ids.begin(), else_block->use_ids.end(),
+        else_block->use_id_list.begin(), else_block->use_id_list.end(),
         condbr_instruction_id
-      ) != else_block->use_ids.end()
+      ) != else_block->use_id_list.end()
     );
 
     REQUIRE(
       std::find(
-        then_block->use_ids.begin(), then_block->use_ids.end(),
+        then_block->use_id_list.begin(), then_block->use_id_list.end(),
         phi_instruction_id
-      ) != then_block->use_ids.end()
+      ) != then_block->use_id_list.end()
     );
 
     REQUIRE(
       std::find(
-        else_block->use_ids.begin(), else_block->use_ids.end(),
+        else_block->use_id_list.begin(), else_block->use_id_list.end(),
         phi_instruction_id
-      ) != else_block->use_ids.end()
+      ) != else_block->use_id_list.end()
     );
 
     REQUIRE(
       std::find(
-        final_block->use_ids.begin(), final_block->use_ids.end(),
+        final_block->use_id_list.begin(), final_block->use_id_list.end(),
         br_instruction_id_1
-      ) != final_block->use_ids.end()
+      ) != final_block->use_id_list.end()
     );
 
     REQUIRE(
       std::find(
-        final_block->use_ids.begin(), final_block->use_ids.end(),
+        final_block->use_id_list.begin(), final_block->use_id_list.end(),
         br_instruction_id_2
-      ) != final_block->use_ids.end()
+      ) != final_block->use_id_list.end()
     );
   }
 }

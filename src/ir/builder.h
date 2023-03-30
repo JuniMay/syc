@@ -138,7 +138,7 @@ struct Builder {
   InstructionID add_call_instruction(
     std::optional<OperandID> maybe_dst_id,
     std::string function_name,
-    std::vector<OperandID> arg_ids
+    std::vector<OperandID> arg_id_list
   );
 
   /// Make a getelementptr instruction and add it to the current block.
@@ -146,7 +146,7 @@ struct Builder {
     OperandID dst_id,
     TypePtr basis_type,
     OperandID ptr_id,
-    std::vector<OperandID> index_ids
+    std::vector<OperandID> index_id_list
   );
 
   /// Create a new block for the current function and set the current block to
@@ -157,7 +157,7 @@ struct Builder {
   /// All the operands must be parameters.
   void add_function(
     std::string function_name,
-    std::vector<OperandID> parameter_ids,
+    std::vector<OperandID> parameter_id_list,
     TypePtr return_type
   );
 

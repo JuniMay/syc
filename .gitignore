@@ -3,3 +3,5 @@ build
 
 *.ll
 *.asm
+
+tests/2022

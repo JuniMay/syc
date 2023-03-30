@@ -2,10 +2,12 @@
 #define SYC_COMMON_H_
 
 #include <algorithm>
+#include <iomanip>
 #include <list>
 #include <map>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <variant>
@@ -109,6 +111,85 @@ struct Operand;
 using OperandPtr = std::shared_ptr<Operand>;
 
 }  // namespace ir
+
+namespace backend {
+
+using IROperandID = ir::OperandID;
+
+enum class GPRegister;
+enum class FPRegister;
+
+struct Register;
+
+enum class VirtualRegisterKind;
+
+using VirtualRegisterID = size_t;
+
+struct VirtualRegister;
+
+struct Immediate;
+
+using BasicBlockID = size_t;
+
+struct BasicBlock;
+
+using BasicBlockPtr = std::shared_ptr<BasicBlock>;
+
+namespace instruction {
+
+struct Load;
+struct FloatLoad;
+struct Store;
+struct FloatStore;
+struct FloatMove;
+struct FloatConvert;
+struct Binary;
+struct BinaryImm;
+struct FloatBinary;
+struct FloatMulAdd;
+struct FloatUnary;
+struct Lui;
+struct Li;
+struct Call;
+struct Branch;
+
+}  // namespace instruction
+
+using InstructionKind = std::variant<
+  instruction::Load,
+  instruction::FloatLoad,
+  instruction::Store,
+  instruction::FloatStore,
+  instruction::FloatMove,
+  instruction::FloatConvert,
+  instruction::Binary,
+  instruction::BinaryImm,
+  instruction::FloatBinary,
+  instruction::FloatMulAdd,
+  instruction::FloatUnary,
+  instruction::Lui,
+  instruction::Li,
+  instruction::Call,
+  instruction::Branch>;
+
+using InstructionID = size_t;
+
+struct Instruction;
+
+using InstructionPtr = std::shared_ptr<Instruction>;
+
+struct Memory;
+
+using OperandID = size_t;
+
+using OperandKind = std::variant<Immediate, VirtualRegister, Register>;
+
+struct Operand;
+
+using OperandPtr = std::shared_ptr<Operand>;
+
+}  // namespace backend
+
 }  // namespace syc
 
 #endif

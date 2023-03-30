@@ -51,7 +51,7 @@ struct Operand {
   /// ID of the instruction that defines this operand.
   std::optional<InstructionID> def_id;
   /// IDs of the instructions that use this operand.
-  std::vector<InstructionID> use_ids;
+  std::vector<InstructionID> use_id_list;
 
   /// Get the stringified representation of the operand (in llvm ir).
   std::string to_string() const;
@@ -60,6 +60,10 @@ struct Operand {
   /// Note that global variables/constants have a pointer of the type.
   /// If the type is directly accessed, it will not be wrapped into a pointer.
   TypePtr get_type();
+
+  void set_def(InstructionID def_id);
+
+  void add_use(InstructionID use_id);
 };
 
 }  // namespace ir

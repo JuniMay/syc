@@ -6,6 +6,7 @@
 #ifdef UNITTEST
 #define CATCH_CONFIG_RUNNER
 #include "catch2/catch.hpp"
+#include "unittest/backend.h"
 #include "unittest/ir.h"
 #endif
 

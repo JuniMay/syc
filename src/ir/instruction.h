@@ -180,7 +180,7 @@ struct Call {
   /// Function operand ID.
   std::string function_name;
   /// List of argument operand IDs.
-  std::vector<OperandID> arg_ids;
+  std::vector<OperandID> arg_id_list;
 };
 
 /// GetElementPtr instruction.
@@ -192,7 +192,7 @@ struct GetElementPtr {
   /// Pointer operand ID.
   OperandID ptr_id;
   /// List of indices.
-  std::vector<OperandID> index_ids;
+  std::vector<OperandID> index_id_list;
 };
 
 }  // namespace instruction
@@ -200,6 +200,8 @@ struct GetElementPtr {
 struct Instruction {
   InstructionID id;
   InstructionKind kind;
+
+  BasicBlockID parent_block_id;
 
   std::string to_string(Context& context);
 };

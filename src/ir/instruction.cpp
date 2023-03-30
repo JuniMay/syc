@@ -300,7 +300,7 @@ std::string Instruction::to_string(Context& context) {
         auto result =
           "call " + return_type_str + " @" + instruction.function_name + "(";
 
-        for (auto& operand_id : instruction.arg_ids) {
+        for (auto& operand_id : instruction.arg_id_list) {
           auto operand = context.get_operand(operand_id);
           auto operand_type_str = type::to_string(operand->get_type());
           auto operand_str = operand->to_string();
@@ -308,7 +308,7 @@ std::string Instruction::to_string(Context& context) {
           result += operand_type_str + " " + operand_str + ", ";
         }
 
-        if (instruction.arg_ids.size() > 0) {
+        if (instruction.arg_id_list.size() > 0) {
           result.pop_back();
           result.pop_back();
         }
@@ -335,7 +335,7 @@ std::string Instruction::to_string(Context& context) {
         auto result = dst_str + " = getelementptr " + basis_type_str + ", " +
                       ptr_type_str + " " + ptr_str;
 
-        for (auto& operand_id : instruction.index_ids) {
+        for (auto& operand_id : instruction.index_id_list) {
           auto operand = context.get_operand(operand_id);
           auto operand_type_str = type::to_string(operand->get_type());
           auto operand_str = operand->to_string();

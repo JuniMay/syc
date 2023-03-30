@@ -10,11 +10,11 @@ struct Function {
   std::string name;
   TypePtr return_type;
 
-  std::vector<OperandID> parameter_ids;
+  std::vector<OperandID> parameter_id_list;
 
   std::list<BasicBlockID> basic_block_list;
 
-  std::vector<InstructionID> caller_ids;
+  std::vector<InstructionID> caller_id_list;
 
   void add_basic_block(BasicBlockID basic_block_id);
 
