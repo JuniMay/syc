@@ -53,6 +53,9 @@ struct Operand {
   /// IDs of the instructions that use this operand.
   std::vector<InstructionID> use_id_list;
 
+  /// Constructor
+  Operand(OperandID id, TypePtr type, OperandKind kind);
+
   /// Get the stringified representation of the operand (in llvm ir).
   std::string to_string() const;
 

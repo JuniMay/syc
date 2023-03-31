@@ -2,34 +2,38 @@
 #define SYC_IR_FUNCTION_H_
 
 #include "common.h"
+#include "ir/basic_block.h"
 
 namespace syc {
 namespace ir {
 
 struct Function {
+  /// Function name
   std::string name;
+  /// Return type.
   TypePtr return_type;
-
+  /// List of paramter operand ID.
   std::vector<OperandID> parameter_id_list;
-
-  std::list<BasicBlockID> basic_block_list;
-
+  /// Head basic block of the function.
+  /// This block is a dummy block to index the initial basic block.
+  BasicBlockPtr head_basic_block;
+  /// Tail basic block of the function.
+  /// This block is a dummy block to index the final basic block.
+  BasicBlockPtr tail_basic_block;
+  /// List of id of instructions that use this function
   std::vector<InstructionID> caller_id_list;
 
-  void add_basic_block(BasicBlockID basic_block_id);
-
-  void remove_basic_block(BasicBlockID basic_block_id);
-
-  void insert_basic_block_after(
-    BasicBlockID basic_block_id,
-    BasicBlockID insert_after_id
+  /// Constructor
+  Function(
+    std::string name,
+    TypePtr return_type,
+    std::vector<OperandID> parameter_id_list
   );
 
-  void insert_basic_block_before(
-    BasicBlockID basic_block_id,
-    BasicBlockID insert_before_id
-  );
+  /// Append basic block to the end of the function.
+  void append_basic_block(BasicBlockPtr basic_block);
 
+  /// Convert the function and its basic blocks to a string in IR form.
   std::string to_string(Context& context);
 };
 

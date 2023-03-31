@@ -8,21 +8,19 @@
 namespace syc {
 namespace ir {
 
-InstructionPtr make_instruction(
+InstructionPtr create_instruction(
   InstructionID id,
   InstructionKind kind,
   BasicBlockID parent_block_id
 ) {
-  auto instruction = std::make_shared<Instruction>(id, kind, parent_block_id);
-  return instruction;
+  return std::make_shared<Instruction>(id, kind, parent_block_id);
 }
 
-InstructionPtr make_dummy_instruction() {
-  auto instruction = std::make_shared<Instruction>(
+InstructionPtr create_dummy_instruction() {
+  return create_instruction(
     std::numeric_limits<OperandID>::max(), instruction::Dummy{},
     std::numeric_limits<BasicBlockID>::max()
   );
-  return instruction;
 }
 
 void Instruction::insert_next(InstructionPtr instruction) {

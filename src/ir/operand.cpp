@@ -6,6 +6,9 @@ namespace syc {
 
 namespace ir {
 
+Operand::Operand(OperandID id, TypePtr type, OperandKind kind)
+  : id(id), type(type), kind(kind), def_id(std::nullopt) {}
+
 std::string Operand::to_string() const {
   using namespace operand;
   return std::visit(

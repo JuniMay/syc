@@ -33,6 +33,8 @@ struct BasicBlock;
 struct Function;
 
 using BasicBlockPtr = std::shared_ptr<BasicBlock>;
+using BasicBlockPrevPtr = std::weak_ptr<BasicBlock>;
+
 using FunctionPtr = std::shared_ptr<Function>;
 
 namespace type {

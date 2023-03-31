@@ -7,39 +7,20 @@
 namespace syc {
 namespace ir {
 
-void Function::add_basic_block(BasicBlockID basic_block_id) {
-  basic_block_list.push_back(basic_block_id);
+Function::Function(
+  std::string name,
+  TypePtr return_type,
+  std::vector<OperandID> parameter_id_list
+)
+  : name(name), return_type(return_type), parameter_id_list(parameter_id_list) {
+  this->head_basic_block = create_dummy_basic_block();
+  this->tail_basic_block = create_dummy_basic_block();
+
+  this->head_basic_block->insert_next(this->tail_basic_block);
 }
 
-void Function::remove_basic_block(BasicBlockID basic_block_id) {
-  basic_block_list.remove(basic_block_id);
-}
-
-void Function::insert_basic_block_after(
-  BasicBlockID basic_block_id,
-  BasicBlockID insert_after_id
-) {
-  auto it = std::find(
-    basic_block_list.begin(), basic_block_list.end(), insert_after_id
-  );
-  if (it == basic_block_list.end()) {
-    throw std::runtime_error("insert_after_id not found");
-  }
-  ++it;
-  basic_block_list.insert(it, basic_block_id);
-}
-
-void Function::insert_basic_block_before(
-  BasicBlockID basic_block_id,
-  BasicBlockID insert_before_id
-) {
-  auto it = std::find(
-    basic_block_list.begin(), basic_block_list.end(), insert_before_id
-  );
-  if (it == basic_block_list.end()) {
-    throw std::runtime_error("insert_before_id not found");
-  }
-  basic_block_list.insert(it, basic_block_id);
+void Function::append_basic_block(BasicBlockPtr basic_block) {
+  this->tail_basic_block->insert_prev(basic_block);
 }
 
 std::string Function::to_string(Context& context) {
@@ -60,9 +41,11 @@ std::string Function::to_string(Context& context) {
 
   result += ") {\n";
 
-  for (auto basic_block_id : basic_block_list) {
-    auto basic_block = context.get_basic_block(basic_block_id);
-    result += basic_block->to_string(context);
+  auto curr_basic_block = this->head_basic_block->next;
+
+  while (curr_basic_block != this->tail_basic_block) {
+    result += curr_basic_block->to_string(context);
+    curr_basic_block = curr_basic_block->next;
   }
 
   result += "}\n";

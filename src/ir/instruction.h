@@ -203,33 +203,43 @@ struct Dummy {};
 /// Instruction
 /// Instruction is stored in a bidirectional linked list.
 struct Instruction : std::enable_shared_from_this<Instruction> {
+  /// Instruction ID in the context
   InstructionID id;
+  /// Instruction kind.
   InstructionKind kind;
-
+  /// Basic block ID of the parent block.
   BasicBlockID parent_block_id;
-
+  /// Next instruction.
   InstructionPtr next;
+  /// Previous instruction.
   InstructionPrevPtr prev;
 
+  /// Constructor
   Instruction(
     InstructionID id,
     InstructionKind kind,
     BasicBlockID parent_block_id
   );
 
+  /// Insert the instruction after the current instruction.
   void insert_next(InstructionPtr instruction);
+  /// Insert the instruction before the current instruction.
   void insert_prev(InstructionPtr instruction);
 
+  /// Convert the instruction to a string of IR form.
   std::string to_string(Context& context);
 };
 
-InstructionPtr make_instruction(
+/// Create an instruction.
+/// Return the pointer to the created instruction.
+InstructionPtr create_instruction(
   InstructionID id,
   InstructionKind kind,
   BasicBlockID parent_block_id
 );
 
-InstructionPtr make_dummy_instruction();
+/// Create a dummy instruction.
+InstructionPtr create_dummy_instruction();
 
 }  // namespace ir
 }  // namespace syc

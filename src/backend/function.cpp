@@ -3,7 +3,7 @@
 namespace syc {
 namespace backend {
 
-void Function::add_basic_block(BasicBlockID basic_block_id) {
+void Function::append_basic_block(BasicBlockID basic_block_id) {
   basic_block_list.push_back(basic_block_id);
 }
 

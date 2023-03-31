@@ -15,39 +15,120 @@ TEST_CASE("IR Instruction", "[ir][instruction]") {
   SECTION("Instruction Insertion") {
     auto builder = Builder();
 
-    builder.add_function("main", {}, builder.make_i32_type());
+    builder.add_function("main", {}, builder.fetch_i32_type());
 
-    auto bb_0_id = builder.add_basic_block();
+    auto bb_0 = builder.fetch_basic_block();
+    builder.append_basic_block(bb_0);
+    builder.set_curr_basic_block(bb_0);
 
     auto operand_0_id =
-      builder.make_immediate_operand(builder.make_i32_type(), 0);
+      builder.fetch_immediate_operand(builder.fetch_i32_type(), 0);
     auto operand_1_id =
-      builder.make_immediate_operand(builder.make_i32_type(), 1);
+      builder.fetch_immediate_operand(builder.fetch_i32_type(), 1);
 
     auto dst_operand_id =
-      builder.make_arbitrary_operand(builder.make_i32_type());
-    auto add_instruction = builder.make_binary_instruction(
+      builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+    auto append_instruction = builder.fetch_binary_instruction(
       BinaryOp::Add, dst_operand_id, operand_0_id, operand_1_id
     );
 
-    auto ret_instruction = builder.make_ret_instruction(
-      builder.make_immediate_operand(builder.make_i32_type(), 0)
+    auto ret_instruction = builder.fetch_ret_instruction(
+      builder.fetch_immediate_operand(builder.fetch_i32_type(), 0)
     );
-    builder.add_instruction(ret_instruction);
+    builder.append_instruction(ret_instruction);
 
-    ret_instruction->insert_prev(add_instruction);
+    ret_instruction->insert_prev(append_instruction);
 
     auto dst_operand_2_id =
-      builder.make_arbitrary_operand(builder.make_i32_type());
+      builder.fetch_arbitrary_operand(builder.fetch_i32_type());
 
-    auto add_instruction_1 = builder.make_binary_instruction(
+    auto add_instruction_1 = builder.fetch_binary_instruction(
       BinaryOp::Add, dst_operand_2_id, dst_operand_id,
-      builder.make_immediate_operand(builder.make_i32_type(), 2)
+      builder.fetch_immediate_operand(builder.fetch_i32_type(), 2)
     );
 
-    add_instruction->insert_next(add_instruction_1);
+    append_instruction->insert_next(add_instruction_1);
 
     std::cout << builder.context.to_string() << std::endl;
+  }
+}
+
+TEST_CASE("IR Basic Block", "[ir][basic_block]") {
+  using namespace syc::ir;
+
+  SECTION("Basic Block Insertion") {
+    auto builder = Builder();
+
+    auto param_a_id =
+      builder.fetch_parameter_operand(builder.fetch_i32_type(), "a");
+
+    builder.add_function(
+      "control_flow_functions", {param_a_id}, builder.fetch_float_type()
+    );
+
+    auto entry_block = builder.fetch_basic_block();
+    auto then_block = builder.fetch_basic_block();
+    auto else_block = builder.fetch_basic_block();
+    auto final_block = builder.fetch_basic_block();
+
+    builder.set_curr_basic_block(entry_block);
+    auto cond_operand_id =
+      builder.fetch_arbitrary_operand(builder.fetch_i1_type());
+    auto cond_instruction = builder.fetch_icmp_instruction(
+      instruction::ICmpCond::Slt, cond_operand_id, param_a_id,
+      builder.fetch_immediate_operand(builder.fetch_i32_type(), 0)
+    );
+    builder.append_instruction(cond_instruction);
+    auto condbr_instruction = builder.fetch_condbr_instruction(
+      cond_operand_id, then_block->id, else_block->id
+    );
+    builder.append_instruction(condbr_instruction);
+
+    builder.set_curr_basic_block(then_block);
+    auto then_operand_id =
+      builder.fetch_arbitrary_operand(builder.fetch_float_type());
+    auto sitofp_instruction_1 = builder.fetch_cast_instruction(
+      instruction::CastOp::SIToFP, then_operand_id, param_a_id
+    );
+    builder.append_instruction(sitofp_instruction_1);
+    auto br_instruction_1 = builder.fetch_br_instruction(final_block->id);
+    builder.append_instruction(br_instruction_1);
+
+    builder.set_curr_basic_block(else_block);
+    auto else_operand_id =
+      builder.fetch_arbitrary_operand(builder.fetch_float_type());
+    auto sitofp_instruction_2 = builder.fetch_cast_instruction(
+      instruction::CastOp::SIToFP, else_operand_id, param_a_id
+    );
+    builder.append_instruction(sitofp_instruction_2);
+    auto fmul_operand_id =
+      builder.fetch_arbitrary_operand(builder.fetch_float_type());
+    auto fmul_instruction = builder.fetch_binary_instruction(
+      instruction::BinaryOp::FMul, fmul_operand_id, else_operand_id,
+      builder.fetch_immediate_operand(builder.fetch_float_type(), (float)2.0)
+    );
+    builder.append_instruction(fmul_instruction);
+
+    auto br_instruction_2 = builder.fetch_br_instruction(final_block->id);
+    builder.append_instruction(br_instruction_2);
+
+    builder.set_curr_basic_block(final_block);
+    auto phi_operand_id =
+      builder.fetch_arbitrary_operand(builder.fetch_float_type());
+    auto phi_instruction = builder.fetch_phi_instruction(
+      phi_operand_id,
+      {{then_operand_id, then_block->id}, {fmul_operand_id, else_block->id}}
+    );
+    builder.append_instruction(phi_instruction);
+    auto ret_instruction = builder.fetch_ret_instruction(phi_operand_id);
+    builder.append_instruction(ret_instruction);
+
+    builder.append_basic_block(final_block);
+    final_block->insert_prev(then_block);
+    then_block->insert_prev(entry_block);
+    entry_block->insert_next(else_block);
+
+    std::cout << builder.context.to_string();
   }
 }
 
@@ -59,82 +140,84 @@ TEST_CASE("IR Builder", "[ir]") {
   SECTION("Global variable and constant definition") {
     auto builder = Builder();
 
-    auto global_i32_0 = builder.make_global_operand(
-      builder.make_i32_type(), "g_0", false, true, {}
+    auto global_i32_0 = builder.fetch_global_operand(
+      builder.fetch_i32_type(), "g_0", false, true, {}
     );
 
-    auto global_i32_1 = builder.make_global_operand(
-      builder.make_i32_type(), "g_1", false, false,
+    auto global_i32_1 = builder.fetch_global_operand(
+      builder.fetch_i32_type(), "g_1", false, false,
       {
-        builder.make_immediate_operand(builder.make_i32_type(), 114514),
+        builder.fetch_immediate_operand(builder.fetch_i32_type(), 114514),
       }
     );
 
-    auto global_arr_0 = builder.make_global_operand(
-      builder.make_array_type(3, builder.make_i32_type()), "g_arr_0", false,
+    auto global_arr_0 = builder.fetch_global_operand(
+      builder.fetch_array_type(3, builder.fetch_i32_type()), "g_arr_0", false,
       false,
       {
-        builder.make_immediate_operand(builder.make_i32_type(), 1),
-        builder.make_immediate_operand(builder.make_i32_type(), 2),
-        builder.make_immediate_operand(builder.make_i32_type(), 3),
+        builder.fetch_immediate_operand(builder.fetch_i32_type(), 1),
+        builder.fetch_immediate_operand(builder.fetch_i32_type(), 2),
+        builder.fetch_immediate_operand(builder.fetch_i32_type(), 3),
       }
     );
 
-    auto global_arr_1 = builder.make_global_operand(
-      builder.make_array_type(3, builder.make_i32_type()), "g_arr_1", false,
+    auto global_arr_1 = builder.fetch_global_operand(
+      builder.fetch_array_type(3, builder.fetch_i32_type()), "g_arr_1", false,
       true, {}
     );
 
-    auto global_float_0 = builder.make_global_operand(
-      builder.make_float_type(), "g_float_0", false, true, {}
+    auto global_float_0 = builder.fetch_global_operand(
+      builder.fetch_float_type(), "g_float_0", false, true, {}
     );
 
-    auto global_float_1 = builder.make_global_operand(
-      builder.make_float_type(), "g_float_1", false, false,
+    auto global_float_1 = builder.fetch_global_operand(
+      builder.fetch_float_type(), "g_float_1", false, false,
       {
-        builder.make_immediate_operand(builder.make_float_type(), (float)3.14),
+        builder.fetch_immediate_operand(builder.fetch_float_type(), (float)3.14),
       }
     );
-    auto global_float_2 = builder.make_global_operand(
-      builder.make_float_type(), "g_float_2", false, false,
+    auto global_float_2 = builder.fetch_global_operand(
+      builder.fetch_float_type(), "g_float_2", false, false,
       {
-        builder.make_immediate_operand(
-          builder.make_float_type(), (float)1067869798
+        builder.fetch_immediate_operand(
+          builder.fetch_float_type(), (float)1067869798
         ),
       }
     );
 
-    auto constant_i32_0 = builder.make_global_operand(
-      builder.make_i32_type(), "c_0", true, true, {}
+    auto constant_i32_0 = builder.fetch_global_operand(
+      builder.fetch_i32_type(), "c_0", true, true, {}
     );
-    auto constant_i32_1 = builder.make_global_operand(
-      builder.make_i32_type(), "c_1", true, false,
+    auto constant_i32_1 = builder.fetch_global_operand(
+      builder.fetch_i32_type(), "c_1", true, false,
       {
-        builder.make_immediate_operand(builder.make_i32_type(), 1919810),
+        builder.fetch_immediate_operand(builder.fetch_i32_type(), 1919810),
       }
     );
 
-    auto constant_arr_0 = builder.make_global_operand(
-      builder.make_array_type(3, builder.make_i32_type()), "c_arr_0", true,
+    auto constant_arr_0 = builder.fetch_global_operand(
+      builder.fetch_array_type(3, builder.fetch_i32_type()), "c_arr_0", true,
       false,
       {
-        builder.make_immediate_operand(builder.make_i32_type(), 4),
-        builder.make_immediate_operand(builder.make_i32_type(), 5),
-        builder.make_immediate_operand(builder.make_i32_type(), 6),
+        builder.fetch_immediate_operand(builder.fetch_i32_type(), 4),
+        builder.fetch_immediate_operand(builder.fetch_i32_type(), 5),
+        builder.fetch_immediate_operand(builder.fetch_i32_type(), 6),
       }
     );
 
-    auto constant_arr_1 = builder.make_global_operand(
-      builder.make_array_type(3, builder.make_i32_type()), "c_arr_1", true,
+    auto constant_arr_1 = builder.fetch_global_operand(
+      builder.fetch_array_type(3, builder.fetch_i32_type()), "c_arr_1", true,
       true, {}
     );
 
-    builder.add_function("dummy", {}, builder.make_void_type());
+    builder.add_function("dummy", {}, builder.fetch_void_type());
 
-    auto main_function_entry_block_id = builder.add_basic_block();
+    auto main_function_entry_block = builder.fetch_basic_block();
+    builder.append_basic_block(main_function_entry_block);
+    builder.set_curr_basic_block(main_function_entry_block);
 
-    auto ret_instruction = builder.make_ret_instruction();
-    builder.add_instruction(ret_instruction);
+    auto ret_instruction = builder.fetch_ret_instruction();
+    builder.append_instruction(ret_instruction);
 
     std::cout << builder.context.to_string();
 
@@ -145,11 +228,11 @@ TEST_CASE("IR Builder", "[ir]") {
     auto builder = Builder();
 
     auto param_1_id =
-      builder.make_parameter_operand(builder.make_i32_type(), "param_1");
+      builder.fetch_parameter_operand(builder.fetch_i32_type(), "param_1");
     auto param_2_id =
-      builder.make_parameter_operand(builder.make_i32_type(), "param_2");
+      builder.fetch_parameter_operand(builder.fetch_i32_type(), "param_2");
     auto param_3_id =
-      builder.make_parameter_operand(builder.make_float_type(), "param_3");
+      builder.fetch_parameter_operand(builder.fetch_float_type(), "param_3");
 
     builder.add_function(
       "test_fn",
@@ -158,33 +241,38 @@ TEST_CASE("IR Builder", "[ir]") {
         param_2_id,
         param_3_id,
       },
-      builder.make_i32_type()
+      builder.fetch_i32_type()
     );
 
-    auto test_fn_entry_block_id = builder.add_basic_block();
+    auto test_fn_entry_block = builder.fetch_basic_block();
+    builder.append_basic_block(test_fn_entry_block);
+    builder.set_curr_basic_block(test_fn_entry_block);
 
-    auto operand_0_id = builder.make_arbitrary_operand(builder.make_i32_type());
-    auto instruction_0 = builder.make_binary_instruction(
+    auto operand_0_id =
+      builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+    auto instruction_0 = builder.fetch_binary_instruction(
       instruction::BinaryOp::Add, operand_0_id, param_1_id, param_2_id
     );
-    builder.add_instruction(instruction_0);
+    builder.append_instruction(instruction_0);
 
-    auto operand_1_id = builder.make_arbitrary_operand(builder.make_i32_type());
-    auto instruction_1 = builder.make_cast_instruction(
+    auto operand_1_id =
+      builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+    auto instruction_1 = builder.fetch_cast_instruction(
       instruction::CastOp::FPToSI, operand_1_id, param_3_id
     );
-    builder.add_instruction(instruction_1);
+    builder.append_instruction(instruction_1);
 
-    auto operand_2_id = builder.make_arbitrary_operand(builder.make_i32_type());
-    auto instruction_2 = builder.make_binary_instruction(
+    auto operand_2_id =
+      builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+    auto instruction_2 = builder.fetch_binary_instruction(
       instruction::BinaryOp::Sub, operand_2_id, operand_0_id, operand_1_id
     );
-    builder.add_instruction(instruction_2);
+    builder.append_instruction(instruction_2);
 
-    auto ret_instruction = builder.make_ret_instruction(operand_2_id);
-    builder.add_instruction(ret_instruction);
+    auto ret_instruction = builder.fetch_ret_instruction(operand_2_id);
+    builder.append_instruction(ret_instruction);
 
-    REQUIRE(ret_instruction->parent_block_id == test_fn_entry_block_id);
+    REQUIRE(ret_instruction->parent_block_id == test_fn_entry_block->id);
 
     REQUIRE(
       builder.context.get_operand(operand_0_id)->def_id == instruction_0->id
@@ -229,94 +317,94 @@ TEST_CASE("IR Builder", "[ir]") {
     auto builder = Builder();
 
     auto param_a_id =
-      builder.make_parameter_operand(builder.make_i32_type(), "a");
+      builder.fetch_parameter_operand(builder.fetch_i32_type(), "a");
 
     builder.add_function(
-      "control_flow_functions", {param_a_id}, builder.make_float_type()
+      "control_flow_functions", {param_a_id}, builder.fetch_float_type()
     );
 
-    auto entry_block_id = builder.add_basic_block();
-    auto then_block_id = builder.add_basic_block();
-    auto else_block_id = builder.add_basic_block();
-    auto final_block_id = builder.add_basic_block();
+    auto entry_block = builder.fetch_basic_block();
+    auto then_block = builder.fetch_basic_block();
+    auto else_block = builder.fetch_basic_block();
+    auto final_block = builder.fetch_basic_block();
 
-    builder.switch_basic_block(entry_block_id);
+    builder.append_basic_block(entry_block);
+    builder.append_basic_block(then_block);
+    builder.append_basic_block(else_block);
+    builder.append_basic_block(final_block);
+
+    builder.set_curr_basic_block(entry_block);
 
     auto cond_operand_id =
-      builder.make_arbitrary_operand(builder.make_i1_type());
+      builder.fetch_arbitrary_operand(builder.fetch_i1_type());
 
-    auto cond_instruction = builder.make_icmp_instruction(
+    auto cond_instruction = builder.fetch_icmp_instruction(
       instruction::ICmpCond::Slt, cond_operand_id, param_a_id,
-      builder.make_immediate_operand(builder.make_i32_type(), 0)
+      builder.fetch_immediate_operand(builder.fetch_i32_type(), 0)
     );
-    builder.add_instruction(cond_instruction);
+    builder.append_instruction(cond_instruction);
 
-    auto condbr_instruction = builder.make_condbr_instruction(
-      cond_operand_id, then_block_id, else_block_id
+    auto condbr_instruction = builder.fetch_condbr_instruction(
+      cond_operand_id, then_block->id, else_block->id
     );
-    builder.add_instruction(condbr_instruction);
+    builder.append_instruction(condbr_instruction);
 
-    builder.switch_basic_block(then_block_id);
+    builder.set_curr_basic_block(then_block);
 
     auto then_operand_id =
-      builder.make_arbitrary_operand(builder.make_float_type());
-    auto sitofp_instruction_1 = builder.make_cast_instruction(
+      builder.fetch_arbitrary_operand(builder.fetch_float_type());
+    auto sitofp_instruction_1 = builder.fetch_cast_instruction(
       instruction::CastOp::SIToFP, then_operand_id, param_a_id
     );
-    builder.add_instruction(sitofp_instruction_1);
+    builder.append_instruction(sitofp_instruction_1);
 
-    auto br_instruction_1 = builder.make_br_instruction(final_block_id);
-    builder.add_instruction(br_instruction_1);
+    auto br_instruction_1 = builder.fetch_br_instruction(final_block->id);
+    builder.append_instruction(br_instruction_1);
 
-    builder.switch_basic_block(else_block_id);
+    builder.set_curr_basic_block(else_block);
 
     auto else_operand_id =
-      builder.make_arbitrary_operand(builder.make_float_type());
-    auto sitofp_instruction_2 = builder.make_cast_instruction(
+      builder.fetch_arbitrary_operand(builder.fetch_float_type());
+    auto sitofp_instruction_2 = builder.fetch_cast_instruction(
       instruction::CastOp::SIToFP, else_operand_id, param_a_id
     );
-    builder.add_instruction(sitofp_instruction_2);
+    builder.append_instruction(sitofp_instruction_2);
 
     auto fmul_operand_id =
-      builder.make_arbitrary_operand(builder.make_float_type());
-    auto fmul_instruction = builder.make_binary_instruction(
+      builder.fetch_arbitrary_operand(builder.fetch_float_type());
+    auto fmul_instruction = builder.fetch_binary_instruction(
       instruction::BinaryOp::FMul, fmul_operand_id, else_operand_id,
-      builder.make_immediate_operand(builder.make_float_type(), (float)2.0)
+      builder.fetch_immediate_operand(builder.fetch_float_type(), (float)2.0)
     );
-    builder.add_instruction(fmul_instruction);
+    builder.append_instruction(fmul_instruction);
 
-    auto br_instruction_2 = builder.make_br_instruction(final_block_id);
-    builder.add_instruction(br_instruction_2);
+    auto br_instruction_2 = builder.fetch_br_instruction(final_block->id);
+    builder.append_instruction(br_instruction_2);
 
-    builder.switch_basic_block(final_block_id);
+    builder.set_curr_basic_block(final_block);
 
     auto phi_operand_id =
-      builder.make_arbitrary_operand(builder.make_float_type());
-    auto phi_instruction = builder.make_phi_instruction(
+      builder.fetch_arbitrary_operand(builder.fetch_float_type());
+    auto phi_instruction = builder.fetch_phi_instruction(
       phi_operand_id,
-      {{then_operand_id, then_block_id}, {fmul_operand_id, else_block_id}}
+      {{then_operand_id, then_block->id}, {fmul_operand_id, else_block->id}}
     );
-    builder.add_instruction(phi_instruction);
+    builder.append_instruction(phi_instruction);
 
-    auto ret_instruction = builder.make_ret_instruction(phi_operand_id);
-    builder.add_instruction(ret_instruction);
+    auto ret_instruction = builder.fetch_ret_instruction(phi_operand_id);
+    builder.append_instruction(ret_instruction);
 
     std::cout << builder.context.to_string();
 
-    REQUIRE(cond_instruction->parent_block_id == entry_block_id);
-    REQUIRE(condbr_instruction->parent_block_id == entry_block_id);
-    REQUIRE(sitofp_instruction_1->parent_block_id == then_block_id);
-    REQUIRE(br_instruction_1->parent_block_id == then_block_id);
-    REQUIRE(sitofp_instruction_2->parent_block_id == else_block_id);
-    REQUIRE(fmul_instruction->parent_block_id == else_block_id);
-    REQUIRE(br_instruction_2->parent_block_id == else_block_id);
-    REQUIRE(phi_instruction->parent_block_id == final_block_id);
-    REQUIRE(ret_instruction->parent_block_id == final_block_id);
-
-    auto entry_block = builder.context.get_basic_block(entry_block_id);
-    auto then_block = builder.context.get_basic_block(then_block_id);
-    auto else_block = builder.context.get_basic_block(else_block_id);
-    auto final_block = builder.context.get_basic_block(final_block_id);
+    REQUIRE(cond_instruction->parent_block_id == entry_block->id);
+    REQUIRE(condbr_instruction->parent_block_id == entry_block->id);
+    REQUIRE(sitofp_instruction_1->parent_block_id == then_block->id);
+    REQUIRE(br_instruction_1->parent_block_id == then_block->id);
+    REQUIRE(sitofp_instruction_2->parent_block_id == else_block->id);
+    REQUIRE(fmul_instruction->parent_block_id == else_block->id);
+    REQUIRE(br_instruction_2->parent_block_id == else_block->id);
+    REQUIRE(phi_instruction->parent_block_id == final_block->id);
+    REQUIRE(ret_instruction->parent_block_id == final_block->id);
 
     REQUIRE(
       std::find(

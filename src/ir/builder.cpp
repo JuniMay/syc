@@ -9,60 +9,45 @@
 namespace syc {
 namespace ir {
 
-void Builder::switch_function(std::string function_name) {
-  curr_function = context.get_function(function_name);
-}
-
-void Builder::switch_basic_block(BasicBlockID basic_block_id) {
-  if (
-    std::find(
-      curr_function->basic_block_list.begin(),
-      curr_function->basic_block_list.end(),
-      basic_block_id) == curr_function->basic_block_list.end()) {
-    throw std::runtime_error("Basic block not found in function.");
-  }
-  curr_basic_block = context.get_basic_block(basic_block_id);
-}
-
-OperandID Builder::make_operand(TypePtr type, OperandKind kind) {
+OperandID Builder::fetch_operand(TypePtr type, OperandKind kind) {
   auto id = context.get_next_operand_id();
-  auto operand = std::make_shared<Operand>(Operand{
-    id,
-    type,
-    kind,
-    std::nullopt,
-    {},
-  });
+  auto operand = std::make_shared<Operand>(id, type, kind);
   context.register_operand(operand);
   return id;
 }
 
 OperandID
-Builder::make_immediate_operand(TypePtr type, std::variant<int, float> value) {
-  return make_operand(type, operand::Immediate{value});
+Builder::fetch_immediate_operand(TypePtr type, std::variant<int, float> value) {
+  return fetch_operand(type, operand::Immediate{value});
 }
 
-OperandID Builder::make_parameter_operand(TypePtr type, std::string name) {
-  return make_operand(type, operand::Parameter{name});
+OperandID Builder::fetch_parameter_operand(TypePtr type, std::string name) {
+  return fetch_operand(type, operand::Parameter{name});
 }
 
-OperandID Builder::make_global_operand(
+OperandID Builder::fetch_global_operand(
   TypePtr type,
   std::string name,
   bool is_constant,
   bool is_zero_initialized,
   std::vector<OperandID> initializer
 ) {
-  return make_operand(
-    type, operand::Global{name, is_constant, is_zero_initialized, initializer}
+  return fetch_operand(
+    type,
+    operand::Global{
+      name,
+      is_constant,
+      is_zero_initialized,
+      initializer,
+    }
   );
 }
 
-OperandID Builder::make_arbitrary_operand(TypePtr type) {
-  return make_operand(type, operand::Arbitrary{});
+OperandID Builder::fetch_arbitrary_operand(TypePtr type) {
+  return fetch_operand(type, operand::Arbitrary{});
 }
 
-InstructionPtr Builder::make_binary_instruction(
+InstructionPtr Builder::fetch_binary_instruction(
   instruction::BinaryOp op,
   OperandID dst_id,
   OperandID lhs_id,
@@ -72,7 +57,7 @@ InstructionPtr Builder::make_binary_instruction(
 
   auto kind = InstructionKind(instruction::Binary{op, dst_id, lhs_id, rhs_id});
 
-  auto instruction = make_instruction(id, kind, curr_basic_block->id);
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
 
@@ -83,7 +68,7 @@ InstructionPtr Builder::make_binary_instruction(
   return instruction;
 }
 
-InstructionPtr Builder::make_icmp_instruction(
+InstructionPtr Builder::fetch_icmp_instruction(
   instruction::ICmpCond cond,
   OperandID dst_id,
   OperandID lhs_id,
@@ -93,7 +78,7 @@ InstructionPtr Builder::make_icmp_instruction(
 
   auto kind = InstructionKind(instruction::ICmp{cond, dst_id, lhs_id, rhs_id});
 
-  auto instruction = make_instruction(id, kind, curr_basic_block->id);
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
 
@@ -104,7 +89,7 @@ InstructionPtr Builder::make_icmp_instruction(
   return instruction;
 }
 
-InstructionPtr Builder::make_fcmp_instruction(
+InstructionPtr Builder::fetch_fcmp_instruction(
   instruction::FCmpCond cond,
   OperandID dst_id,
   OperandID lhs_id,
@@ -114,7 +99,7 @@ InstructionPtr Builder::make_fcmp_instruction(
 
   auto kind = InstructionKind(instruction::FCmp{cond, dst_id, lhs_id, rhs_id});
 
-  auto instruction = make_instruction(id, kind, curr_basic_block->id);
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
 
@@ -125,7 +110,7 @@ InstructionPtr Builder::make_fcmp_instruction(
   return instruction;
 }
 
-InstructionPtr Builder::make_cast_instruction(
+InstructionPtr Builder::fetch_cast_instruction(
   instruction::CastOp op,
   OperandID dst_id,
   OperandID src_id
@@ -134,7 +119,7 @@ InstructionPtr Builder::make_cast_instruction(
 
   auto kind = InstructionKind(instruction::Cast{op, dst_id, src_id});
 
-  auto instruction = make_instruction(id, kind, curr_basic_block->id);
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
 
@@ -144,14 +129,14 @@ InstructionPtr Builder::make_cast_instruction(
   return instruction;
 }
 
-InstructionPtr Builder::make_ret_instruction(
+InstructionPtr Builder::fetch_ret_instruction(
   std::optional<OperandID> maybe_value_id
 ) {
   auto id = context.get_next_instruction_id();
 
   auto kind = InstructionKind(instruction::Ret{maybe_value_id});
 
-  auto instruction = make_instruction(id, kind, curr_basic_block->id);
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
 
@@ -162,7 +147,7 @@ InstructionPtr Builder::make_ret_instruction(
   return instruction;
 }
 
-InstructionPtr Builder::make_condbr_instruction(
+InstructionPtr Builder::fetch_condbr_instruction(
   OperandID cond_id,
   BasicBlockID then_block_id,
   BasicBlockID else_block_id
@@ -175,7 +160,7 @@ InstructionPtr Builder::make_condbr_instruction(
     else_block_id,
   });
 
-  auto instruction = make_instruction(id, kind, curr_basic_block->id);
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
 
@@ -186,12 +171,12 @@ InstructionPtr Builder::make_condbr_instruction(
   return instruction;
 }
 
-InstructionPtr Builder::make_br_instruction(BasicBlockID block_id) {
+InstructionPtr Builder::fetch_br_instruction(BasicBlockID block_id) {
   auto id = context.get_next_instruction_id();
 
   auto kind = InstructionKind(instruction::Br{block_id});
 
-  auto instruction = make_instruction(id, kind, curr_basic_block->id);
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
 
@@ -200,14 +185,14 @@ InstructionPtr Builder::make_br_instruction(BasicBlockID block_id) {
   return instruction;
 }
 
-InstructionPtr Builder::make_phi_instruction(
+InstructionPtr Builder::fetch_phi_instruction(
   OperandID dst_id,
   std::vector<std::tuple<OperandID, BasicBlockID>> incoming_list
 ) {
   auto id = context.get_next_instruction_id();
   auto kind = InstructionKind(instruction::Phi{dst_id, incoming_list});
 
-  auto instruction = make_instruction(id, kind, curr_basic_block->id);
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
 
@@ -221,7 +206,7 @@ InstructionPtr Builder::make_phi_instruction(
   return instruction;
 }
 
-InstructionPtr Builder::make_alloca_instruction(
+InstructionPtr Builder::fetch_alloca_instruction(
   OperandID dst_id,
   TypePtr allocaed_type,
   std::optional<OperandID> maybe_size_id,
@@ -237,7 +222,7 @@ InstructionPtr Builder::make_alloca_instruction(
     maybe_addrspace_id,
   });
 
-  auto instruction = make_instruction(id, kind, curr_basic_block->id);
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
 
@@ -256,7 +241,7 @@ InstructionPtr Builder::make_alloca_instruction(
   return instruction;
 }
 
-InstructionPtr Builder::make_load_instruction(
+InstructionPtr Builder::fetch_load_instruction(
   OperandID dst_id,
   OperandID ptr_id,
   std::optional<OperandID> maybe_align_id
@@ -268,7 +253,7 @@ InstructionPtr Builder::make_load_instruction(
     maybe_align_id,
   });
 
-  auto instruction = make_instruction(id, kind, curr_basic_block->id);
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
 
@@ -281,7 +266,7 @@ InstructionPtr Builder::make_load_instruction(
   return instruction;
 }
 
-InstructionPtr Builder::make_store_instruction(
+InstructionPtr Builder::fetch_store_instruction(
   OperandID value_id,
   OperandID ptr_id,
   std::optional<OperandID> maybe_align_id
@@ -293,7 +278,7 @@ InstructionPtr Builder::make_store_instruction(
     maybe_align_id,
   });
 
-  auto instruction = make_instruction(id, kind, curr_basic_block->id);
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
 
@@ -306,7 +291,7 @@ InstructionPtr Builder::make_store_instruction(
   return instruction;
 }
 
-InstructionPtr Builder::make_call_instruction(
+InstructionPtr Builder::fetch_call_instruction(
   std::optional<OperandID> maybe_dst_id,
   std::string function_name,
   std::vector<OperandID> args_id
@@ -318,7 +303,7 @@ InstructionPtr Builder::make_call_instruction(
     args_id,
   });
 
-  auto instruction = make_instruction(id, kind, curr_basic_block->id);
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
 
@@ -333,7 +318,7 @@ InstructionPtr Builder::make_call_instruction(
   return instruction;
 }
 
-InstructionPtr Builder::make_getelementptr_instruction(
+InstructionPtr Builder::fetch_getelementptr_instruction(
   OperandID dst_id,
   TypePtr basis_type,
   OperandID ptr_id,
@@ -347,7 +332,7 @@ InstructionPtr Builder::make_getelementptr_instruction(
     indices_id,
   });
 
-  auto instruction = make_instruction(id, kind, curr_basic_block->id);
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
 
@@ -360,17 +345,28 @@ InstructionPtr Builder::make_getelementptr_instruction(
   return instruction;
 }
 
-void Builder::add_instruction(InstructionPtr instruction) {
-  curr_basic_block->add_instruction(instruction);
+void Builder::append_instruction(InstructionPtr instruction) {
+  curr_basic_block->append_instruction(instruction);
 }
 
-BasicBlockID Builder::add_basic_block() {
+BasicBlockPtr Builder::fetch_basic_block() {
   auto id = context.get_next_basic_block_id();
-  auto basic_block = std::make_shared<BasicBlock>(id, curr_function->name);
+  auto basic_block = create_basic_block(id, curr_function->name);
+
   context.register_basic_block(basic_block);
-  curr_function->add_basic_block(id);
+  return basic_block;
+}
+
+void Builder::append_basic_block(BasicBlockPtr basic_block) {
+  curr_function->append_basic_block(basic_block);
+}
+
+void Builder::set_curr_basic_block(BasicBlockPtr basic_block) {
   curr_basic_block = basic_block;
-  return id;
+}
+
+void Builder::switch_function(std::string function_name) {
+  curr_function = context.get_function(function_name);
 }
 
 void Builder::add_function(
@@ -378,8 +374,8 @@ void Builder::add_function(
   std::vector<OperandID> parameter_id_list,
   TypePtr return_type
 ) {
-  auto function = std::make_shared<Function>(Function{
-    function_name, return_type, parameter_id_list, {}});
+  auto function =
+    std::make_shared<Function>(function_name, return_type, parameter_id_list);
   context.register_function(function);
   curr_function = function;
 }

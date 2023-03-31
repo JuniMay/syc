@@ -13,7 +13,7 @@ struct Function {
 
   std::list<BasicBlockID> basic_block_list;
 
-  void add_basic_block(BasicBlockID basic_block_id);
+  void append_basic_block(BasicBlockID basic_block_id);
   void remove_basic_block(BasicBlockID basic_block_id);
 
   void insert_basic_block_after(
