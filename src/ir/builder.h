@@ -59,60 +59,60 @@ struct Builder {
 
   OperandID make_arbitrary_operand(TypePtr type);
 
-  /// Make a binary instruction and add it to the current block.
-  InstructionID add_binary_instruction(
+  /// Make a binary instruction
+  InstructionPtr make_binary_instruction(
     instruction::BinaryOp op,
     OperandID dst_id,
     OperandID lhs_id,
     OperandID rhs_id
   );
 
-  /// Make an icmp instruction and add it to the current block.
-  InstructionID add_icmp_instruction(
+  /// Make an icmp instruction
+  InstructionPtr make_icmp_instruction(
     instruction::ICmpCond cond,
     OperandID dst_id,
     OperandID lhs_id,
     OperandID rhs_id
   );
 
-  /// Make a fcmp instruction and add it to the current block.
-  InstructionID add_fcmp_instruction(
+  /// Make a fcmp instruction
+  InstructionPtr make_fcmp_instruction(
     instruction::FCmpCond cond,
     OperandID dst_id,
     OperandID lhs_id,
     OperandID rhs_id
   );
 
-  /// Make a cast instruction and add it to the current block.
-  InstructionID add_cast_instruction(
+  /// Make a cast instruction
+  InstructionPtr make_cast_instruction(
     instruction::CastOp op,
     OperandID dst_id,
     OperandID src_id
   );
 
-  /// Make a sext instruction and add it to the current block.
-  InstructionID add_ret_instruction(
+  /// Make a sext instruction
+  InstructionPtr make_ret_instruction(
     std::optional<OperandID> maybe_value_id = std::nullopt
   );
 
-  /// Make a conditional branch instruction and add it to the current block.
-  InstructionID add_condbr_instruction(
+  /// Make a conditional branch instruction
+  InstructionPtr make_condbr_instruction(
     OperandID cond_id,
     BasicBlockID then_block_id,
     BasicBlockID else_block_id
   );
 
-  /// Make an unconditional branch instruction and add it to the current block.
-  InstructionID add_br_instruction(BasicBlockID block_id);
+  /// Make an unconditional branch instruction
+  InstructionPtr make_br_instruction(BasicBlockID block_id);
 
-  /// Make a phi instruction and add it to the current block.
-  InstructionID add_phi_instruction(
+  /// Make a phi instruction
+  InstructionPtr make_phi_instruction(
     OperandID dst_id,
     std::vector<std::tuple<OperandID, BasicBlockID>> incoming_list
   );
 
-  /// Make a alloca instruction and add it to the current block.
-  InstructionID add_alloca_instruction(
+  /// Make a alloca instruction
+  InstructionPtr make_alloca_instruction(
     OperandID dst_id,
     TypePtr allocated_type,
     std::optional<OperandID> maybe_size_id,
@@ -120,34 +120,37 @@ struct Builder {
     std::optional<OperandID> maybe_addrspace_id
   );
 
-  /// Make a load instruction and add it to the current block.
-  InstructionID add_load_instruction(
+  /// Make a load instruction
+  InstructionPtr make_load_instruction(
     OperandID dst_id,
     OperandID ptr_id,
     std::optional<OperandID> maybe_align
   );
 
-  /// Make a store instruction and add it to the current block.
-  InstructionID add_store_instruction(
+  /// Make a store instruction
+  InstructionPtr make_store_instruction(
     OperandID value_id,
     OperandID ptr_id,
     std::optional<OperandID> maybe_align
   );
 
-  /// Make a call instruction and add it to the current block.
-  InstructionID add_call_instruction(
+  /// Make a call instruction
+  InstructionPtr make_call_instruction(
     std::optional<OperandID> maybe_dst_id,
     std::string function_name,
     std::vector<OperandID> arg_id_list
   );
 
-  /// Make a getelementptr instruction and add it to the current block.
-  InstructionID add_getelementptr_instruction(
+  /// Make a getelementptr instruction
+  InstructionPtr make_getelementptr_instruction(
     OperandID dst_id,
     TypePtr basis_type,
     OperandID ptr_id,
     std::vector<OperandID> index_id_list
   );
+
+  /// Add an instruction to the current block.
+  void add_instruction(InstructionPtr instruction);
 
   /// Create a new block for the current function and set the current block to
   /// the newly created block.

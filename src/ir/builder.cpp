@@ -62,7 +62,7 @@ OperandID Builder::make_arbitrary_operand(TypePtr type) {
   return make_operand(type, operand::Arbitrary{});
 }
 
-InstructionID Builder::add_binary_instruction(
+InstructionPtr Builder::make_binary_instruction(
   instruction::BinaryOp op,
   OperandID dst_id,
   OperandID lhs_id,
@@ -72,23 +72,18 @@ InstructionID Builder::add_binary_instruction(
 
   auto kind = InstructionKind(instruction::Binary{op, dst_id, lhs_id, rhs_id});
 
-  auto instruction = std::make_shared<Instruction>(Instruction{
-    id,
-    kind,
-    curr_basic_block->id,
-  });
+  auto instruction = make_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
-  curr_basic_block->add_instruction(id);
 
   context.operand_table[dst_id]->set_def(id);
   context.operand_table[lhs_id]->add_use(id);
   context.operand_table[rhs_id]->add_use(id);
 
-  return id;
+  return instruction;
 }
 
-InstructionID Builder::add_icmp_instruction(
+InstructionPtr Builder::make_icmp_instruction(
   instruction::ICmpCond cond,
   OperandID dst_id,
   OperandID lhs_id,
@@ -98,23 +93,18 @@ InstructionID Builder::add_icmp_instruction(
 
   auto kind = InstructionKind(instruction::ICmp{cond, dst_id, lhs_id, rhs_id});
 
-  auto instruction = std::make_shared<Instruction>(Instruction{
-    id,
-    kind,
-    curr_basic_block->id,
-  });
+  auto instruction = make_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
-  curr_basic_block->add_instruction(id);
 
   context.operand_table[dst_id]->set_def(id);
   context.operand_table[lhs_id]->add_use(id);
   context.operand_table[rhs_id]->add_use(id);
 
-  return id;
+  return instruction;
 }
 
-InstructionID Builder::add_fcmp_instruction(
+InstructionPtr Builder::make_fcmp_instruction(
   instruction::FCmpCond cond,
   OperandID dst_id,
   OperandID lhs_id,
@@ -124,23 +114,18 @@ InstructionID Builder::add_fcmp_instruction(
 
   auto kind = InstructionKind(instruction::FCmp{cond, dst_id, lhs_id, rhs_id});
 
-  auto instruction = std::make_shared<Instruction>(Instruction{
-    id,
-    kind,
-    curr_basic_block->id,
-  });
+  auto instruction = make_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
-  curr_basic_block->add_instruction(id);
 
   context.operand_table[dst_id]->set_def(id);
   context.operand_table[lhs_id]->add_use(id);
   context.operand_table[rhs_id]->add_use(id);
 
-  return id;
+  return instruction;
 }
 
-InstructionID Builder::add_cast_instruction(
+InstructionPtr Builder::make_cast_instruction(
   instruction::CastOp op,
   OperandID dst_id,
   OperandID src_id
@@ -149,45 +134,35 @@ InstructionID Builder::add_cast_instruction(
 
   auto kind = InstructionKind(instruction::Cast{op, dst_id, src_id});
 
-  auto instruction = std::make_shared<Instruction>(Instruction{
-    id,
-    kind,
-    curr_basic_block->id,
-  });
+  auto instruction = make_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
-  curr_basic_block->add_instruction(id);
 
   context.operand_table[dst_id]->set_def(id);
   context.operand_table[src_id]->add_use(id);
 
-  return id;
+  return instruction;
 }
 
-InstructionID Builder::add_ret_instruction(
+InstructionPtr Builder::make_ret_instruction(
   std::optional<OperandID> maybe_value_id
 ) {
   auto id = context.get_next_instruction_id();
 
   auto kind = InstructionKind(instruction::Ret{maybe_value_id});
 
-  auto instruction = std::make_shared<Instruction>(Instruction{
-    id,
-    kind,
-    curr_basic_block->id,
-  });
+  auto instruction = make_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
-  curr_basic_block->add_instruction(id);
 
   if (maybe_value_id.has_value()) {
     context.operand_table[maybe_value_id.value()]->add_use(id);
   }
 
-  return id;
+  return instruction;
 }
 
-InstructionID Builder::add_condbr_instruction(
+InstructionPtr Builder::make_condbr_instruction(
   OperandID cond_id,
   BasicBlockID then_block_id,
   BasicBlockID else_block_id
@@ -200,55 +175,41 @@ InstructionID Builder::add_condbr_instruction(
     else_block_id,
   });
 
-  auto instruction = std::make_shared<Instruction>(Instruction{
-    id,
-    kind,
-    curr_basic_block->id,
-  });
+  auto instruction = make_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
-  curr_basic_block->add_instruction(id);
 
   context.operand_table[cond_id]->add_use(id);
   context.basic_block_table[then_block_id]->add_use(id);
   context.basic_block_table[else_block_id]->add_use(id);
 
-  return id;
+  return instruction;
 }
 
-InstructionID Builder::add_br_instruction(BasicBlockID block_id) {
+InstructionPtr Builder::make_br_instruction(BasicBlockID block_id) {
   auto id = context.get_next_instruction_id();
 
   auto kind = InstructionKind(instruction::Br{block_id});
 
-  auto instruction = std::make_shared<Instruction>(Instruction{
-    id,
-    kind,
-    curr_basic_block->id,
-  });
+  auto instruction = make_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
-  curr_basic_block->add_instruction(id);
 
   context.basic_block_table[block_id]->add_use(id);
 
-  return id;
+  return instruction;
 }
 
-InstructionID Builder::add_phi_instruction(
+InstructionPtr Builder::make_phi_instruction(
   OperandID dst_id,
   std::vector<std::tuple<OperandID, BasicBlockID>> incoming_list
 ) {
   auto id = context.get_next_instruction_id();
   auto kind = InstructionKind(instruction::Phi{dst_id, incoming_list});
 
-  auto instruction = std::make_shared<Instruction>(Instruction{
-    id,
-    kind,
-    curr_basic_block->id,
-  });
+  auto instruction = make_instruction(id, kind, curr_basic_block->id);
+
   context.register_instruction(instruction);
-  curr_basic_block->add_instruction(id);
 
   // NOT SURE if the phi instruction should be added to the use list.
   context.operand_table[dst_id]->set_def(id);
@@ -257,10 +218,10 @@ InstructionID Builder::add_phi_instruction(
     context.basic_block_table[block_id]->add_use(id);
   }
 
-  return id;
+  return instruction;
 }
 
-InstructionID Builder::add_alloca_instruction(
+InstructionPtr Builder::make_alloca_instruction(
   OperandID dst_id,
   TypePtr allocaed_type,
   std::optional<OperandID> maybe_size_id,
@@ -276,14 +237,9 @@ InstructionID Builder::add_alloca_instruction(
     maybe_addrspace_id,
   });
 
-  auto instruction = std::make_shared<Instruction>(Instruction{
-    id,
-    kind,
-    curr_basic_block->id,
-  });
+  auto instruction = make_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
-  curr_basic_block->add_instruction(id);
 
   context.operand_table[dst_id]->set_def(id);
   if (maybe_size_id.has_value()) {
@@ -297,10 +253,10 @@ InstructionID Builder::add_alloca_instruction(
     );
   }
 
-  return id;
+  return instruction;
 }
 
-InstructionID Builder::add_load_instruction(
+InstructionPtr Builder::make_load_instruction(
   OperandID dst_id,
   OperandID ptr_id,
   std::optional<OperandID> maybe_align_id
@@ -312,14 +268,9 @@ InstructionID Builder::add_load_instruction(
     maybe_align_id,
   });
 
-  auto instruction = std::make_shared<Instruction>(Instruction{
-    id,
-    kind,
-    curr_basic_block->id,
-  });
+  auto instruction = make_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
-  curr_basic_block->add_instruction(id);
 
   context.operand_table[dst_id]->set_def(id);
   context.operand_table[ptr_id]->add_use(id);
@@ -327,10 +278,10 @@ InstructionID Builder::add_load_instruction(
     context.operand_table[maybe_align_id.value()]->add_use(id);
   }
 
-  return id;
+  return instruction;
 }
 
-InstructionID Builder::add_store_instruction(
+InstructionPtr Builder::make_store_instruction(
   OperandID value_id,
   OperandID ptr_id,
   std::optional<OperandID> maybe_align_id
@@ -342,14 +293,9 @@ InstructionID Builder::add_store_instruction(
     maybe_align_id,
   });
 
-  auto instruction = std::make_shared<Instruction>(Instruction{
-    id,
-    kind,
-    curr_basic_block->id,
-  });
+  auto instruction = make_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
-  curr_basic_block->add_instruction(id);
 
   context.operand_table[value_id]->add_use(id);
   context.operand_table[ptr_id]->add_use(id);
@@ -357,10 +303,10 @@ InstructionID Builder::add_store_instruction(
     context.operand_table[maybe_align_id.value()]->add_use(id);
   }
 
-  return id;
+  return instruction;
 }
 
-InstructionID Builder::add_call_instruction(
+InstructionPtr Builder::make_call_instruction(
   std::optional<OperandID> maybe_dst_id,
   std::string function_name,
   std::vector<OperandID> args_id
@@ -372,14 +318,9 @@ InstructionID Builder::add_call_instruction(
     args_id,
   });
 
-  auto instruction = std::make_shared<Instruction>(Instruction{
-    id,
-    kind,
-    curr_basic_block->id,
-  });
+  auto instruction = make_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
-  curr_basic_block->add_instruction(id);
 
   if (maybe_dst_id.has_value()) {
     context.operand_table[maybe_dst_id.value()]->set_def(id);
@@ -389,10 +330,10 @@ InstructionID Builder::add_call_instruction(
   }
   context.function_table[function_name]->caller_id_list.push_back(id);
 
-  return id;
+  return instruction;
 }
 
-InstructionID Builder::add_getelementptr_instruction(
+InstructionPtr Builder::make_getelementptr_instruction(
   OperandID dst_id,
   TypePtr basis_type,
   OperandID ptr_id,
@@ -406,14 +347,9 @@ InstructionID Builder::add_getelementptr_instruction(
     indices_id,
   });
 
-  auto instruction = std::make_shared<Instruction>(Instruction{
-    id,
-    kind,
-    curr_basic_block->id,
-  });
+  auto instruction = make_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
-  curr_basic_block->add_instruction(id);
 
   context.operand_table[dst_id]->set_def(id);
   context.operand_table[ptr_id]->add_use(id);
@@ -421,13 +357,16 @@ InstructionID Builder::add_getelementptr_instruction(
     context.operand_table[index_id]->add_use(id);
   }
 
-  return id;
+  return instruction;
+}
+
+void Builder::add_instruction(InstructionPtr instruction) {
+  curr_basic_block->add_instruction(instruction);
 }
 
 BasicBlockID Builder::add_basic_block() {
   auto id = context.get_next_basic_block_id();
-  auto basic_block =
-    std::make_shared<BasicBlock>(BasicBlock{id, curr_function->name, {}});
+  auto basic_block = std::make_shared<BasicBlock>(id, curr_function->name);
   context.register_basic_block(basic_block);
   curr_function->add_basic_block(id);
   curr_basic_block = basic_block;

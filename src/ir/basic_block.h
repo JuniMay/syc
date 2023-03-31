@@ -10,23 +10,15 @@ namespace ir {
 struct BasicBlock {
   BasicBlockID id;
   std::string parent_function_name;
-  std::list<InstructionID> instruction_list;
+  
+  InstructionPtr head_instruction;
+  InstructionPtr tail_instruction;
 
   std::vector<InstructionID> use_id_list;
 
-  void add_instruction(InstructionID instruction_id) {
-    instruction_list.push_back(instruction_id);
-  }
+  BasicBlock(BasicBlockID id, std::string parent_function_name);
 
-  void insert_instruction_after(
-    InstructionID instruction_id,
-    InstructionID after_instruction_id
-  );
-
-  void insert_instruction_before(
-    InstructionID instruction_id,
-    InstructionID before_instruction_id
-  );
+  void add_instruction(InstructionPtr instruction);
 
   std::string get_label() const { return "bb_" + std::to_string(id); }
 

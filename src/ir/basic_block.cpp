@@ -5,47 +5,34 @@
 namespace syc {
 namespace ir {
 
+BasicBlock::BasicBlock(BasicBlockID id, std::string parent_function_name)
+  : id(id), parent_function_name(parent_function_name) {
+  this->head_instruction = make_dummy_instruction();
+  this->tail_instruction = make_dummy_instruction();
+
+  this->head_instruction->insert_next(this->tail_instruction);
+}
+
 std::string BasicBlock::to_string(Context& context) {
   std::string label = this->get_label();
   std::string result = label + ":\n";
 
-  for (auto instruction_id : instruction_list) {
-    auto instruction = context.get_instruction(instruction_id);
-    result += "  " + instruction->to_string(context) + "\n";
-  }
+  auto curr_instruction = this->head_instruction->next;
+
+  while (curr_instruction != this->tail_instruction) {
+    result += "  " + curr_instruction->to_string(context) + "\n";
+    curr_instruction = curr_instruction->next;
+  };
 
   return result;
 }
 
-void BasicBlock::insert_instruction_after(
-  InstructionID instruction_id,
-  InstructionID after_instruction_id
-) {
-  auto it = std::find(
-    instruction_list.begin(), instruction_list.end(), after_instruction_id
-  );
-  if (it == instruction_list.end()) {
-    throw std::runtime_error("Instruction not found");
-  }
-  ++it;
-  instruction_list.insert(it, instruction_id);
-}
-
-void BasicBlock::insert_instruction_before(
-  InstructionID instruction_id,
-  InstructionID before_instruction_id
-) {
-  auto it = std::find(
-    instruction_list.begin(), instruction_list.end(), before_instruction_id
-  );
-  if (it == instruction_list.end()) {
-    throw std::runtime_error("Instruction not found");
-  }
-  instruction_list.insert(it, instruction_id);
+void BasicBlock::add_instruction(InstructionPtr instruction) {
+  this->tail_instruction->insert_prev(instruction);
 }
 
 void BasicBlock::add_use(InstructionID use_id) {
-  use_id_list.push_back(use_id);
+  this->use_id_list.push_back(use_id);
 }
 
 }  // namespace ir

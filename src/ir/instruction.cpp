@@ -8,6 +8,51 @@
 namespace syc {
 namespace ir {
 
+InstructionPtr make_instruction(
+  InstructionID id,
+  InstructionKind kind,
+  BasicBlockID parent_block_id
+) {
+  auto instruction = std::make_shared<Instruction>(id, kind, parent_block_id);
+  return instruction;
+}
+
+InstructionPtr make_dummy_instruction() {
+  auto instruction = std::make_shared<Instruction>(
+    std::numeric_limits<OperandID>::max(), instruction::Dummy{},
+    std::numeric_limits<BasicBlockID>::max()
+  );
+  return instruction;
+}
+
+void Instruction::insert_next(InstructionPtr instruction) {
+  instruction->next = this->next;
+  instruction->prev = this->shared_from_this();
+
+  if (this->next) {
+    this->next->prev = instruction;
+  }
+  this->next = instruction;
+}
+
+void Instruction::insert_prev(InstructionPtr instruction) {
+  instruction->next = this->shared_from_this();
+  instruction->prev = this->prev;
+
+  if (auto prev = this->prev.lock()) {
+    prev->next = instruction;
+  }
+
+  this->prev = instruction;
+}
+
+Instruction::Instruction(
+  InstructionID id,
+  InstructionKind kind,
+  BasicBlockID parent_block_id
+)
+  : id(id), kind(kind), parent_block_id(parent_block_id), next(nullptr) {}
+
 std::string Instruction::to_string(Context& context) {
   using namespace instruction;
 
@@ -344,8 +389,9 @@ std::string Instruction::to_string(Context& context) {
         }
 
         return result;
-      }},
-
+      },
+      [&context](const auto& instruction) -> std::string { return ""; },
+    },
     kind
   );
 }

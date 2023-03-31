@@ -195,16 +195,41 @@ struct GetElementPtr {
   std::vector<OperandID> index_id_list;
 };
 
+/// Dummy instruction for head/tail guard.
+struct Dummy {};
+
 }  // namespace instruction
 
-struct Instruction {
+/// Instruction
+/// Instruction is stored in a bidirectional linked list.
+struct Instruction : std::enable_shared_from_this<Instruction> {
   InstructionID id;
   InstructionKind kind;
 
   BasicBlockID parent_block_id;
 
+  InstructionPtr next;
+  InstructionPrevPtr prev;
+
+  Instruction(
+    InstructionID id,
+    InstructionKind kind,
+    BasicBlockID parent_block_id
+  );
+
+  void insert_next(InstructionPtr instruction);
+  void insert_prev(InstructionPtr instruction);
+
   std::string to_string(Context& context);
 };
+
+InstructionPtr make_instruction(
+  InstructionID id,
+  InstructionKind kind,
+  BasicBlockID parent_block_id
+);
+
+InstructionPtr make_dummy_instruction();
 
 }  // namespace ir
 }  // namespace syc

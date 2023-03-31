@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <limits>
 #include <list>
 #include <map>
 #include <memory>
@@ -69,6 +70,7 @@ struct Load;
 struct Store;
 struct GetElementPtr;
 struct Call;
+struct Dummy;
 
 }  // namespace instruction
 
@@ -85,11 +87,13 @@ using InstructionKind = std::variant<
   instruction::Load,
   instruction::Store,
   instruction::Call,
-  instruction::GetElementPtr>;
+  instruction::GetElementPtr,
+  instruction::Dummy>;
 
 struct Instruction;
 
 using InstructionPtr = std::shared_ptr<Instruction>;
+using InstructionPrevPtr = std::weak_ptr<Instruction>;
 
 namespace operand {
 
