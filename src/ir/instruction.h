@@ -225,6 +225,8 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
   void insert_next(InstructionPtr instruction);
   /// Insert the instruction before the current instruction.
   void insert_prev(InstructionPtr instruction);
+  /// Remove the instruction from the linked list.
+  void remove();
 
   /// Convert the instruction to a string of IR form.
   std::string to_string(Context& context);

@@ -44,6 +44,15 @@ void Instruction::insert_prev(InstructionPtr instruction) {
   this->prev = instruction;
 }
 
+void Instruction::remove() {
+  if (auto prev = this->prev.lock()) {
+    prev->next = this->next;
+  }
+  if (this->next) {
+    this->next->prev = this->prev;
+  }
+}
+
 Instruction::Instruction(
   InstructionID id,
   InstructionKind kind,

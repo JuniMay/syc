@@ -46,6 +46,16 @@ void BasicBlock::insert_prev(BasicBlockPtr basic_block) {
   this->prev = basic_block;
 }
 
+void BasicBlock::remove() {
+  if (auto prev = this->prev.lock()) {
+    prev->next = this->next;
+  }
+
+  if (this->next) {
+    this->next->prev = this->prev;
+  }
+}
+
 std::string BasicBlock::to_string(Context& context) {
   std::string label = this->get_label();
   std::string result = label + ":\n";
