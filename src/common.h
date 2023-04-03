@@ -140,6 +140,7 @@ using BasicBlockID = size_t;
 struct BasicBlock;
 
 using BasicBlockPtr = std::shared_ptr<BasicBlock>;
+using BasicBlockPrevPtr = std::weak_ptr<BasicBlock>;
 
 namespace instruction {
 
@@ -158,6 +159,7 @@ struct Lui;
 struct Li;
 struct Call;
 struct Branch;
+struct Dummy;
 
 }  // namespace instruction
 
@@ -176,13 +178,15 @@ using InstructionKind = std::variant<
   instruction::Lui,
   instruction::Li,
   instruction::Call,
-  instruction::Branch>;
+  instruction::Branch,
+  instruction::Dummy>;
 
 using InstructionID = size_t;
 
 struct Instruction;
 
 using InstructionPtr = std::shared_ptr<Instruction>;
+using InstructionPrevPtr = std::weak_ptr<Instruction>;
 
 struct Memory;
 

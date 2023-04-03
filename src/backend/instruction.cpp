@@ -5,6 +5,49 @@
 namespace syc {
 namespace backend {
 
+Instruction::Instruction(
+  InstructionID id,
+  InstructionKind kind,
+  BasicBlockID parent_block_id
+)
+  : id(id), kind(kind), parent_block_id(parent_block_id), next(nullptr) {}
+
+void Instruction::insert_next(InstructionPtr instruction) {
+  instruction->next = this->next;
+  instruction->prev = this->shared_from_this();
+
+  if (this->next) {
+    this->next->prev = instruction;
+  }
+  this->next = instruction;
+}
+
+void Instruction::insert_prev(InstructionPtr instruction) {
+  instruction->next = this->shared_from_this();
+  instruction->prev = this->prev;
+
+  if (auto prev = this->prev.lock()) {
+    prev->next = instruction;
+  }
+
+  this->prev = instruction;
+}
+
+InstructionPtr create_instruction(
+  InstructionID id,
+  InstructionKind kind,
+  BasicBlockID parent_block_id
+) {
+  return std::make_shared<Instruction>(id, kind, parent_block_id);
+}
+
+InstructionPtr create_dummy_instruction() {
+  return create_instruction(
+    std::numeric_limits<InstructionID>::max(), instruction::Dummy{},
+    std::numeric_limits<BasicBlockID>::max()
+  );
+}
+
 std::string Instruction::to_string(Context& context) {
   using namespace instruction;
 
@@ -548,7 +591,7 @@ std::string Instruction::to_string(Context& context) {
 
         return ss.str();
       },
-    },
+      [&context](const auto& instruction) -> std::string { return ""; }},
     kind
   );
 }

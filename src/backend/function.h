@@ -11,20 +11,12 @@ struct Function {
 
   std::size_t stack_frame_size;
 
-  std::list<BasicBlockID> basic_block_list;
+  BasicBlockPtr head_basic_block;
+  BasicBlockPtr tail_basic_block;
 
-  void append_basic_block(BasicBlockID basic_block_id);
-  void remove_basic_block(BasicBlockID basic_block_id);
+  Function(std::string name);
 
-  void insert_basic_block_after(
-    BasicBlockID basic_block_id,
-    BasicBlockID insert_after_id
-  );
-
-  void insert_basic_block_before(
-    BasicBlockID basic_block_id,
-    BasicBlockID insert_before_id
-  );
+  void append_basic_block(BasicBlockPtr basic_block);
 };
 
 }  // namespace backend

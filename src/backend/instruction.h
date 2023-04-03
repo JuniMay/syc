@@ -296,16 +296,47 @@ struct Branch {
   BasicBlockID block_id;
 };
 
+struct Dummy {};
+
 }  // namespace instruction
 
-struct Instruction {
+/// Machine instruction
+struct Instruction : std::enable_shared_from_this<Instruction> {
+  /// Instruction ID in the context.
   InstructionID id;
+  /// Instruction kind.
   InstructionKind kind;
-
+  /// ID of the parent basic block.
   BasicBlockID parent_block_id;
 
+  /// Next instruction.
+  InstructionPtr next;
+  /// Previous instruction.
+  InstructionPrevPtr prev;
+
+  /// Constructor
+  Instruction(
+    InstructionID id,
+    InstructionKind kind,
+    BasicBlockID parent_block_id
+  );
+
+  /// Insert instruction to the next of the current instruction.
+  void insert_next(InstructionPtr instruction);
+  /// Insert instruction to the prev of the current instruction.
+  void insert_prev(InstructionPtr instruction);
+
+  /// Convert the instruction to a string of assembly code.
   std::string to_string(Context& context);
 };
+
+InstructionPtr create_instruction(
+  InstructionID id,
+  InstructionKind kind,
+  BasicBlockID parent_block_id
+);
+
+InstructionPtr create_dummy_instruction();
 
 }  // namespace backend
 }  // namespace syc
