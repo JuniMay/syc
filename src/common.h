@@ -22,6 +22,91 @@ template <class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
 namespace syc {
+
+namespace frontend {
+
+namespace type {
+
+struct Int;
+struct Float;
+struct Array;
+struct Void;
+struct Pointer;
+
+}  // namespace type
+
+using TypeKind =
+  std::variant<type::Int, type::Float, type::Array, type::Void, type::Pointer>;
+
+struct Type;
+
+using TypePtr = std::shared_ptr<Type>;
+
+namespace ast {
+
+struct Block;
+
+namespace expr {
+
+enum class BinaryOp;
+enum class UnaryOp;
+
+struct Binary;
+struct Unary;
+struct Call;
+struct ComptimeValue;
+struct Cast;
+struct Index;
+
+}  // namespace expr
+
+namespace stmt {
+
+struct If;
+struct While;
+struct Break;
+struct Continue;
+struct Return;
+struct Assign;
+struct Block;
+struct Expr;
+
+}  // namespace stmt
+
+struct Decl;
+struct FuncDef;
+
+using ExprKind = std::variant<
+  expr::Binary,
+  expr::Unary,
+  expr::Call,
+  expr::ComptimeValue,
+  expr::Cast,
+  expr::Index>;
+
+struct Expr;
+
+using StmtKind = std::variant<
+  stmt::If,
+  stmt::While,
+  stmt::Break,
+  stmt::Continue,
+  stmt::Return,
+  stmt::Assign,
+  stmt::Block,
+  stmt::Expr>;
+
+struct Stmt;
+
+struct CompUnit;
+
+using ExprPtr = std::shared_ptr<Expr>;
+using StmtPtr = std::shared_ptr<Stmt>;
+
+}  // namespace ast
+
+}  // namespace frontend
+
 namespace ir {
 
 using BasicBlockID = size_t;

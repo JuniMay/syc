@@ -5,3 +5,4 @@ build
 *.asm
 
 tests/2022
+.DS_Store
