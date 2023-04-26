@@ -35,8 +35,8 @@ struct Pointer;
 
 }  // namespace type
 
-using TypeKind =
-  std::variant<type::Integer, type::Float, type::Array, type::Void, type::Pointer>;
+using TypeKind = std::
+  variant<type::Integer, type::Float, type::Array, type::Void, type::Pointer>;
 struct Type;
 using TypePtr = std::shared_ptr<Type>;
 
@@ -44,15 +44,14 @@ enum class BinaryOp;
 enum class UnaryOp;
 struct ComptimeValue;
 
-enum class SymbolKind;
+enum class Scope;
+
 struct SymbolEntry;
 struct SymbolTable;
 using SymbolEntryPtr = std::shared_ptr<SymbolEntry>;
 using SymbolTablePtr = std::shared_ptr<SymbolTable>;
 
 namespace ast {
-
-struct Block;
 
 namespace expr {
 
@@ -70,21 +69,16 @@ struct While;
 struct Break;
 struct Continue;
 struct Return;
-struct Assign;
 struct Block;
+struct Assign;
 struct Expr;
-
-}  // namespace stmt
-
 struct Decl;
 struct Func;
 
-using ExprKind = std::variant<
-  expr::Binary,
-  expr::Unary,
-  expr::Call,
-  ComptimeValue,
-  expr::Cast>;
+}  // namespace stmt
+
+using ExprKind = std::
+  variant<expr::Binary, expr::Unary, expr::Call, ComptimeValue, expr::Cast>;
 
 struct Expr;
 
@@ -96,16 +90,20 @@ using StmtKind = std::variant<
   stmt::Return,
   stmt::Assign,
   stmt::Block,
-  stmt::Expr>;
+  stmt::Expr,
+  stmt::Decl,
+  stmt::Func>;
 
 struct Stmt;
 
-struct CompUnit;
+struct Compunit;
 
 using ExprPtr = std::shared_ptr<Expr>;
 using StmtPtr = std::shared_ptr<Stmt>;
 
 }  // namespace ast
+
+struct Context;
 
 }  // namespace frontend
 

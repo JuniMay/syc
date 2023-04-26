@@ -209,14 +209,13 @@ ComptimeValue comptime_compute_cast(ComptimeValue val, TypePtr type) {
 
 namespace ast {
 
-CompUnit::CompUnit() : symtable(create_symbol_table(nullptr)), items({}) {}
+Compunit::Compunit() : symtable(create_symbol_table(nullptr)), stmts({}) {}
 
 ExprPtr create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs) {
   // TODO: binary expression may cause implicit type cast:
   //       1. int + float -> float
   //       2. using int/float in condition will cause implicit cast to bool
   //       3. maybe more...
-
 }
 
 ExprPtr create_unary_expr(UnaryOp op, ExprPtr expr) {
@@ -233,6 +232,52 @@ ExprPtr create_call_expr(const std::string& name, std::vector<ExprPtr> args) {
   // TODO: get the function symbol (and the type) from the corresponding symbol
   // table.
   return std::make_shared<Expr>(ExprKind(expr::Call{name, args}), nullptr);
+}
+
+void stmt::Block::add_stmt(StmtPtr stmt) {
+  this->stmts.push_back(stmt);
+
+  std::visit(
+    overloaded{
+      [this](const stmt::Decl& decl) {
+        auto entry = decl.fetch_symbol_entry();
+        this->symtable->add_symbol_entry(entry);
+      },
+      [](const auto& others) {
+        // do nothing
+      }},
+    stmt->kind
+  );
+}
+
+void Compunit::add_stmt(StmtPtr stmt) {
+  this->stmts.push_back(stmt);
+
+  std::visit(
+    overloaded{
+      [this](const stmt::Decl& decl) {
+        auto entry = decl.fetch_symbol_entry();
+        this->symtable->add_symbol_entry(entry);
+      },
+      [](const auto& others) {
+        // do nothing
+      }},
+    stmt->kind
+  );
+}
+
+SymbolEntryPtr stmt::Decl::fetch_symbol_entry() const {
+  std::optional<ComptimeValue> value = std::nullopt;
+
+  // Decide if the expression is a compile-time value.
+  if (this->maybe_init.has_value()) {
+    auto init_expr = this->maybe_init.value();
+    if (std::holds_alternative<ComptimeValue>(init_expr->kind)) {
+      value = std::get<ComptimeValue>(init_expr->kind);
+    }
+  }
+
+  return create_symbol_entry(scope, name, type, is_const, value);
 }
 
 }  // namespace ast

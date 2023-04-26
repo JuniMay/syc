@@ -55,6 +55,7 @@ enum class UnaryOp {
 struct ComptimeValue {
   /// The value is bool, int or float.
   std::variant<bool, int, float> value;
+  /// Type of the value.
   TypePtr type;
 };
 
@@ -157,6 +158,8 @@ struct Block {
   SymbolTablePtr symtable;
   /// Statements.
   std::vector<StmtPtr> stmts;
+
+  void add_stmt(StmtPtr stmt);
 };
 
 /// Assign statement
@@ -174,21 +177,22 @@ struct Expr {
   ExprPtr expr;
 };
 
-}  // namespace stmt
-
 /// Declaration.
 /// This is used for both global and local.
 struct Decl {
+  /// Scope of the variable/constant.
+  Scope scope;
   /// If the declaration is a constant.
   bool is_const;
   /// Type of the declaration.
+  /// Indices (if any) is contained in the type.
   TypePtr type;
   /// Name of the declaration.
   std::string name;
-  /// Indices (of array) in the declaration.
-  std::optional<std::vector<ExprPtr>> indices;
   /// Initial value.
-  std::optional<ExprPtr> init;
+  std::optional<ExprPtr> maybe_init;
+
+  SymbolEntryPtr fetch_symbol_entry() const;
 };
 
 /// Function definition.
@@ -208,6 +212,8 @@ struct Func {
   StmtPtr body;
 };
 
+}  // namespace stmt
+
 /// Statement.
 struct Stmt {
   /// Statement kind.
@@ -215,14 +221,15 @@ struct Stmt {
 };
 
 /// Compile unit.
-struct CompUnit {
+struct Compunit {
   /// Global symbols.
   SymbolTablePtr symtable;
   /// Items.
-  std::vector<std::variant<Decl, Func>> items;
-
+  std::vector<StmtPtr> stmts;
   /// Constructor.
-  CompUnit();
+  Compunit();
+
+  void add_stmt(StmtPtr stmt);
 };
 
 ExprPtr create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs);
