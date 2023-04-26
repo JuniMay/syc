@@ -6,15 +6,16 @@
 namespace syc {
 
 namespace frontend {
-namespace ast {
-
-namespace expr {
 
 /// Binary operations.
 enum class BinaryOp {
+  /// Add
   Add,
+  /// Sub
   Sub,
+  /// Mul
   Mul,
+  /// Mod
   Mod,
   /// Less than.
   Lt,
@@ -28,8 +29,14 @@ enum class BinaryOp {
   Eq,
   /// Not equal to.
   Ne,
+  /// Logical And
+  /// This is for bool type.
   LogicalAnd,
+  /// Logical Or
+  /// This is for bool type.
   LogicalOr,
+  /// Index
+  Index,
 };
 
 /// Unary operations.
@@ -38,9 +45,35 @@ enum class UnaryOp {
   Pos,
   /// Negative
   Neg,
-  /// Not
-  Not,
+  /// LogicalNot
+  LogicalNot,
 };
+
+/// Compile-time value.
+/// This is the representation of literal, constant, and compile time computed
+/// result.
+struct ComptimeValue {
+  /// The value is bool, int or float.
+  std::variant<bool, int, float> value;
+  TypePtr type;
+};
+
+ComptimeValue
+create_comptime_value(std::variant<bool, int, float> value, TypePtr type);
+
+/// Compute binary operation between two compile-time values.
+ComptimeValue
+comptime_compute_binary(BinaryOp op, ComptimeValue lhs, ComptimeValue rhs);
+
+/// Compute unary operation on a compile-time value.
+ComptimeValue comptime_compute_unary(UnaryOp op, ComptimeValue val);
+
+/// Compute cast operation on a compile-time value.
+ComptimeValue comptime_compute_cast(ComptimeValue val, TypePtr type);
+
+namespace ast {
+
+namespace expr {
 
 /// Binary expression.
 struct Binary {
@@ -68,29 +101,12 @@ struct Call {
   std::vector<ExprPtr> args;
 };
 
-/// Compile-time value.
-/// This is the representation of literal, constant, and compile time computed
-/// result.
-struct ComptimeValue {
-  /// The value is either int or float.
-  /// boolean is represented as int.
-  std::variant<int, float> value;
-};
-
 /// Cast expression.
 struct Cast {
   /// Expression to be casted.
   ExprPtr expr;
   /// Target type.
   TypePtr type;
-};
-
-/// Indexing expression.
-struct Index {
-  /// Expression to be indexed from.
-  ExprPtr expr;
-  /// Indexer expression.
-  ExprPtr index;
 };
 
 }  // namespace expr
@@ -105,35 +121,56 @@ struct Expr {
 
 namespace stmt {
 
+/// If statement.
 struct If {
+  /// Condition
   ExprPtr cond;
-  StmtPtr then;
-  StmtPtr else_;
+  /// True branch
+  StmtPtr then_stmt;
+  /// False branch
+  StmtPtr else_stmt;
 };
 
+/// While statement.
 struct While {
+  /// Condition
   ExprPtr cond;
+  /// Body
   StmtPtr body;
 };
 
+/// Break
 struct Break {};
 
+/// Continue
 struct Continue {};
 
+/// Return
 struct Return {
+  /// Return expression.
   ExprPtr expr;
 };
 
-struct Assign {
-  ExprPtr lhs;
-  ExprPtr rhs;
-};
-
+/// Block statement.
 struct Block {
+  /// Symbol table of the block.
+  SymbolTablePtr symtable;
+  /// Statements.
   std::vector<StmtPtr> stmts;
 };
 
+/// Assign statement
+struct Assign {
+  /// Left-hand side expression.
+  /// This can be a identifier or an index expression.
+  ExprPtr lhs;
+  /// Right-hand side expression.
+  ExprPtr rhs;
+};
+
+/// Expression statement.
 struct Expr {
+  /// The expression.
   ExprPtr expr;
 };
 
@@ -155,7 +192,11 @@ struct Decl {
 };
 
 /// Function definition.
-struct FuncDef {
+struct Func {
+  /// Symbol table
+  /// In this symbol table, only parameters are included,
+  /// and other symbols are stored in the block statement.
+  SymbolTablePtr symtable;
   /// Return type.
   TypePtr ret_type;
   /// Function name.
@@ -167,14 +208,27 @@ struct FuncDef {
   StmtPtr body;
 };
 
+/// Statement.
 struct Stmt {
+  /// Statement kind.
   StmtKind kind;
 };
 
-ExprPtr make_binary_expr(expr::BinaryOp op, ExprPtr lhs, ExprPtr rhs);
-ExprPtr make_unary_expr(expr::UnaryOp op, ExprPtr expr);
-ExprPtr make_comptime_value_expr(std::variant<int, float> value);
-ExprPtr make_cast_expr(ExprPtr expr, TypePtr type);
+/// Compile unit.
+struct CompUnit {
+  /// Global symbols.
+  SymbolTablePtr symtable;
+  /// Items.
+  std::vector<std::variant<Decl, Func>> items;
+
+  /// Constructor.
+  CompUnit();
+};
+
+ExprPtr create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs);
+ExprPtr create_unary_expr(UnaryOp op, ExprPtr expr);
+ExprPtr create_cast_expr(ExprPtr expr, TypePtr type);
+ExprPtr create_call_expr(const std::string& name, std::vector<ExprPtr> args);
 
 }  // namespace ast
 

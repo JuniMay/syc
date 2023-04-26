@@ -27,7 +27,7 @@ namespace frontend {
 
 namespace type {
 
-struct Int;
+struct Integer;
 struct Float;
 struct Array;
 struct Void;
@@ -36,11 +36,19 @@ struct Pointer;
 }  // namespace type
 
 using TypeKind =
-  std::variant<type::Int, type::Float, type::Array, type::Void, type::Pointer>;
-
+  std::variant<type::Integer, type::Float, type::Array, type::Void, type::Pointer>;
 struct Type;
-
 using TypePtr = std::shared_ptr<Type>;
+
+enum class BinaryOp;
+enum class UnaryOp;
+struct ComptimeValue;
+
+enum class SymbolKind;
+struct SymbolEntry;
+struct SymbolTable;
+using SymbolEntryPtr = std::shared_ptr<SymbolEntry>;
+using SymbolTablePtr = std::shared_ptr<SymbolTable>;
 
 namespace ast {
 
@@ -48,15 +56,10 @@ struct Block;
 
 namespace expr {
 
-enum class BinaryOp;
-enum class UnaryOp;
-
 struct Binary;
 struct Unary;
 struct Call;
-struct ComptimeValue;
 struct Cast;
-struct Index;
 
 }  // namespace expr
 
@@ -74,15 +77,14 @@ struct Expr;
 }  // namespace stmt
 
 struct Decl;
-struct FuncDef;
+struct Func;
 
 using ExprKind = std::variant<
   expr::Binary,
   expr::Unary,
   expr::Call,
-  expr::ComptimeValue,
-  expr::Cast,
-  expr::Index>;
+  ComptimeValue,
+  expr::Cast>;
 
 struct Expr;
 
