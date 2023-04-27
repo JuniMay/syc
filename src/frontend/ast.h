@@ -2,6 +2,7 @@
 #define SYC_FRONTEND_AST_H_
 
 #include "common.h"
+#include "frontend/comptime.h"
 
 namespace syc {
 
@@ -15,6 +16,8 @@ enum class BinaryOp {
   Sub,
   /// Mul
   Mul,
+  /// Div
+  Div,
   /// Mod
   Mod,
   /// Less than.
@@ -49,32 +52,15 @@ enum class UnaryOp {
   LogicalNot,
 };
 
-/// Compile-time value.
-/// This is the representation of literal, constant, and compile time computed
-/// result.
-struct ComptimeValue {
-  /// The value is bool, int or float.
-  std::variant<bool, int, float> value;
-  /// Type of the value.
-  TypePtr type;
-};
-
-ComptimeValue
-create_comptime_value(std::variant<bool, int, float> value, TypePtr type);
-
-/// Compute binary operation between two compile-time values.
-ComptimeValue
-comptime_compute_binary(BinaryOp op, ComptimeValue lhs, ComptimeValue rhs);
-
-/// Compute unary operation on a compile-time value.
-ComptimeValue comptime_compute_unary(UnaryOp op, ComptimeValue val);
-
-/// Compute cast operation on a compile-time value.
-ComptimeValue comptime_compute_cast(ComptimeValue val, TypePtr type);
-
 namespace ast {
 
 namespace expr {
+
+/// Identifier as an expression.
+struct Identifier {
+  /// Name of the identifier
+  std::string name;
+};
 
 /// Binary expression.
 struct Binary {
@@ -110,14 +96,33 @@ struct Cast {
   TypePtr type;
 };
 
+/// Literal number (or a constant)
+struct Constant {
+  /// Value of the literal.
+  ComptimeValue value;
+};
+
 }  // namespace expr
 
 /// Expression.
 struct Expr {
   /// Expression kind.
   ExprKind kind;
-  /// Expression type.
-  TypePtr type;
+  /// Symbol entry
+  /// If the expression is a identifier, the symbol entry is corresponding to
+  /// the name. Otherwise the symbol entry is temporary.
+  /// If the expression is a constant (i.e. literal value), the symbol entry is
+  /// nullptr.
+  SymbolEntryPtr symbol_entry;
+
+  /// Constructor
+  Expr(ExprKind kind, SymbolEntryPtr symbol_entry);
+
+  /// If the expression is compile-time computable.
+  bool is_comptime() const;
+
+  /// Get the value.
+  std::optional<ComptimeValue> get_comptime_value() const;
 };
 
 namespace stmt {
@@ -128,7 +133,7 @@ struct If {
   ExprPtr cond;
   /// True branch
   StmtPtr then_stmt;
-  /// False branch
+  /// False branch, nullptr if no else statement.
   StmtPtr else_stmt;
 };
 
@@ -196,20 +201,19 @@ struct Decl {
 };
 
 /// Function definition.
-struct Func {
+struct FuncDef {
   /// Symbol table
   /// In this symbol table, only parameters are included,
   /// and other symbols are stored in the block statement.
   SymbolTablePtr symtable;
-  /// Return type.
-  TypePtr ret_type;
-  /// Function name.
-  std::string name;
-  /// Parameters.
-  /// The `init` in each Decl is nullopt.
-  std::vector<Decl> params;
+  /// Symbol entry of the function
+  SymbolEntryPtr symbol_entry;
+  /// Parameter names.
+  std::vector<std::string> param_names;
   /// A block statement.
   StmtPtr body;
+
+  void set_body(StmtPtr body);
 };
 
 }  // namespace stmt
@@ -218,6 +222,8 @@ struct Func {
 struct Stmt {
   /// Statement kind.
   StmtKind kind;
+
+  Stmt(StmtKind kins);
 };
 
 /// Compile unit.
@@ -232,10 +238,73 @@ struct Compunit {
   void add_stmt(StmtPtr stmt);
 };
 
-ExprPtr create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs);
-ExprPtr create_unary_expr(UnaryOp op, ExprPtr expr);
-ExprPtr create_cast_expr(ExprPtr expr, TypePtr type);
-ExprPtr create_call_expr(const std::string& name, std::vector<ExprPtr> args);
+/// Create an identifier expression from the corresponding symbol entry.
+/// When building the AST, symbol_entry can be looked up in the `curr_symtable`
+/// by driver using its name.
+ExprPtr create_identifier_expr(SymbolEntryPtr symbol_entry);
+
+/// Create a constant expression.
+ExprPtr create_constant_expr(ComptimeValue value);
+
+/// Create a binary expression.
+/// `symbol_name` is the temporary name fetched from the driver.
+/// `symtable` if the symbol table to register the temporary symbol entry.
+ExprPtr create_binary_expr(
+  BinaryOp op,
+  ExprPtr lhs,
+  ExprPtr rhs,
+  std::string symbol_name,
+  SymbolTablePtr symtable
+);
+
+/// Create a unary expression.
+/// `symbol_name` is the temporary name fetched from the driver.
+/// `symtable` if the symbol table to register the temporary symbol entry.
+ExprPtr create_unary_expr(
+  UnaryOp op,
+  ExprPtr expr,
+  std::string symbol_name,
+  SymbolTablePtr symtable
+);
+
+/// Create a call expression.
+/// `symbol_name` is the temporary name fetched from the driver.
+/// `symtable` if the symbol table to register the temporary symbol entry.
+/// Note that the type of the symbol entry can be void.
+ExprPtr create_call_expr(
+  SymbolEntryPtr func_symbol_entry,
+  std::vector<ExprPtr> args,
+  std::string symbol_name,
+  SymbolTablePtr symtable
+);
+
+/// Create a return statement.
+StmtPtr create_return_stmt(ExprPtr expr);
+
+/// Create a break statement.
+StmtPtr create_break_stmt();
+
+/// Create a continue statement.
+StmtPtr create_continue_stmt();
+
+/// Create an if statement.
+StmtPtr
+create_if_stmt(ExprPtr cond, StmtPtr then_stmt, StmtPtr else_stmt = nullptr);
+
+/// Create a while statement.
+StmtPtr create_while_stmt(ExprPtr cond, StmtPtr body);
+
+/// Create a new block with no statements.
+StmtPtr create_block_stmt(SymbolTablePtr parent_symtable);
+
+/// Create a new function definition with no statements.
+/// This will not create a new block. The body is handled by the driver.
+StmtPtr create_func_def_stmt(
+  SymbolTablePtr parent_symtable,
+  TypePtr ret_type,
+  std::string name,
+  std::vector<std::tuple<TypePtr, std::string>> params
+);
 
 }  // namespace ast
 

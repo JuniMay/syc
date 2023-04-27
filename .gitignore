@@ -6,3 +6,5 @@ build
 
 tests/2022
 .DS_Store
+
+src/frontend/generated

@@ -2,6 +2,7 @@
 #define SYC_FRONTEND_TYPE_H_
 
 #include "common.h"
+#include "frontend/comptime.h"
 
 namespace syc {
 
@@ -22,8 +23,8 @@ struct Integer {
 struct Float {};
 
 struct Array {
-  size_t size;
   TypePtr element_type;
+  std::optional<size_t> maybe_size;
 };
 
 struct Void {};
@@ -32,10 +33,17 @@ struct Pointer {
   TypePtr value_type;
 };
 
+struct Function {
+  TypePtr ret_type;
+  std::vector<TypePtr> param_types;
+};
+
 }  // namespace type
 
 struct Type {
   TypeKind kind;
+
+  Type(TypeKind kind);
 
   bool is_bool() const;
   /// If the type is `int`.
@@ -63,8 +71,10 @@ TypePtr create_int_type();
 TypePtr create_bool_type();
 TypePtr create_float_type();
 TypePtr create_void_type();
-TypePtr create_array_type(size_t size, TypePtr element_type);
+TypePtr
+create_array_type(TypePtr element_type, std::optional<size_t> maybe_size);
 TypePtr create_pointer_type(TypePtr value_type);
+TypePtr create_function_type(TypePtr ret_type, std::vector<TypePtr> param_types);
 
 bool operator==(TypePtr lhs, TypePtr rhs);
 

@@ -5,233 +5,191 @@
 namespace syc {
 namespace frontend {
 
-ComptimeValue
-create_comptime_value(std::variant<bool, int, float> value, TypePtr type) {
-  return ComptimeValue{value, type};
-}
-
-ComptimeValue
-comptime_compute_binary(BinaryOp op, ComptimeValue lhs, ComptimeValue rhs) {
-  if (lhs.type != rhs.type) {
-    throw std::runtime_error(
-      "Inconsist type of compile-time values, consider implicit type cast."
-    );
-  }
-
-  if (lhs.type->is_bool()) {
-    switch (op) {
-      case BinaryOp::LogicalAnd: {
-        bool value = std::get<bool>(lhs.value) && std::get<bool>(rhs.value);
-        return create_comptime_value(value, create_bool_type());
-      }
-      case BinaryOp::LogicalOr: {
-        bool value = std::get<bool>(lhs.value) || std::get<bool>(rhs.value);
-        return create_comptime_value(value, create_bool_type());
-      }
-      default: {
-        throw std::runtime_error(
-          "Unsupported compile-time operation for type `bool`."
-        );
-      }
-    }
-  } else if (lhs.type->is_int()) {
-    switch (op) {
-      case BinaryOp::Add: {
-        int value = std::get<int>(lhs.value) + std::get<int>(rhs.value);
-        return create_comptime_value(value, create_int_type());
-      }
-      case BinaryOp::Sub: {
-        int value = std::get<int>(lhs.value) - std::get<int>(rhs.value);
-        return create_comptime_value(value, create_int_type());
-      }
-      case BinaryOp::Mul: {
-        int value = std::get<int>(lhs.value) * std::get<int>(rhs.value);
-        return create_comptime_value(value, create_int_type());
-      }
-      case BinaryOp::Mod: {
-        int value = std::get<int>(lhs.value) % std::get<int>(rhs.value);
-        return create_comptime_value(value, create_int_type());
-      }
-      case BinaryOp::Lt: {
-        bool value = std::get<int>(lhs.value) < std::get<int>(rhs.value);
-        return create_comptime_value(value, create_bool_type());
-      }
-      case BinaryOp::Gt: {
-        bool value = std::get<int>(lhs.value) > std::get<int>(rhs.value);
-        return create_comptime_value(value, create_bool_type());
-      }
-      case BinaryOp::Le: {
-        bool value = std::get<int>(lhs.value) <= std::get<int>(rhs.value);
-        return create_comptime_value(value, create_bool_type());
-      }
-      case BinaryOp::Ge: {
-        bool value = std::get<int>(lhs.value) >= std::get<int>(rhs.value);
-        return create_comptime_value(value, create_bool_type());
-      }
-      case BinaryOp::Eq: {
-        bool value = std::get<int>(lhs.value) == std::get<int>(rhs.value);
-        return create_comptime_value(value, create_bool_type());
-      }
-      case BinaryOp::Ne: {
-        bool value = std::get<int>(lhs.value) != std::get<int>(rhs.value);
-        return create_comptime_value(value, create_bool_type());
-      }
-      default: {
-        throw std::runtime_error(
-          "Unsupported compile-time operation for type `int`."
-        );
-      }
-    }
-  } else if (lhs.type->is_float()) {
-    switch (op) {
-      case BinaryOp::Add: {
-        float value = std::get<float>(lhs.value) + std::get<float>(rhs.value);
-        return create_comptime_value(value, create_float_type());
-      }
-      case BinaryOp::Sub: {
-        float value = std::get<float>(lhs.value) - std::get<float>(rhs.value);
-        return create_comptime_value(value, create_float_type());
-      }
-      case BinaryOp::Mul: {
-        float value = std::get<float>(lhs.value) * std::get<float>(rhs.value);
-        return create_comptime_value(value, create_float_type());
-      }
-      case BinaryOp::Lt: {
-        bool value = std::get<int>(lhs.value) < std::get<int>(rhs.value);
-        return create_comptime_value(value, create_bool_type());
-      }
-      case BinaryOp::Gt: {
-        bool value = std::get<int>(lhs.value) > std::get<int>(rhs.value);
-        return create_comptime_value(value, create_bool_type());
-      }
-      case BinaryOp::Le: {
-        bool value = std::get<int>(lhs.value) <= std::get<int>(rhs.value);
-        return create_comptime_value(value, create_bool_type());
-      }
-      case BinaryOp::Ge: {
-        bool value = std::get<int>(lhs.value) >= std::get<int>(rhs.value);
-        return create_comptime_value(value, create_bool_type());
-      }
-      case BinaryOp::Eq: {
-        bool value = std::get<int>(lhs.value) == std::get<int>(rhs.value);
-        return create_comptime_value(value, create_bool_type());
-      }
-      case BinaryOp::Ne: {
-        bool value = std::get<int>(lhs.value) != std::get<int>(rhs.value);
-        return create_comptime_value(value, create_bool_type());
-      }
-      default: {
-        throw std::runtime_error(
-          "Unsupported compile-time operation for type `int`."
-        );
-      }
-    }
-  } else {
-    throw std::runtime_error("Unsupported type for compile-time computation.");
-  }
-}
-
-ComptimeValue comptime_compute_unary(UnaryOp op, ComptimeValue val) {
-  if (op == UnaryOp::Pos) {
-    // Note that if the operation is positive, the type of the value will not be
-    // checked.
-    return val;  // do nothing.
-  }
-
-  if (val.type->is_bool()) {
-    switch (op) {
-      case UnaryOp::Neg: {
-        bool value = !std::get<bool>(val.value);
-        return create_comptime_value(value, create_bool_type());
-      }
-      default: {
-        throw std::runtime_error(
-          "Unsupported compile-time operation for type `bool`."
-        );
-      }
-    }
-  } else if (val.type->is_int()) {
-    switch (op) {
-      case UnaryOp::Neg: {
-        int value = -std::get<int>(val.value);
-        return create_comptime_value(value, create_int_type());
-      }
-      default: {
-        throw std::runtime_error(
-          "Unsupported compile-time operation for type `int`."
-        );
-      }
-    }
-  } else if (val.type->is_float()) {
-    switch (op) {
-      case UnaryOp::Neg: {
-        float value = -std::get<float>(val.value);
-        return create_comptime_value(value, create_float_type());
-      }
-      default: {
-        throw std::runtime_error(
-          "Unsupported compile-time operation for type `float`."
-        );
-      }
-    }
-  } else {
-    throw std::runtime_error("Unsupported type for compile-time computation.");
-  }
-}
-
-ComptimeValue comptime_compute_cast(ComptimeValue val, TypePtr type) {
-  if (val.type == type) {
-    return val;  // do nothing.
-  }
-
-  if (val.type->is_bool() && type->is_int()) {
-    int value = static_cast<int>(std::get<bool>(val.value));
-    return create_comptime_value(value, type);
-  } else if (val.type->is_bool() && type->is_float()) {
-    float value = static_cast<float>(std::get<bool>(val.value));
-    return create_comptime_value(value, type);
-  } else if (val.type->is_int() && type->is_bool()) {
-    bool value = static_cast<bool>(std::get<int>(val.value));
-    return create_comptime_value(value, type);
-  } else if (val.type->is_int() && type->is_float()) {
-    float value = static_cast<float>(std::get<int>(val.value));
-    return create_comptime_value(value, type);
-  } else if (val.type->is_float() && type->is_bool()) {
-    bool value = static_cast<bool>(std::get<float>(val.value));
-    return create_comptime_value(value, type);
-  } else if (val.type->is_float() && type->is_int()) {
-    int value = static_cast<int>(std::get<float>(val.value));
-    return create_comptime_value(value, type);
-  } else {
-    throw std::runtime_error("Unsupported type for compile-time computation.");
-  }
-}
-
 namespace ast {
+
+bool Expr::is_comptime() const {
+  return std::visit(
+    overloaded{
+      [](const expr::Binary& kind) {
+        return kind.lhs->is_comptime() && kind.rhs->is_comptime();
+      },
+      [](const expr::Unary& kind) { return kind.expr->is_comptime(); },
+      [](const expr::Cast& kind) { return kind.expr->is_comptime(); },
+      [](const expr::Constant& kind) { return true; },
+      [](const auto&) { return false; },
+    },
+    this->kind
+  );
+}
+
+std::optional<ComptimeValue> Expr::get_comptime_value() const {
+  if (!this->is_comptime()) {
+    return std::nullopt;
+  }
+
+  return std::visit(
+    overloaded{
+      [](const expr::Binary& kind) -> std::optional<ComptimeValue> {
+        auto lhs = kind.lhs->get_comptime_value();
+        auto rhs = kind.rhs->get_comptime_value();
+        if (!lhs.has_value() || !rhs.has_value()) {
+          return std::nullopt;
+        }
+        return std::make_optional(
+          comptime_compute_binary(kind.op, lhs.value(), rhs.value())
+        );
+      },
+      [](const expr::Unary& kind) -> std::optional<ComptimeValue> {
+        auto expr = kind.expr->get_comptime_value();
+        if (!expr.has_value()) {
+          return std::nullopt;
+        }
+        return std::make_optional(comptime_compute_unary(kind.op, expr.value())
+        );
+      },
+      [](const expr::Cast& kind) -> std::optional<ComptimeValue> {
+        auto expr = kind.expr->get_comptime_value();
+        if (!expr.has_value()) {
+          return std::nullopt;
+        }
+        return std::make_optional(comptime_compute_cast(expr.value(), kind.type)
+        );
+      },
+      [](const expr::Constant& kind) -> std::optional<ComptimeValue> {
+        return std::make_optional(kind.value);
+      },
+      [](const auto&) -> std::optional<ComptimeValue> { return std::nullopt; },
+    },
+    this->kind
+  );
+}
 
 Compunit::Compunit() : symtable(create_symbol_table(nullptr)), stmts({}) {}
 
-ExprPtr create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs) {
-  // TODO: binary expression may cause implicit type cast:
-  //       1. int + float -> float
-  //       2. using int/float in condition will cause implicit cast to bool
-  //       3. maybe more...
+ExprPtr create_identifier_expr(SymbolEntryPtr symbol_entry) {
+  return std::make_shared<Expr>(
+    ExprKind(expr::Identifier{symbol_entry->name}), symbol_entry
+  );
 }
 
-ExprPtr create_unary_expr(UnaryOp op, ExprPtr expr) {
-  // TODO: unary expression may cause implicit type cast:
-  //       1. logical not may cause implicit cast to bool
-  //       2. maybe more...
+ExprPtr create_constant_expr(ComptimeValue value) {
+  return std::make_shared<Expr>(ExprKind(expr::Constant{value}), nullptr);
 }
 
-ExprPtr create_cast_expr(ExprPtr expr, TypePtr type) {
-  return std::make_shared<Expr>(ExprKind(expr::Cast{expr, type}), type);
+ExprPtr create_binary_expr(
+  BinaryOp op,
+  ExprPtr lhs,
+  ExprPtr rhs,
+  std::string symbol_name,
+  SymbolTablePtr symtable
+) {
+  // TODO: decide type of the result.
+  auto symbol_entry =
+    create_symbol_entry(Scope::Temp, symbol_name, nullptr, false, std::nullopt);
+
+  symtable->add_symbol_entry(symbol_entry);
+
+  return std::make_shared<Expr>(
+    ExprKind(expr::Binary{op, lhs, rhs}), symbol_entry
+  );
 }
 
-ExprPtr create_call_expr(const std::string& name, std::vector<ExprPtr> args) {
-  // TODO: get the function symbol (and the type) from the corresponding symbol
-  // table.
-  return std::make_shared<Expr>(ExprKind(expr::Call{name, args}), nullptr);
+ExprPtr create_unary_expr(
+  UnaryOp op,
+  ExprPtr expr,
+  std::string symbol_name,
+  SymbolTablePtr symtable
+) {
+  // TODO: decide type of the result.
+  auto symbol_entry =
+    create_symbol_entry(Scope::Temp, symbol_name, nullptr, false, std::nullopt);
+
+  symtable->add_symbol_entry(symbol_entry);
+
+  return std::make_shared<Expr>(ExprKind(expr::Unary{op, expr}), symbol_entry);
+}
+
+ExprPtr create_call_expr(
+  SymbolEntryPtr func_symbol_entry,
+  std::vector<ExprPtr> args,
+  std::string symbol_name,
+  SymbolTablePtr symtable
+) {
+  auto func_name = func_symbol_entry->name;
+  auto func_type = func_symbol_entry->type;
+  
+  auto ret_type = std::get<type::Function>(func_type->kind).ret_type;
+
+  auto symbol_entry =
+    create_symbol_entry(Scope::Temp, symbol_name, ret_type, false, std::nullopt);
+
+  symtable->add_symbol_entry(symbol_entry);
+
+  return std::make_shared<Expr>(
+    ExprKind(expr::Call{func_name, args}), symbol_entry
+  );
+}
+
+StmtPtr create_return_stmt(ExprPtr expr) {
+  return std::make_shared<Stmt>(StmtKind(stmt::Return{expr}));
+}
+
+StmtPtr create_break_stmt() {
+  return std::make_shared<Stmt>(StmtKind(stmt::Break{}));
+}
+
+StmtPtr create_continue_stmt() {
+  return std::make_shared<Stmt>(StmtKind(stmt::Continue{}));
+}
+
+StmtPtr create_if_stmt(ExprPtr cond, StmtPtr then_stmt, StmtPtr else_stmt) {
+  return std::make_shared<Stmt>(StmtKind(stmt::If{cond, then_stmt, else_stmt}));
+}
+
+StmtPtr create_while_stmt(ExprPtr cond, StmtPtr body) {
+  return std::make_shared<Stmt>(StmtKind(stmt::While{cond, body}));
+}
+
+StmtPtr create_block_stmt(SymbolTablePtr parent_symtable) {
+  auto symtable = create_symbol_table(parent_symtable);
+  return std::make_shared<Stmt>(StmtKind(stmt::Block{symtable, {}}));
+}
+
+StmtPtr create_func_def_stmt(
+  SymbolTablePtr parent_symtable,
+  TypePtr ret_type,
+  std::string name,
+  std::vector<std::tuple<TypePtr, std::string>> params
+) {
+  std::vector<TypePtr> param_types;
+  std::vector<std::string> param_names;
+
+  for (auto [type, name] : params) {
+    param_types.push_back(type);
+    param_names.push_back(name);
+  }
+
+  auto func_type = create_function_type(ret_type, param_types);
+
+  auto symtable = create_symbol_table(parent_symtable);
+
+  auto symbol_entry =
+    create_symbol_entry(Scope::Global, name, func_type, false, std::nullopt);
+
+  parent_symtable->add_symbol_entry(symbol_entry);
+
+  for (auto [type, name] : params) {
+    auto symbol_entry =
+      create_symbol_entry(Scope::Param, name, type, false, std::nullopt);
+    symtable->add_symbol_entry(symbol_entry);
+  }
+
+  return std::make_shared<Stmt>(StmtKind(stmt::FuncDef{
+    symtable,
+    symbol_entry,
+    param_names,
+    nullptr,
+  }));
 }
 
 void stmt::Block::add_stmt(StmtPtr stmt) {
@@ -245,9 +203,19 @@ void stmt::Block::add_stmt(StmtPtr stmt) {
       },
       [](const auto& others) {
         // do nothing
-      }},
+      },
+    },
     stmt->kind
   );
+}
+
+void stmt::FuncDef::set_body(StmtPtr body) {
+  if (!std::holds_alternative<stmt::Block>(body->kind)) {
+    throw std::runtime_error("Only block statement is allowed in function body."
+    );
+  }
+
+  this->body = body;
 }
 
 void Compunit::add_stmt(StmtPtr stmt) {
@@ -261,7 +229,8 @@ void Compunit::add_stmt(StmtPtr stmt) {
       },
       [](const auto& others) {
         // do nothing
-      }},
+      },
+    },
     stmt->kind
   );
 }
@@ -272,13 +241,18 @@ SymbolEntryPtr stmt::Decl::fetch_symbol_entry() const {
   // Decide if the expression is a compile-time value.
   if (this->maybe_init.has_value()) {
     auto init_expr = this->maybe_init.value();
-    if (std::holds_alternative<ComptimeValue>(init_expr->kind)) {
-      value = std::get<ComptimeValue>(init_expr->kind);
+    if (std::holds_alternative<expr::Constant>(init_expr->kind)) {
+      value = std::get<expr::Constant>(init_expr->kind).value;
     }
   }
 
   return create_symbol_entry(scope, name, type, is_const, value);
 }
+
+Expr::Expr(ExprKind kind, SymbolEntryPtr symbol_entry)
+  : kind(kind), symbol_entry(symbol_entry) {}
+
+Stmt::Stmt(StmtKind kind) : kind(kind) {}
 
 }  // namespace ast
 

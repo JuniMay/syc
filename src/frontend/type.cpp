@@ -3,6 +3,8 @@
 namespace syc {
 namespace frontend {
 
+Type::Type(TypeKind kind) : kind(kind) {}
+
 bool Type::is_bool() const {
   return std::holds_alternative<type::Integer>(kind) &&
          std::get<type::Integer>(kind).size == 1;
@@ -74,12 +76,20 @@ TypePtr create_void_type() {
   return std::make_shared<Type>(TypeKind(type::Void{}));
 }
 
-TypePtr create_array_type(size_t size, TypePtr element_type) {
-  return std::make_shared<Type>(TypeKind(type::Array{size, element_type}));
+TypePtr
+create_array_type(TypePtr element_type, std::optional<size_t> maybe_size) {
+  return std::make_shared<Type>(TypeKind(type::Array{element_type, maybe_size})
+  );
 }
 
 TypePtr create_pointer_type(TypePtr value_type) {
   return std::make_shared<Type>(TypeKind(type::Pointer{value_type}));
+}
+
+TypePtr
+create_function_type(TypePtr ret_type, std::vector<TypePtr> param_types) {
+  return std::make_shared<Type>(TypeKind(type::Function{ret_type, param_types})
+  );
 }
 
 bool operator==(TypePtr lhs, TypePtr rhs) {
@@ -89,10 +99,20 @@ bool operator==(TypePtr lhs, TypePtr rhs) {
 
   return std::visit(
     overloaded{
-      [](type::Integer& lhs, type::Integer& rhs) { return lhs.size == rhs.size; },
+      [](type::Integer& lhs, type::Integer& rhs) {
+        return lhs.size == rhs.size;
+      },
       [](type::Float& lhs, type::Float& rhs) { return true; },
       [](type::Array& lhs, type::Array& rhs) {
-        return lhs.size == rhs.size && lhs.element_type == rhs.element_type;
+        if (lhs.maybe_size.has_value() != rhs.maybe_size.has_value()) {
+          return false;
+        }
+        if (lhs.maybe_size.has_value()) {
+          if (lhs.maybe_size.value() != rhs.maybe_size.value()) {
+            return false;
+          }
+        }
+        return lhs.element_type == rhs.element_type;
       },
       [](type::Void& lhs, type::Void& rhs) { return true; },
       [](type::Pointer& lhs, type::Pointer& rhs) {

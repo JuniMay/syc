@@ -13,6 +13,7 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include <stack>
 
 template <class... Ts>
 struct overloaded : Ts... {
@@ -32,22 +33,31 @@ struct Float;
 struct Array;
 struct Void;
 struct Pointer;
+struct Function;
 
 }  // namespace type
 
-using TypeKind = std::
-  variant<type::Integer, type::Float, type::Array, type::Void, type::Pointer>;
+using TypeKind = std::variant<
+  type::Integer,
+  type::Float,
+  type::Array,
+  type::Void,
+  type::Pointer,
+  type::Function>;
+
 struct Type;
 using TypePtr = std::shared_ptr<Type>;
 
 enum class BinaryOp;
 enum class UnaryOp;
+
 struct ComptimeValue;
 
 enum class Scope;
 
 struct SymbolEntry;
 struct SymbolTable;
+
 using SymbolEntryPtr = std::shared_ptr<SymbolEntry>;
 using SymbolTablePtr = std::shared_ptr<SymbolTable>;
 
@@ -55,10 +65,12 @@ namespace ast {
 
 namespace expr {
 
+struct Identifier;
 struct Binary;
 struct Unary;
 struct Call;
 struct Cast;
+struct Constant;
 
 }  // namespace expr
 
@@ -73,12 +85,17 @@ struct Block;
 struct Assign;
 struct Expr;
 struct Decl;
-struct Func;
+struct FuncDef;
 
 }  // namespace stmt
 
-using ExprKind = std::
-  variant<expr::Binary, expr::Unary, expr::Call, ComptimeValue, expr::Cast>;
+using ExprKind = std::variant<
+  expr::Identifier,
+  expr::Binary,
+  expr::Unary,
+  expr::Call,
+  expr::Constant,
+  expr::Cast>;
 
 struct Expr;
 
@@ -92,7 +109,7 @@ using StmtKind = std::variant<
   stmt::Block,
   stmt::Expr,
   stmt::Decl,
-  stmt::Func>;
+  stmt::FuncDef>;
 
 struct Stmt;
 
@@ -103,7 +120,7 @@ using StmtPtr = std::shared_ptr<Stmt>;
 
 }  // namespace ast
 
-struct Context;
+struct Driver;
 
 }  // namespace frontend
 

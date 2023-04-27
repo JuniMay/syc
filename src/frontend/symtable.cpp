@@ -1,5 +1,5 @@
 #include "frontend/symtable.h"
-#include "frontend/ast.h"
+#include "frontend/comptime.h"
 
 namespace syc {
 namespace frontend {

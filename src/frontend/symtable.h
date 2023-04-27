@@ -2,6 +2,8 @@
 #define SYC_FRONTEND_SYMTABLE_H_
 
 #include "common.h"
+#include "frontend/ast.h"
+#include "frontend/comptime.h"
 
 namespace syc {
 namespace frontend {
@@ -14,6 +16,8 @@ enum class Scope {
   Param,
   /// Local variable/constant
   Local,
+  /// Temporary symbol
+  Temp,
 };
 
 /// Symbol entry
