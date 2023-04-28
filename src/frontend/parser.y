@@ -62,14 +62,14 @@
 
 %start Program
 
-%type <AstStmtPtr> Stmt IfStmt WhileStmt ReturnStmt BreakStmt 
-%type <AstStmtPtr> BlockStmt ContinueStmt BlankStmt DeclStmt
+%type <AstStmtPtr> Stmt IfStmt WhileStmt ReturnStmt BreakStmt ExprStmt
+%type <AstStmtPtr> ContinueStmt BlankStmt DeclStmt AssignStmt
 
 %type <std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> Def
 %type <std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>>> DefList
 
 %type <AstExprPtr> Expr AddExpr LOrExpr PrimaryExpr RelExpr MulExpr
-%type <AstExprPtr> LAndExpr EqExpr UnaryExpr IndexExpr InitVal
+%type <AstExprPtr> LAndExpr EqExpr UnaryExpr LVal InitVal Cond
 
 %type <std::vector<AstExprPtr>> InitValList
 
@@ -82,6 +82,8 @@
 %precedence THEN
 %precedence ELSE
 
+// TODO: solve shift/reduce conflict of function and declaration.
+
 %%
 
 Program 
@@ -90,15 +92,22 @@ Program
 
 Stmts 
   : Stmt {
-    driver.add_stmt($1);
+    if ($1 != nullptr) {
+      driver.add_stmt($1);
+    }
   }
   | Stmts Stmt {
-    driver.add_stmt($2);
+    if ($2 != nullptr) {
+      driver.add_stmt($2);
+    }
   }
   ;
 
 Stmt
-  : IfStmt {
+  : AssignStmt {
+    $$ = $1;
+  }
+  | IfStmt {
     $$ = $1;
   }
   | WhileStmt {
@@ -116,19 +125,52 @@ Stmt
   | DeclStmt {
     $$ = $1;
   }
+  | ExprStmt {
+    $$ = $1;
+  }
+  | BlankStmt {
+    $$ = $1;
+  }
+  // Blocks and functions are created by the driver and are treated as a part
+  // of the context. 
+  | BlockStmt {
+    $$ = nullptr;
+  }
+  | FuncDef {
+    $$ = nullptr;
+  }
+  ;
+
+FuncDef 
+  : Type IDENTIFIER '(' ')' {
+    driver.add_function($1, $2, {});
+  } BlockStmt {
+    driver.quit_function();
+  }
+  | Type IDENTIFIER '(' FuncParamList ')' {
+    driver.add_function($1, $2, $4);
+  } BlockStmt {
+    driver.quit_function();
+  }
+  ;
+
+ExprStmt
+  : Expr ';' {
+    $$ = frontend::ast::create_expr_stmt($1);
+  }
   ;
 
 DeclStmt
   : Type {
     driver.curr_decl_type = $1;
-  } DefList {
+  } DefList ';' {
     auto scope = driver.is_curr_global() ? frontend::Scope::Global 
                                          : frontend::Scope::Local;
     $$ = frontend::ast::create_decl_stmt(scope, false, $3);
   }
   | CONST Type {
     driver.curr_decl_type = $2;
-  } DefList {
+  } DefList ';' {
     auto scope = driver.is_curr_global() ? frontend::Scope::Global 
                                          : frontend::Scope::Local;
     $$ = frontend::ast::create_decl_stmt(scope, true, $4);
@@ -196,16 +238,16 @@ InitValList
   ;
 
 IfStmt 
-  : IF '(' Expr ')' Stmt %prec THEN {
+  : IF '(' Cond ')' Stmt %prec THEN {
     $$ = frontend::ast::create_if_stmt($3, $5, nullptr);
   }
-  | IF '(' Expr ')' Stmt ELSE Stmt {
+  | IF '(' Cond ')' Stmt ELSE Stmt {
     $$ = frontend::ast::create_if_stmt($3, $5, $7);
   }
   ;
 
 WhileStmt 
-  : WHILE '(' Expr ')' Stmt {
+  : WHILE '(' Cond ')' Stmt {
     $$ = frontend::ast::create_while_stmt($3, $5);
   }
   ;
@@ -247,7 +289,15 @@ BlankStmt
 
 
 Expr 
-  : AddExpr
+  : AddExpr {
+    $$ = $1;
+  }
+  ;
+
+Cond
+  : LOrExpr {
+    $$ = $1;
+  }
   ;
 
 PrimaryExpr
@@ -269,11 +319,29 @@ PrimaryExpr
   }
   ;
 
-IndexExpr
-  : Expr '[' Expr ']' {
+LVal
+  : IDENTIFIER '[' Expr ']' {
+    auto symbol_entry = driver.compunit.symtable->lookup($1);
+    if (symbol_entry == nullptr) {
+      std::cerr << @1 << ":" << "Undefined identifier: " + $1;
+    }
+    auto identifier_expr = frontend::ast::create_identifier_expr(symbol_entry);
+    $$ = frontend::ast::create_binary_expr(
+      frontend::BinaryOp::Index, identifier_expr, $3, 
+      driver.get_next_temp_name(), driver.curr_symtable
+    );
+  }
+  | LVal '[' Expr ']' {
     $$ = frontend::ast::create_binary_expr(
       frontend::BinaryOp::Index, $1, $3, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      driver.get_next_temp_name(), driver.curr_symtable
+    );
+  }
+  ;
+
+AssignStmt
+  : LVal '=' Expr ';' {
+    $$ = frontend::ast::create_assign_stmt($1, $3);
   }
   ;
 
@@ -457,11 +525,11 @@ FuncParamList
 
 FuncParam
   : Type IDENTIFIER {
-    $$ = std::make_tuple($1, $2)
+    $$ = std::make_tuple($1, $2);
   }
   | FuncParam '[' Expr ']' {
     auto maybe_type = frontend::create_array_type_from_expr(
-      std::get<0>$1, std::make_optional($3));
+      std::get<0>($1), std::make_optional($3));
 
     if (!maybe_type.has_value()) {
       std::cerr << @3 << "Array size must be const expression." << std::endl;

@@ -95,9 +95,6 @@ void Driver::add_function(
   this->curr_function = new_function;
   this->curr_symtable =
     std::get<ast::stmt::FuncDef>(this->curr_function->kind).symtable;
-
-  // Add the body for the function.
-  this->add_block();
 }
 
 void Driver::quit_function() {

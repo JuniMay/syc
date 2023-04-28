@@ -211,6 +211,14 @@ StmtPtr create_decl_stmt(
   return std::make_shared<Stmt>(StmtKind(stmt::Decl{scope, is_const, defs}));
 }
 
+StmtPtr create_expr_stmt(ExprPtr expr) {
+  return std::make_shared<Stmt>(StmtKind(stmt::Expr{expr}));
+}
+
+StmtPtr create_assign_stmt(ExprPtr lhs, ExprPtr rhs) {
+  return std::make_shared<Stmt>(StmtKind(stmt::Assign{lhs, rhs}));
+}
+
 void stmt::Block::add_stmt(StmtPtr stmt) {
   this->stmts.push_back(stmt);
 

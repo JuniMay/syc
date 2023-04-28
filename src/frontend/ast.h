@@ -325,6 +325,10 @@ StmtPtr create_decl_stmt(
   std::vector<std::tuple<TypePtr, std::string, std::optional<ExprPtr>>> defs
 );
 
+StmtPtr create_expr_stmt(ExprPtr expr);
+
+StmtPtr create_assign_stmt(ExprPtr lhs, ExprPtr rhs);
+
 }  // namespace ast
 
 }  // namespace frontend
