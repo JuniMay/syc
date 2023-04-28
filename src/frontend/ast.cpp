@@ -73,6 +73,9 @@ ExprPtr create_initializer_list_expr(std::vector<ExprPtr> init_list) {
 }
 
 ExprPtr create_identifier_expr(SymbolEntryPtr symbol_entry) {
+  if (symbol_entry == nullptr) {
+    return nullptr;
+  }
   return std::make_shared<Expr>(
     ExprKind(expr::Identifier{symbol_entry->name}), symbol_entry
   );
@@ -89,6 +92,10 @@ ExprPtr create_binary_expr(
   std::string symbol_name,
   SymbolTablePtr symtable
 ) {
+  if (lhs == nullptr || rhs == nullptr) {
+    return nullptr;
+  }
+
   // TODO: decide type of the result.
   auto symbol_entry =
     create_symbol_entry(Scope::Temp, symbol_name, nullptr, false, std::nullopt);
@@ -106,6 +113,10 @@ ExprPtr create_unary_expr(
   std::string symbol_name,
   SymbolTablePtr symtable
 ) {
+  if (expr == nullptr) {
+    return nullptr;
+  }
+
   // TODO: decide type of the result.
   auto symbol_entry =
     create_symbol_entry(Scope::Temp, symbol_name, nullptr, false, std::nullopt);
@@ -121,6 +132,10 @@ ExprPtr create_call_expr(
   std::string symbol_name,
   SymbolTablePtr symtable
 ) {
+  if (func_symbol_entry == nullptr) {
+    return nullptr;
+  }
+
   auto func_name = func_symbol_entry->name;
   auto func_type = func_symbol_entry->type;
 
@@ -212,10 +227,17 @@ StmtPtr create_decl_stmt(
 }
 
 StmtPtr create_expr_stmt(ExprPtr expr) {
+  if (expr == nullptr) {
+    return create_blank_stmt();
+  }
   return std::make_shared<Stmt>(StmtKind(stmt::Expr{expr}));
 }
 
 StmtPtr create_assign_stmt(ExprPtr lhs, ExprPtr rhs) {
+  if (lhs == nullptr || rhs == nullptr) {
+    return create_blank_stmt();
+  }
+
   return std::make_shared<Stmt>(StmtKind(stmt::Assign{lhs, rhs}));
 }
 

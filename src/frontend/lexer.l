@@ -127,6 +127,16 @@ HEX_FP (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][
   return parser::symbol_type(token_type(';'), loc);
 }
 
+">" {
+  driver.add_token(yytext);
+  return parser::symbol_type(token_type('>'), loc);
+}
+
+"<" {
+  driver.add_token(yytext);
+  return parser::symbol_type(token_type('<'), loc);
+}
+
 "<=" {
   driver.add_token("LE");
   return parser::make_LE(loc);
@@ -200,6 +210,11 @@ HEX_FP (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][
 "continue" {
   driver.add_token("CONTINUE");
   return parser::make_CONTINUE(loc);
+}
+
+"while" {
+  driver.add_token("WHILE");
+  return parser::make_WHILE(loc);
 }
 
 {IDENTIFIER} {

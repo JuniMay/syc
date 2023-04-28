@@ -82,7 +82,10 @@
 %precedence THEN
 %precedence ELSE
 
-// TODO: solve shift/reduce conflict of function and declaration.
+// [x] Solve shift/reduce conflict of function and declaration.
+//     - Ref: https://www.gnu.org/software/bison/manual/html_node/Midrule-Conflicts.html
+// [ ] Add support for function from the runtime library.
+// [ ] Replace YYABORT by better error handling. 
 
 %%
 
@@ -161,19 +164,15 @@ ExprStmt
   ;
 
 DeclStmt
-  : Type {
-    driver.curr_decl_type = $1;
-  } DefList ';' {
+  : Type DefList ';' {
     auto scope = driver.is_curr_global() ? frontend::Scope::Global 
                                          : frontend::Scope::Local;
-    $$ = frontend::ast::create_decl_stmt(scope, false, $3);
+    $$ = frontend::ast::create_decl_stmt(scope, false, $2);
   }
-  | CONST Type {
-    driver.curr_decl_type = $2;
-  } DefList ';' {
+  | CONST Type DefList ';' {
     auto scope = driver.is_curr_global() ? frontend::Scope::Global 
                                          : frontend::Scope::Local;
-    $$ = frontend::ast::create_decl_stmt(scope, true, $4);
+    $$ = frontend::ast::create_decl_stmt(scope, true, $3);
   }
   ;
 
@@ -210,6 +209,7 @@ ArrayIndices
     if (!maybe_type.has_value()) {
       std::cerr << @2 << ":" 
                 << "Array size must be const expression." << std::endl;
+      YYABORT;
     }
     $$ = maybe_type.value();
   }
@@ -308,6 +308,7 @@ PrimaryExpr
     auto symbol_entry = driver.curr_symtable->lookup($1);
     if (symbol_entry == nullptr) {
       std::cerr << @1 << ":" << "Undefined identifier: " + $1;
+      YYABORT;
     }
     $$ = frontend::ast::create_identifier_expr(symbol_entry);
   }
@@ -320,16 +321,12 @@ PrimaryExpr
   ;
 
 LVal
-  : IDENTIFIER '[' Expr ']' {
+  : IDENTIFIER {
     auto symbol_entry = driver.compunit.symtable->lookup($1);
     if (symbol_entry == nullptr) {
       std::cerr << @1 << ":" << "Undefined identifier: " + $1;
     }
-    auto identifier_expr = frontend::ast::create_identifier_expr(symbol_entry);
-    $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Index, identifier_expr, $3, 
-      driver.get_next_temp_name(), driver.curr_symtable
-    );
+    $$ = frontend::ast::create_identifier_expr(symbol_entry);
   }
   | LVal '[' Expr ']' {
     $$ = frontend::ast::create_binary_expr(
@@ -368,12 +365,14 @@ UnaryExpr
     auto symbol_entry = driver.compunit.symtable->lookup($1);
     if (symbol_entry == nullptr) {
       std::cerr << @1 << ":" << "Undefined identifier: " + $1;
+      YYABORT;
     }
     auto maybe_func_type = symbol_entry->type;
     if (
       !std::holds_alternative<frontend::type::Function>(maybe_func_type->kind)
     ) {
       std::cerr << @1 << ":" << "Not a function: " + $1;
+      YYABORT;
     }
     $$ = frontend::ast::create_call_expr(
       symbol_entry, 
@@ -386,12 +385,14 @@ UnaryExpr
     auto symbol_entry = driver.compunit.symtable->lookup($1);
     if (symbol_entry == nullptr) {
       std::cerr << @1 << ":" << "Undefined identifier: " + $1;
+      YYABORT;
     }
     auto maybe_func_type = symbol_entry->type;
     if (
       !std::holds_alternative<frontend::type::Function>(maybe_func_type->kind)
     ) {
       std::cerr << @1 << ":" << "Not a function: " + $1;
+      YYABORT;
     }
     $$ = frontend::ast::create_call_expr(
       symbol_entry, 
@@ -533,6 +534,7 @@ FuncParam
 
     if (!maybe_type.has_value()) {
       std::cerr << @3 << "Array size must be const expression." << std::endl;
+      YYABORT;
     }
 
     auto type = maybe_type.value();
@@ -549,12 +551,15 @@ FuncParam
 Type
   : INT {
     $$ = frontend::create_int_type();
+    driver.curr_decl_type = $$;
   }
   | FLOAT {
     $$ = frontend::create_float_type();
+    driver.curr_decl_type = $$;
   }
   | VOID {
     $$ = frontend::create_void_type();
+    driver.curr_decl_type = $$;
   }
   ;
 
