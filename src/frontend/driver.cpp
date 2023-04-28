@@ -19,6 +19,43 @@ Driver::Driver(std::string filename) {
   yyset_in(fopen(filename.c_str(), "r"), lexer);
   loc = new yy::location();
   parser = new yy::parser(lexer, *loc, *this);
+
+  // now add functions of the runtime library.
+  this->add_function_decl(create_int_type(), "getint", {});
+  this->add_function_decl(create_int_type(), "getch", {});
+  this->add_function_decl(create_float_type(), "getfloat", {});
+  this->add_function_decl(
+    create_int_type(), "getarray",
+    {{create_array_type(create_int_type(), std::nullopt), ""}}
+  );
+  this->add_function_decl(
+    create_int_type(), "getfarray",
+    {{create_array_type(create_float_type(), std::nullopt), ""}}
+  );
+  this->add_function_decl(
+    create_void_type(), "putint", {{create_int_type(), ""}}
+  );
+  this->add_function_decl(
+    create_void_type(), "putch", {{create_int_type(), ""}}
+  );
+  this->add_function_decl(
+    create_void_type(), "putfloat", {{create_float_type(), ""}}
+  );
+  this->add_function_decl(
+    create_void_type(), "putarray",
+    {{create_int_type(), ""},
+     {create_array_type(create_int_type(), std::nullopt), ""}}
+  );
+  this->add_function_decl(
+    create_void_type(), "putfarray",
+    {{create_int_type(), ""},
+     {create_array_type(create_float_type(), std::nullopt), ""}}
+  );
+
+  // `putf` function is not added yet.
+
+  this->add_function_decl(create_void_type(), "starttime", {});
+  this->add_function_decl(create_void_type(), "stoptime", {});
 }
 
 Driver::~Driver() {
@@ -104,6 +141,15 @@ void Driver::quit_function() {
   }
   this->curr_function = nullptr;
   this->curr_symtable = this->compunit.symtable;
+}
+
+void Driver::add_function_decl(
+  TypePtr ret_type,
+  std::string name,
+  std::vector<std::tuple<TypePtr, std::string>> params
+) {
+  this->add_function(ret_type, name, params);
+  this->quit_function();
 }
 
 void Driver::add_token(const std::string& token) {

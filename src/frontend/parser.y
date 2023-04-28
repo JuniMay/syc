@@ -82,10 +82,6 @@
 %precedence THEN
 %precedence ELSE
 
-// [x] Solve shift/reduce conflict of function and declaration.
-//     - Ref: https://www.gnu.org/software/bison/manual/html_node/Midrule-Conflicts.html
-// [ ] Add support for function from the runtime library.
-// [ ] Replace YYABORT by better error handling. 
 
 %%
 
@@ -304,13 +300,8 @@ PrimaryExpr
   : '(' Expr ')' {
     $$ = $2;
   }
-  | IDENTIFIER {
-    auto symbol_entry = driver.curr_symtable->lookup($1);
-    if (symbol_entry == nullptr) {
-      std::cerr << @1 << ":" << "Undefined identifier: " + $1;
-      YYABORT;
-    }
-    $$ = frontend::ast::create_identifier_expr(symbol_entry);
+  | LVal {
+    $$ = $1;
   }
   | INTEGER {
     $$ = frontend::ast::create_constant_expr($1);
@@ -325,6 +316,7 @@ LVal
     auto symbol_entry = driver.compunit.symtable->lookup($1);
     if (symbol_entry == nullptr) {
       std::cerr << @1 << ":" << "Undefined identifier: " + $1;
+      YYABORT;
     }
     $$ = frontend::ast::create_identifier_expr(symbol_entry);
   }

@@ -219,6 +219,8 @@ struct FuncDef {
   /// Parameter names.
   std::vector<std::string> param_names;
   /// A block statement.
+  /// If the body is nulltr, the function is a declaration.
+  /// e.g. functions in the runtime library.
   StmtPtr body;
 
   void set_body(StmtPtr body);
@@ -243,6 +245,8 @@ struct Compunit {
   /// Constructor.
   Compunit();
 
+  /// Add a statement to the compile unit.
+  /// If the statement is a declaration, the symbol entry will be registered.
   void add_stmt(StmtPtr stmt);
 };
 

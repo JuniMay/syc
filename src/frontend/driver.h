@@ -75,6 +75,12 @@ struct Driver {
   /// Quit from the current function and get back to the global context.
   void quit_function();
 
+  void add_function_decl(
+    TypePtr ret_type,
+    std::string name,
+    std::vector<std::tuple<TypePtr, std::string>> params
+  );
+
   /// Add the token to `tokens`
   void add_token(const std::string& token);
 
