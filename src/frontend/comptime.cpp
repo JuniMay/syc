@@ -8,9 +8,9 @@ std::string ComptimeValue::to_string() const {
   std::stringstream buf;
 
   if (this->type->is_bool()) {
-    buf << "COMPTIME BOOL  " << std::get<float>(this->value);
+    buf << "COMPTIME BOOL  " << std::get<bool>(this->value);
   } else if (this->type->is_int()) {
-    buf << "COMPTIME INT   " << std::get<float>(this->value);
+    buf << "COMPTIME INT   " << std::get<int>(this->value);
   } else if (this->type->is_float()) {
     buf << "COMPTIME FLOAT " << std::get<float>(this->value);
   } else {

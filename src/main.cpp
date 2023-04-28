@@ -4,8 +4,6 @@
 #include "ir/instruction.h"
 #include "frontend/driver.h"
 
-#include "frontend/generated/lexer.h"
-
 #ifdef UNITTEST
 #define CATCH_CONFIG_RUNNER
 #include "catch2/catch.hpp"

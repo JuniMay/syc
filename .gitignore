@@ -4,6 +4,7 @@ build
 *.ll
 *.asm
 
+/tests
 tests/2022
 .DS_Store
 
