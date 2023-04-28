@@ -27,6 +27,14 @@
   #include "frontend/comptime.h"
 
   using namespace syc;
+
+  using AstStmtPtr = frontend::ast::StmtPtr;
+  using AstExprPtr = frontend::ast::ExprPtr;
+  using AstTypePtr = frontend::TypePtr;
+  using AstBinaryOp = frontend::BinaryOp;
+  using AstUnaryOp = frontend::UnaryOp;
+  using AstComptimeValue = frontend::ComptimeValue;
+
 }
 
 %code {
@@ -47,26 +55,29 @@
 %token LE GE EQ NE LOR LAND
 
 %token <std::string> IDENTIFIER 
-%token <frontend::ComptimeValue> INTEGER FLOATING
+%token <AstComptimeValue> INTEGER FLOATING
 
 %token IF ELSE WHILE RETURN BREAK CONTINUE 
 %token CONST INT FLOAT VOID
 
 %start Program
 
-%type <std::vector<frontend::ast::StmtPtr>> Stmts
+%type <AstStmtPtr> Stmt IfStmt WhileStmt ReturnStmt BreakStmt 
+%type <AstStmtPtr> BlockStmt ContinueStmt BlankStmt DeclStmt
 
-%type <frontend::ast::StmtPtr> Stmt IfStmt WhileStmt ReturnStmt BreakStmt 
-%type <frontend::ast::StmtPtr> BlockStmt ContinueStmt
+%type <std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> Def
+%type <std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>>> DefList
 
-%type <frontend::ast::ExprPtr> Expr AddExpr LOrExpr PrimaryExpr RelExpr MulExpr
-%type <frontend::ast::ExprPtr> LAndExpr EqExpr UnaryExpr IndexExpr
+%type <AstExprPtr> Expr AddExpr LOrExpr PrimaryExpr RelExpr MulExpr
+%type <AstExprPtr> LAndExpr EqExpr UnaryExpr IndexExpr InitVal
+
+%type <std::vector<AstExprPtr>> InitValList
 
 %type <std::tuple<AstTypePtr, std::string>> FuncParam
-%type <std::vector<std::tuple<frontend::type::TypePtr, std::string>>> FuncParamList
-%type <std::vector<frontend::ast::ExprPtr>> FuncArgList
+%type <std::vector<std::tuple<AstTypePtr, std::string>>> FuncParamList
+%type <std::vector<AstExprPtr>> FuncArgList
 
-%type <frontend::TypePtr> Type
+%type <AstTypePtr> Type ArrayIndices
 
 %precedence THEN
 %precedence ELSE
@@ -102,6 +113,86 @@ Stmt
   | BreakStmt {
     $$ = $1;
   }
+  | DeclStmt {
+    $$ = $1;
+  }
+  ;
+
+DeclStmt
+  : Type {
+    driver.curr_decl_type = $1;
+  } DefList {
+    auto scope = driver.is_curr_global() ? frontend::Scope::Global 
+                                         : frontend::Scope::Local;
+    $$ = frontend::ast::create_decl_stmt(scope, false, $3);
+  }
+  | CONST Type {
+    driver.curr_decl_type = $2;
+  } DefList {
+    auto scope = driver.is_curr_global() ? frontend::Scope::Global 
+                                         : frontend::Scope::Local;
+    $$ = frontend::ast::create_decl_stmt(scope, true, $4);
+  }
+  ;
+
+DefList
+  : DefList ',' Def {
+    $$ = $1;
+    $$.push_back($3);
+  }
+  | Def {
+    $$.push_back($1);
+  }
+  ;
+
+Def 
+  : IDENTIFIER {
+    $$ = std::make_tuple(driver.curr_decl_type, $1, std::nullopt);
+  } 
+  | IDENTIFIER ArrayIndices {
+    $$ = std::make_tuple($2, $1, std::nullopt);
+  }
+  | IDENTIFIER '=' InitVal {
+    $$ = std::make_tuple(driver.curr_decl_type, $1, $3);
+  }
+  | IDENTIFIER ArrayIndices '=' InitVal {
+    $$ = std::make_tuple($2, $1, $4);
+  }
+  ;
+
+ArrayIndices
+  : '[' Expr ']' {
+    // Get the corresponding array type from the `curr_decl_type`.
+    auto maybe_type = frontend::create_array_type_from_expr(
+      driver.curr_decl_type, std::make_optional($2));
+    if (!maybe_type.has_value()) {
+      std::cerr << @2 << ":" 
+                << "Array size must be const expression." << std::endl;
+    }
+    $$ = maybe_type.value();
+  }
+  ;
+
+InitVal 
+  : Expr {
+    $$ = $1;
+  }
+  | '{' '}' {
+    $$ = frontend::ast::create_initializer_list_expr({});
+  }
+  | '{' InitValList '}' {
+    $$ = frontend::ast::create_initializer_list_expr($2);
+  }
+  ;
+
+InitValList 
+  : InitVal {
+    $$.push_back($1);
+  }
+  | InitValList ',' InitVal {
+    $$ = $1;
+    $$.push_back($3);
+  } 
   ;
 
 IfStmt 
@@ -120,7 +211,7 @@ WhileStmt
   ;
 
 ReturnStmt 
-  : RETURN Expr {
+  : RETURN Expr ';' {
     $$ = frontend::ast::create_return_stmt($2);
   }
   ;
@@ -148,7 +239,11 @@ BlockStmt
   }
   ;
 
-BlankStmt : ;
+BlankStmt 
+  : ';' {
+    $$ = frontend::ast::create_blank_stmt();
+  }
+  ;
 
 
 Expr 
@@ -167,16 +262,18 @@ PrimaryExpr
     $$ = frontend::ast::create_identifier_expr(symbol_entry);
   }
   | INTEGER {
-
+    $$ = frontend::ast::create_constant_expr($1);
   }
   | FLOATING {
-
+    $$ = frontend::ast::create_constant_expr($1);
   }
   ;
 
 IndexExpr
   : Expr '[' Expr ']' {
-
+    $$ = frontend::ast::create_binary_expr(
+      frontend::BinaryOp::Index, $1, $3, 
+      driver.get_next_temp_name(), driver.curr_symtable);
   }
   ;
 
@@ -340,7 +437,7 @@ LOrExpr
 
 FuncArgList
   : Expr {
-    $$ = std::vector<frontend::ast::ExprPtr>{ $1 };
+    $$.push_back($1);
   }
   | FuncArgList ',' Expr {
     $$ = $1;
@@ -350,7 +447,7 @@ FuncArgList
 
 FuncParamList 
   : FuncParam {
-    $$ = std::vector<std::tuple<frontend::type::TypePtr, std::string>>{ $1 };
+    $$.push_back($1);
   }
   | FuncParamList ',' FuncParam {
     $$ = $1;
@@ -363,18 +460,20 @@ FuncParam
     $$ = std::make_tuple($1, $2)
   }
   | FuncParam '[' Expr ']' {
-    if ($3->is_comptime()) {
-      std::cerr << @3 << ":" << "Array size must be a constant expression";
+    auto maybe_type = frontend::create_array_type_from_expr(
+      std::get<0>$1, std::make_optional($3));
+
+    if (!maybe_type.has_value()) {
+      std::cerr << @3 << "Array size must be const expression." << std::endl;
     }
-    auto size = $3->get_comptime_value();
-    if (!size.has_value()) {
-      std::cerr << @3 << ":" << "Array size must be computable at complie-time";
-    }
-    auto type = frontend::create_array_type(std::get<0>($1), size);
+
+    auto type = maybe_type.value();
+
     $$ = std::make_tuple(type, std::get<1>($1));
   }
   | FuncParam '[' ']' {
-    auto type = frontend::create_array_type(std::get<0>($1), std::nullopt);
+    auto type = frontend::create_array_type_from_expr(
+      std::get<0>($1), std::nullopt).value();
     $$ = std::make_tuple(type, std::get<1>($1));
   }
   ;

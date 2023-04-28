@@ -3,17 +3,18 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <iostream>
 #include <limits>
 #include <list>
 #include <map>
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <stack>
 #include <stdexcept>
 #include <string>
 #include <variant>
 #include <vector>
-#include <stack>
 
 template <class... Ts>
 struct overloaded : Ts... {
@@ -71,11 +72,13 @@ struct Unary;
 struct Call;
 struct Cast;
 struct Constant;
+struct InitializerList;
 
 }  // namespace expr
 
 namespace stmt {
 
+struct Blank;
 struct If;
 struct While;
 struct Break;
@@ -95,11 +98,13 @@ using ExprKind = std::variant<
   expr::Unary,
   expr::Call,
   expr::Constant,
-  expr::Cast>;
+  expr::Cast,
+  expr::InitializerList>;
 
 struct Expr;
 
 using StmtKind = std::variant<
+  stmt::Blank,
   stmt::If,
   stmt::While,
   stmt::Break,

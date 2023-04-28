@@ -80,6 +80,12 @@ struct Unary {
   ExprPtr expr;
 };
 
+/// Initializer list for variable/constant definition.
+struct InitializerList {
+  /// values, represented as expressions.
+  std::vector<ExprPtr> init_list;
+};
+
 /// Call expression.
 struct Call {
   /// Function name.
@@ -111,8 +117,10 @@ struct Expr {
   /// Symbol entry
   /// If the expression is a identifier, the symbol entry is corresponding to
   /// the name. Otherwise the symbol entry is temporary.
-  /// If the expression is a constant (i.e. literal value), the symbol entry is
+  /// If the expression is a literal value, the symbol entry is
   /// nullptr.
+  /// TODO: type for initializer list. The expression in init list is not always
+  /// the same type.
   SymbolEntryPtr symbol_entry;
 
   /// Constructor
@@ -126,6 +134,8 @@ struct Expr {
 };
 
 namespace stmt {
+
+struct Blank {};
 
 /// If statement.
 struct If {
@@ -189,15 +199,13 @@ struct Decl {
   Scope scope;
   /// If the declaration is a constant.
   bool is_const;
-  /// Type of the declaration.
-  /// Indices (if any) is contained in the type.
-  TypePtr type;
-  /// Name of the declaration.
-  std::string name;
-  /// Initial value.
-  std::optional<ExprPtr> maybe_init;
+  /// A declaration may contain multiple definitions.
+  std::vector<std::tuple<TypePtr, std::string, std::optional<ExprPtr>>> defs;
 
-  SymbolEntryPtr fetch_symbol_entry() const;
+  /// Get the number of definitions.
+  size_t get_def_cnt() const;
+  /// Get the symbol entry.
+  SymbolEntryPtr fetch_symbol_entry(size_t idx) const;
 };
 
 /// Function definition.
@@ -278,6 +286,10 @@ ExprPtr create_call_expr(
   SymbolTablePtr symtable
 );
 
+ExprPtr create_initializer_list_expr(std::vector<ExprPtr> init_list);
+
+StmtPtr create_blank_stmt();
+
 /// Create a return statement.
 StmtPtr create_return_stmt(ExprPtr expr);
 
@@ -304,6 +316,13 @@ StmtPtr create_func_def_stmt(
   TypePtr ret_type,
   std::string name,
   std::vector<std::tuple<TypePtr, std::string>> params
+);
+
+/// Create a declaration statement.
+StmtPtr create_decl_stmt(
+  Scope scope,
+  bool is_const,
+  std::vector<std::tuple<TypePtr, std::string, std::optional<ExprPtr>>> defs
 );
 
 }  // namespace ast

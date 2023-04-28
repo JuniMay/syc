@@ -27,6 +27,18 @@ create_comptime_value(std::variant<bool, int, float> value, TypePtr type) {
   return ComptimeValue{value, type};
 }
 
+ComptimeValue create_zero_comptime_value(TypePtr type) {
+  if (type->is_int()) {
+    return create_comptime_value((int)0, type);
+  } else if (type->is_float()) {
+    return create_comptime_value((float)0., type);
+  } else {
+    // Not knowing which type to store.
+    // TODO: array type for comptime.
+    return create_comptime_value(0, type);
+  }
+}
+
 ComptimeValue
 comptime_compute_binary(BinaryOp op, ComptimeValue lhs, ComptimeValue rhs) {
   if (lhs.type != rhs.type) {

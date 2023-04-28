@@ -74,7 +74,14 @@ TypePtr create_void_type();
 TypePtr
 create_array_type(TypePtr element_type, std::optional<size_t> maybe_size);
 TypePtr create_pointer_type(TypePtr value_type);
-TypePtr create_function_type(TypePtr ret_type, std::vector<TypePtr> param_types);
+TypePtr
+create_function_type(TypePtr ret_type, std::vector<TypePtr> param_types);
+
+/// Create an array type from ast expression (optional).
+std::optional<TypePtr> create_array_type_from_expr(
+  TypePtr element_type,
+  std::optional<ast::ExprPtr> maybe_expr
+);
 
 bool operator==(TypePtr lhs, TypePtr rhs);
 

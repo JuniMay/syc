@@ -1,4 +1,5 @@
-#include "type.h"
+#include "frontend/type.h"
+#include "frontend/ast.h"
 
 namespace syc {
 namespace frontend {
@@ -90,6 +91,32 @@ TypePtr
 create_function_type(TypePtr ret_type, std::vector<TypePtr> param_types) {
   return std::make_shared<Type>(TypeKind(type::Function{ret_type, param_types})
   );
+}
+
+std::optional<TypePtr> create_array_type_from_expr(
+  TypePtr element_type,
+  std::optional<ast::ExprPtr> maybe_expr
+) {
+  if (!maybe_expr.has_value()) {
+    return std::make_optional(create_array_type(element_type, std::nullopt));
+  }
+
+  auto expr = maybe_expr.value();
+  if (!expr->is_comptime()) {
+    return std::nullopt;
+  }
+  auto comptime_size = expr->get_comptime_value();
+  if (!comptime_size.has_value()) {
+    return std::nullopt;
+  }
+
+  auto comptime_size_int =
+    comptime_compute_cast(comptime_size.value(), create_int_type());
+
+  int size = std::get<int>(comptime_size_int.value);
+  auto type = create_array_type(element_type, std::make_optional((size_t)size));
+
+  return std::make_optional(type);
 }
 
 bool operator==(TypePtr lhs, TypePtr rhs) {

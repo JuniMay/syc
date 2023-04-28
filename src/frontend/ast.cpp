@@ -66,6 +66,12 @@ std::optional<ComptimeValue> Expr::get_comptime_value() const {
 
 Compunit::Compunit() : symtable(create_symbol_table(nullptr)), stmts({}) {}
 
+ExprPtr create_initializer_list_expr(std::vector<ExprPtr> init_list) {
+  return std::make_shared<Expr>(
+    ExprKind(expr::InitializerList{init_list}), nullptr
+  );
+}
+
 ExprPtr create_identifier_expr(SymbolEntryPtr symbol_entry) {
   return std::make_shared<Expr>(
     ExprKind(expr::Identifier{symbol_entry->name}), symbol_entry
@@ -117,17 +123,22 @@ ExprPtr create_call_expr(
 ) {
   auto func_name = func_symbol_entry->name;
   auto func_type = func_symbol_entry->type;
-  
+
   auto ret_type = std::get<type::Function>(func_type->kind).ret_type;
 
-  auto symbol_entry =
-    create_symbol_entry(Scope::Temp, symbol_name, ret_type, false, std::nullopt);
+  auto symbol_entry = create_symbol_entry(
+    Scope::Temp, symbol_name, ret_type, false, std::nullopt
+  );
 
   symtable->add_symbol_entry(symbol_entry);
 
   return std::make_shared<Expr>(
     ExprKind(expr::Call{func_name, args}), symbol_entry
   );
+}
+
+StmtPtr create_blank_stmt() {
+  return std::make_shared<Stmt>(StmtKind(stmt::Blank{}));
 }
 
 StmtPtr create_return_stmt(ExprPtr expr) {
@@ -192,14 +203,25 @@ StmtPtr create_func_def_stmt(
   }));
 }
 
+StmtPtr create_decl_stmt(
+  Scope scope,
+  bool is_const,
+  std::vector<std::tuple<TypePtr, std::string, std::optional<ExprPtr>>> defs
+) {
+  return std::make_shared<Stmt>(StmtKind(stmt::Decl{scope, is_const, defs}));
+}
+
 void stmt::Block::add_stmt(StmtPtr stmt) {
   this->stmts.push_back(stmt);
 
   std::visit(
     overloaded{
       [this](const stmt::Decl& decl) {
-        auto entry = decl.fetch_symbol_entry();
-        this->symtable->add_symbol_entry(entry);
+        size_t def_cnt = decl.get_def_cnt();
+        for (size_t i = 0; i < def_cnt; i++) {
+          auto entry = decl.fetch_symbol_entry(i);
+          this->symtable->add_symbol_entry(entry);
+        }
       },
       [](const auto& others) {
         // do nothing
@@ -224,8 +246,11 @@ void Compunit::add_stmt(StmtPtr stmt) {
   std::visit(
     overloaded{
       [this](const stmt::Decl& decl) {
-        auto entry = decl.fetch_symbol_entry();
-        this->symtable->add_symbol_entry(entry);
+        size_t def_cnt = decl.get_def_cnt();
+        for (size_t i = 0; i < def_cnt; i++) {
+          auto entry = decl.fetch_symbol_entry(i);
+          this->symtable->add_symbol_entry(entry);
+        }
       },
       [](const auto& others) {
         // do nothing
@@ -235,14 +260,23 @@ void Compunit::add_stmt(StmtPtr stmt) {
   );
 }
 
-SymbolEntryPtr stmt::Decl::fetch_symbol_entry() const {
+size_t stmt::Decl::get_def_cnt() const {
+  return this->defs.size();
+}
+
+SymbolEntryPtr stmt::Decl::fetch_symbol_entry(size_t idx) const {
+  auto [type, name, maybe_init] = this->defs.at(idx);
+
   std::optional<ComptimeValue> value = std::nullopt;
 
-  // Decide if the expression is a compile-time value.
-  if (this->maybe_init.has_value()) {
-    auto init_expr = this->maybe_init.value();
-    if (std::holds_alternative<expr::Constant>(init_expr->kind)) {
-      value = std::get<expr::Constant>(init_expr->kind).value;
+  if (this->is_const) {
+    if (maybe_init.has_value()) {
+      auto init_expr = maybe_init.value();
+      if (std::holds_alternative<expr::Constant>(init_expr->kind)) {
+        value = std::get<expr::Constant>(init_expr->kind).value;
+      }
+    } else {
+      value = create_zero_comptime_value(type);
     }
   }
 

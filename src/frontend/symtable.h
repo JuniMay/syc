@@ -32,6 +32,7 @@ struct SymbolEntry {
   /// For functions and variables, `is_const` is false.
   bool is_const;
   /// (Optional) Compile-time value of the symbol.
+  /// If the symbol is a constant, the value must be given.
   std::optional<ComptimeValue> maybe_value;
 
   /// (Optional) IR operand ID of the symbol.

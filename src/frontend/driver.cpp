@@ -1,7 +1,7 @@
 #include "frontend/driver.h"
 
-#include "generated/lexer.h"
-#include "generated/parser.h"
+#include "frontend/generated/lexer.h"
+#include "frontend/generated/parser.h"
 
 namespace syc {
 namespace frontend {
@@ -12,6 +12,8 @@ Driver::Driver(std::string filename) {
   curr_function = nullptr;
   curr_symtable = compunit.symtable;
   next_temp_id = 0;
+  tokens = "";
+  curr_decl_type = nullptr;
 
   yylex_init(&lexer);
   yyset_in(fopen(filename.c_str(), "r"), lexer);

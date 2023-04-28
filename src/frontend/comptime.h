@@ -11,6 +11,7 @@ namespace frontend {
 /// Compile-time value.
 /// This is the representation of literal, constant, and compile time computed
 /// result.
+/// TODO: array?
 struct ComptimeValue {
   /// The value is bool, int or float.
   std::variant<bool, int, float> value;
@@ -23,6 +24,8 @@ struct ComptimeValue {
 
 ComptimeValue
 create_comptime_value(std::variant<bool, int, float> value, TypePtr type);
+
+ComptimeValue create_zero_comptime_value(TypePtr type);
 
 /// Compute binary operation between two compile-time values.
 ComptimeValue
