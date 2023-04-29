@@ -63,10 +63,10 @@
 %start Program
 
 %type <AstStmtPtr> Stmt IfStmt WhileStmt ReturnStmt BreakStmt ExprStmt
-%type <AstStmtPtr> ContinueStmt BlankStmt DeclStmt AssignStmt
+%type <AstStmtPtr> ContinueStmt BlankStmt DeclStmt AssignStmt BlockStmt
 
-%type <std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> Def
-%type <std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>>> DefList
+%type <std::tuple<AstTypePtr, std::string, AstExprPtr>> Def
+%type <std::vector<std::tuple<AstTypePtr, std::string, AstExprPtr>>> DefList
 
 %type <AstExprPtr> Expr AddExpr LOrExpr PrimaryExpr RelExpr MulExpr
 %type <AstExprPtr> LAndExpr EqExpr UnaryExpr LVal InitVal Cond
@@ -133,7 +133,7 @@ Stmt
   // Blocks and functions are created by the driver and are treated as a part
   // of the context. 
   | BlockStmt {
-    $$ = nullptr;
+    $$ = $1;
   }
   | FuncDef {
     $$ = nullptr;
@@ -184,10 +184,10 @@ DefList
 
 Def 
   : IDENTIFIER {
-    $$ = std::make_tuple(driver.curr_decl_type, $1, std::nullopt);
+    $$ = std::make_tuple(driver.curr_decl_type, $1, nullptr);
   } 
   | IDENTIFIER ArrayIndices {
-    $$ = std::make_tuple($2, $1, std::nullopt);
+    $$ = std::make_tuple($2, $1, nullptr);
   }
   | IDENTIFIER '=' InitVal {
     $$ = std::make_tuple(driver.curr_decl_type, $1, $3);
@@ -262,6 +262,9 @@ ReturnStmt
   : RETURN Expr ';' {
     $$ = frontend::ast::create_return_stmt($2);
   }
+  | RETURN ';' {
+    $$ = frontend::ast::create_return_stmt(nullptr);
+  }
   ;
 
 ContinueStmt 
@@ -280,10 +283,12 @@ BlockStmt
   : '{' {
     driver.add_block();
   } Stmts '}' {
+    $$ = driver.curr_block;
     driver.quit_block();
   }
   | '{' '}' {
     // Just ignore.
+    $$ = frontend::ast::create_blank_stmt();
   }
   ;
 

@@ -69,6 +69,8 @@ Driver::~Driver() {
 }
 
 bool Driver::is_curr_global() const {
+  // Note that a function must be added to the statements of the comunit first
+  // and then set to be the current function.
   return curr_function == nullptr;
 }
 
@@ -135,6 +137,7 @@ void Driver::add_function(
   auto new_function =
     ast::create_func_def_stmt(this->curr_symtable, ret_type, name, params);
 
+  this->add_stmt(new_function);
   this->curr_function = new_function;
   this->curr_symtable =
     std::get<ast::stmt::FuncDef>(this->curr_function->kind).symtable;

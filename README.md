@@ -16,12 +16,20 @@
   - [x] Fix symbol table for identifier.
   - [x] Expand macro for timing functions.
     - Not tested yet (AST display).
+  - [ ] Use `std::optional` to replace nullptr in nullable pointers (memory safety).
   - [ ] Suppot string.
-  - [ ] Replace YYABORT by better error handling.
+  - [ ] Replace YYABORT with better error handling.
 - [ ] AST display
+  - [x] Compunit
+  - [x] Statement
+  - [ ] Expression
 - [ ] IR Generation
 - [ ] Code generation
 - [ ] Code print
 - [ ] AST simplification
 - [ ] IR Optimization
 - [ ] Code Optimization
+
+## Fixme
+
+- [ ] Temporary symbol duplication in the symbol table.

@@ -267,11 +267,16 @@ StmtPtr create_continue_stmt() {
   return std::make_shared<Stmt>(StmtKind(stmt::Continue{}));
 }
 
-StmtPtr create_if_stmt(ExprPtr cond, StmtPtr then_stmt, StmtPtr else_stmt) {
-  return std::make_shared<Stmt>(StmtKind(stmt::If{cond, then_stmt, else_stmt}));
+StmtPtr
+create_if_stmt(ExprPtr cond, StmtPtr then_stmt, StmtPtr maybe_else_stmt) {
+  return std::make_shared<Stmt>(StmtKind(stmt::If{
+    cond, then_stmt, maybe_else_stmt}));
 }
 
 StmtPtr create_while_stmt(ExprPtr cond, StmtPtr body) {
+  if (body == nullptr) {
+    std::cout << "null body for while!!!" << std::endl;
+  }
   return std::make_shared<Stmt>(StmtKind(stmt::While{cond, body}));
 }
 
@@ -320,7 +325,7 @@ StmtPtr create_func_def_stmt(
 StmtPtr create_decl_stmt(
   Scope scope,
   bool is_const,
-  std::vector<std::tuple<TypePtr, std::string, std::optional<ExprPtr>>> defs
+  std::vector<std::tuple<TypePtr, std::string, ExprPtr>> defs
 ) {
   return std::make_shared<Stmt>(StmtKind(stmt::Decl{scope, is_const, defs}));
 }
@@ -399,10 +404,9 @@ SymbolEntryPtr stmt::Decl::fetch_symbol_entry(size_t idx) const {
   std::optional<ComptimeValue> value = std::nullopt;
 
   if (this->is_const) {
-    if (maybe_init.has_value()) {
-      auto init_expr = maybe_init.value();
-      if (std::holds_alternative<expr::Constant>(init_expr->kind)) {
-        value = std::get<expr::Constant>(init_expr->kind).value;
+    if (maybe_init != nullptr) {
+      if (std::holds_alternative<expr::Constant>(maybe_init->kind)) {
+        value = std::get<expr::Constant>(maybe_init->kind).value;
       }
     } else {
       value = create_zero_comptime_value(type);

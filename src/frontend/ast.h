@@ -134,6 +134,8 @@ struct Expr {
 
   /// Get the type.
   TypePtr get_type() const;
+
+  std::string to_string() const;
 };
 
 namespace stmt {
@@ -147,7 +149,7 @@ struct If {
   /// True branch
   StmtPtr then_stmt;
   /// False branch, nullptr if no else statement.
-  StmtPtr else_stmt;
+  StmtPtr maybe_else_stmt;
 };
 
 /// While statement.
@@ -203,7 +205,7 @@ struct Decl {
   /// If the declaration is a constant.
   bool is_const;
   /// A declaration may contain multiple definitions.
-  std::vector<std::tuple<TypePtr, std::string, std::optional<ExprPtr>>> defs;
+  std::vector<std::tuple<TypePtr, std::string, ExprPtr>> defs;
 
   /// Get the number of definitions.
   size_t get_def_cnt() const;
@@ -237,6 +239,8 @@ struct Stmt {
   StmtKind kind;
 
   Stmt(StmtKind kins);
+
+  std::string to_string() const;
 };
 
 /// Compile unit.
@@ -251,6 +255,8 @@ struct Compunit {
   /// Add a statement to the compile unit.
   /// If the statement is a declaration, the symbol entry will be registered.
   void add_stmt(StmtPtr stmt);
+
+  std::string to_string() const;
 };
 
 /// Create an identifier expression from the corresponding symbol entry.
@@ -298,8 +304,11 @@ StmtPtr create_break_stmt();
 StmtPtr create_continue_stmt();
 
 /// Create an if statement.
-StmtPtr
-create_if_stmt(ExprPtr cond, StmtPtr then_stmt, StmtPtr else_stmt = nullptr);
+StmtPtr create_if_stmt(
+  ExprPtr cond,
+  StmtPtr then_stmt,
+  StmtPtr maybe_else_stmt = nullptr
+);
 
 /// Create a while statement.
 StmtPtr create_while_stmt(ExprPtr cond, StmtPtr body);
@@ -320,7 +329,7 @@ StmtPtr create_func_def_stmt(
 StmtPtr create_decl_stmt(
   Scope scope,
   bool is_const,
-  std::vector<std::tuple<TypePtr, std::string, std::optional<ExprPtr>>> defs
+  std::vector<std::tuple<TypePtr, std::string, ExprPtr>> defs
 );
 
 StmtPtr create_expr_stmt(ExprPtr expr);

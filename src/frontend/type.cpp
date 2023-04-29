@@ -101,7 +101,7 @@ std::string Type::to_string() const {
     return function.ret_type->to_string() + "(" + params + ")";
   }
   // unreachable actually.
-  return "";
+  return "UNREACHABLE_TYPE";
 }
 
 TypePtr create_int_type() {
