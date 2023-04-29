@@ -14,7 +14,8 @@
     - Ref: [Midrule-Conflicts](https://www.gnu.org/software/bison/manual/html_node/Midrule-Conflicts.html)
   - [x] Add support for function from the runtime library.
   - [x] Fix symbol table for identifier.
-  - [ ] Expand macro for timing functions.
+  - [x] Expand macro for timing functions.
+    - Not tested yet (AST display).
   - [ ] Suppot string.
   - [ ] Replace YYABORT by better error handling.
 - [ ] AST display

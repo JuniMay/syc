@@ -209,6 +209,16 @@ ArrayIndices
     }
     $$ = maybe_type.value();
   }
+  | ArrayIndices '[' Expr ']' {
+    auto maybe_type = frontend::create_array_type_from_expr(
+      $1, std::make_optional($3));
+    if (!maybe_type.has_value()) {
+      std::cerr << @3 << ":" 
+                << "Array size must be const expression." << std::endl;
+      YYABORT;
+    }
+    $$ = maybe_type.value();
+  }
   ;
 
 InitVal 
@@ -365,6 +375,14 @@ UnaryExpr
     $$ = frontend::ast::create_call_expr(symbol_entry, $3, driver);
   }
   | IDENTIFIER '(' ')' {
+    if ($1 == "starttime" || $1 == "stoptime") {
+      auto symbol_entry = driver.compunit.symtable->lookup("_sysy_" + $1);
+      int lineno = @1.end.line;
+      auto lineno_expr = frontend::ast::create_constant_expr(
+        frontend::create_comptime_value(lineno, frontend::create_int_type()));
+      $$ = frontend::ast::create_call_expr(symbol_entry, {lineno_expr}, driver);
+      YYACCEPT;
+    }
     auto symbol_entry = driver.compunit.symtable->lookup($1);
     if (symbol_entry == nullptr) {
       std::cerr << @1 << ":" << "Undefined identifier: " + $1;
@@ -498,7 +516,7 @@ FuncParam
       std::get<0>($1), std::make_optional($3));
 
     if (!maybe_type.has_value()) {
-      std::cerr << @3 << "Array size must be const expression." << std::endl;
+      std::cerr << @3 << ":" << "Array size must be const expression." << std::endl;
       YYABORT;
     }
 

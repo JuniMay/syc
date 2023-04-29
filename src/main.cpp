@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
 
   auto compunit = &parse_driver.compunit;
 
-  std::cout << parse_driver.tokens;
+  // std::cout << parse_driver.tokens;
 
   if (parse_success != 0) {
     std::cerr << "Parse failed." << std::endl;

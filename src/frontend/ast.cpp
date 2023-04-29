@@ -17,6 +17,14 @@ bool Expr::is_comptime() const {
       [](const expr::Unary& kind) { return kind.expr->is_comptime(); },
       [](const expr::Cast& kind) { return kind.expr->is_comptime(); },
       [](const expr::Constant& kind) { return true; },
+      [this](const expr::Identifier& kind) {
+        auto symbol_entry = this->symbol_entry;
+        if (symbol_entry->is_const) {
+          return true;
+        } else {
+          return false;
+        }
+      },
       [](const auto&) { return false; },
     },
     this->kind
@@ -58,6 +66,10 @@ std::optional<ComptimeValue> Expr::get_comptime_value() const {
       },
       [](const expr::Constant& kind) -> std::optional<ComptimeValue> {
         return std::make_optional(kind.value);
+      },
+      [this](const expr::Identifier& kind) -> std::optional<ComptimeValue> {
+        auto symbol_entry = this->symbol_entry;
+        return symbol_entry->maybe_value;
       },
       [](const auto&) -> std::optional<ComptimeValue> { return std::nullopt; },
     },

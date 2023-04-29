@@ -1,4 +1,4 @@
-%option reentrant noyywrap nounput
+%option reentrant noyywrap nounput yylineno
 
 %{
 
@@ -12,7 +12,11 @@ using namespace syc;
 #define YY_DECL yy::parser::symbol_type yylex( \
   yyscan_t yyscanner, yy::location&loc, frontend::Driver& driver)
 
-#define YY_USER_ACTION loc.columns(yyleng);
+#define YY_USER_ACTION                      \
+  loc.begin.line = loc.end.line = yylineno; \
+  loc.begin.column = yycolumn;              \
+  loc.end.column = yycolumn + yyleng - 1;   \
+  yycolumn += yyleng;
 
 #define yyterminate() return yy::parser::make_END(loc)
 
@@ -267,7 +271,7 @@ HEX_FP (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][
   return parser::make_FLOATING(value, loc);
 }
 
-{EOL} {}
+{EOL} { yycolumn = 1; }
 {WS} {}
 {LINE_COMMENT} {}
 {BLOCK_COMMENT_BEGIN} {BEGIN BLOCK_COMMENT;}

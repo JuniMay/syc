@@ -54,8 +54,12 @@ Driver::Driver(std::string filename) {
 
   // `putf` function is not added yet.
 
-  this->add_function_decl(create_void_type(), "starttime", {});
-  this->add_function_decl(create_void_type(), "stoptime", {});
+  this->add_function_decl(
+    create_void_type(), "_sysy_starttime", {{create_int_type(), "lineno"}}
+  );
+  this->add_function_decl(
+    create_void_type(), "_sysy_stoptime", {{create_int_type(), "lineno"}}
+  );
 }
 
 Driver::~Driver() {
@@ -72,7 +76,6 @@ void Driver::add_stmt(ast::StmtPtr stmt) {
   if (this->is_curr_global()) {
     this->compunit.add_stmt(stmt);
   } else {
-    // TODO: Test if the statement can be actually added into the block.
     std::get<ast::stmt::Block>(this->curr_block->kind).add_stmt(stmt);
   }
 }
