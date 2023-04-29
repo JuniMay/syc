@@ -131,6 +131,9 @@ struct Expr {
 
   /// Get the value.
   std::optional<ComptimeValue> get_comptime_value() const;
+
+  /// Get the type.
+  TypePtr get_type() const;
 };
 
 namespace stmt {
@@ -261,23 +264,13 @@ ExprPtr create_constant_expr(ComptimeValue value);
 /// Create a binary expression.
 /// `symbol_name` is the temporary name fetched from the driver.
 /// `symtable` if the symbol table to register the temporary symbol entry.
-ExprPtr create_binary_expr(
-  BinaryOp op,
-  ExprPtr lhs,
-  ExprPtr rhs,
-  std::string symbol_name,
-  SymbolTablePtr symtable
-);
+ExprPtr
+create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver);
 
 /// Create a unary expression.
 /// `symbol_name` is the temporary name fetched from the driver.
 /// `symtable` if the symbol table to register the temporary symbol entry.
-ExprPtr create_unary_expr(
-  UnaryOp op,
-  ExprPtr expr,
-  std::string symbol_name,
-  SymbolTablePtr symtable
-);
+ExprPtr create_unary_expr(UnaryOp op, ExprPtr expr, Driver& driver);
 
 /// Create a call expression.
 /// `symbol_name` is the temporary name fetched from the driver.
@@ -286,9 +279,10 @@ ExprPtr create_unary_expr(
 ExprPtr create_call_expr(
   SymbolEntryPtr func_symbol_entry,
   std::vector<ExprPtr> args,
-  std::string symbol_name,
-  SymbolTablePtr symtable
+  Driver& driver
 );
+
+ExprPtr create_cast_expr(ExprPtr expr, TypePtr type, Driver& driver);
 
 ExprPtr create_initializer_list_expr(std::vector<ExprPtr> init_list);
 

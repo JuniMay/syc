@@ -313,7 +313,7 @@ PrimaryExpr
 
 LVal
   : IDENTIFIER {
-    auto symbol_entry = driver.compunit.symtable->lookup($1);
+    auto symbol_entry = driver.curr_symtable->lookup($1);
     if (symbol_entry == nullptr) {
       std::cerr << @1 << ":" << "Undefined identifier: " + $1;
       YYABORT;
@@ -322,8 +322,7 @@ LVal
   }
   | LVal '[' Expr ']' {
     $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Index, $1, $3, 
-      driver.get_next_temp_name(), driver.curr_symtable
+      frontend::BinaryOp::Index, $1, $3, driver
     );
   }
   ;
@@ -340,18 +339,15 @@ UnaryExpr
   }
   | '+' UnaryExpr {
     $$ = frontend::ast::create_unary_expr(
-      frontend::UnaryOp::Pos, $2, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      frontend::UnaryOp::Pos, $2, driver);
   }
   | '-' UnaryExpr {
     $$ = frontend::ast::create_unary_expr(
-      frontend::UnaryOp::Neg, $2, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      frontend::UnaryOp::Neg, $2, driver);
   }
   | '!' UnaryExpr {
     $$ = frontend::ast::create_unary_expr(
-      frontend::UnaryOp::LogicalNot, $2, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      frontend::UnaryOp::LogicalNot, $2, driver);
   }
   | IDENTIFIER '(' FuncArgList ')' {
     auto symbol_entry = driver.compunit.symtable->lookup($1);
@@ -366,12 +362,7 @@ UnaryExpr
       std::cerr << @1 << ":" << "Not a function: " + $1;
       YYABORT;
     }
-    $$ = frontend::ast::create_call_expr(
-      symbol_entry, 
-      $3, 
-      driver.get_next_temp_name(), 
-      driver.curr_symtable
-    );
+    $$ = frontend::ast::create_call_expr(symbol_entry, $3, driver);
   }
   | IDENTIFIER '(' ')' {
     auto symbol_entry = driver.compunit.symtable->lookup($1);
@@ -386,12 +377,7 @@ UnaryExpr
       std::cerr << @1 << ":" << "Not a function: " + $1;
       YYABORT;
     }
-    $$ = frontend::ast::create_call_expr(
-      symbol_entry, 
-      {}, 
-      driver.get_next_temp_name(), 
-      driver.curr_symtable
-    );
+    $$ = frontend::ast::create_call_expr(symbol_entry, {}, driver);
   }
   ;
 
@@ -401,18 +387,15 @@ MulExpr
   }
   | MulExpr '*' UnaryExpr {
     $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Mul, $1, $3, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      frontend::BinaryOp::Mul, $1, $3, driver);
   }
   | MulExpr '/' UnaryExpr {
     $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Div, $1, $3, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      frontend::BinaryOp::Div, $1, $3, driver);
   }
   | MulExpr '%' UnaryExpr {
     $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Mod, $1, $3, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      frontend::BinaryOp::Mod, $1, $3, driver);
   }
   ;
 
@@ -422,13 +405,11 @@ AddExpr
   }
   | AddExpr '+' MulExpr {
     $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Add, $1, $3, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      frontend::BinaryOp::Add, $1, $3, driver);
   }
   | AddExpr '-' MulExpr {
     $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Sub, $1, $3, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      frontend::BinaryOp::Sub, $1, $3, driver);
   }
   ;
 
@@ -438,23 +419,19 @@ RelExpr
   }
   | RelExpr '<' AddExpr {
     $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Lt, $1, $3, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      frontend::BinaryOp::Lt, $1, $3, driver);
   }
   | RelExpr '>' AddExpr {
     $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Gt, $1, $3, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      frontend::BinaryOp::Gt, $1, $3, driver);
   }
   | RelExpr LE AddExpr {
     $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Le, $1, $3, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      frontend::BinaryOp::Le, $1, $3, driver);
   }
   | RelExpr GE AddExpr {
     $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Ge, $1, $3, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      frontend::BinaryOp::Ge, $1, $3, driver);
   }
   ;
 
@@ -464,13 +441,11 @@ EqExpr
   }
   | EqExpr EQ RelExpr {
     $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Eq, $1, $3, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      frontend::BinaryOp::Eq, $1, $3, driver);
   }
   | EqExpr NE RelExpr {
     $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Ne, $1, $3, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      frontend::BinaryOp::Ne, $1, $3, driver);
   }
   ;
 
@@ -480,8 +455,7 @@ LAndExpr
   }
   | LAndExpr LAND EqExpr {
     $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::LogicalAnd, $1, $3, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      frontend::BinaryOp::LogicalAnd, $1, $3, driver);
   }
   ;
 
@@ -491,8 +465,7 @@ LOrExpr
   }
   | LOrExpr LOR LAndExpr {
     $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::LogicalOr, $1, $3, 
-      driver.get_next_temp_name(), driver.curr_symtable);
+      frontend::BinaryOp::LogicalOr, $1, $3, driver);
   }
   ;
 

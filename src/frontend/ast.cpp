@@ -1,4 +1,5 @@
 #include "frontend/ast.h"
+#include "frontend/driver.h"
 #include "frontend/symtable.h"
 #include "frontend/type.h"
 
@@ -64,6 +65,18 @@ std::optional<ComptimeValue> Expr::get_comptime_value() const {
   );
 }
 
+TypePtr Expr::get_type() const {
+  if (this->symbol_entry != nullptr) {
+    return this->symbol_entry->type;
+  } else {
+    if (std::holds_alternative<expr::Constant>(this->kind)) {
+      return std::get<expr::Constant>(this->kind).value.type;
+    } else {
+      return nullptr;
+    }
+  }
+}
+
 Compunit::Compunit() : symtable(create_symbol_table(nullptr)), stmts({}) {}
 
 ExprPtr create_initializer_list_expr(std::vector<ExprPtr> init_list) {
@@ -85,20 +98,70 @@ ExprPtr create_constant_expr(ComptimeValue value) {
   return std::make_shared<Expr>(ExprKind(expr::Constant{value}), nullptr);
 }
 
-ExprPtr create_binary_expr(
-  BinaryOp op,
-  ExprPtr lhs,
-  ExprPtr rhs,
-  std::string symbol_name,
-  SymbolTablePtr symtable
-) {
+ExprPtr
+create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver) {
   if (lhs == nullptr || rhs == nullptr) {
     return nullptr;
   }
+  auto symbol_name = driver.get_next_temp_name();
+  auto symtable = driver.curr_symtable;
 
-  // TODO: decide type of the result.
+  TypePtr type = nullptr;
+
+  // TODO: unify type checking
+  switch (op) {
+    case BinaryOp::Add:
+    case BinaryOp::Sub:
+    case BinaryOp::Mul:
+    case BinaryOp::Div:
+    case BinaryOp::Lt:
+    case BinaryOp::Gt:
+    case BinaryOp::Le:
+    case BinaryOp::Ge:
+    case BinaryOp::Eq:
+    case BinaryOp::Ne: {
+      if (lhs->get_type() == rhs->get_type()) {
+        type = lhs->get_type();
+      } else if (lhs->get_type()->is_float() && rhs->get_type()->is_int()) {
+        type = create_float_type();
+        rhs = create_cast_expr(rhs, type, driver);
+      } else if (lhs->get_type()->is_int() && rhs->get_type()->is_float()) {
+        type = create_float_type();
+        lhs = create_cast_expr(lhs, type, driver);
+      } else {
+        std::cerr << "Error: type mismatch: binary expression: " << std::endl;
+        return nullptr;
+      }
+      break;
+    }
+    case BinaryOp::Mod: {
+      type = create_int_type();
+      break;
+    }
+    case BinaryOp::LogicalAnd:
+    case BinaryOp::LogicalOr: {
+      type = create_bool_type();
+      if (!lhs->get_type()->is_bool()) {
+        lhs = create_cast_expr(lhs, create_bool_type(), driver);
+      }
+      if (!rhs->get_type()->is_bool()) {
+        rhs = create_cast_expr(rhs, create_bool_type(), driver);
+      }
+      break;
+    }
+    case BinaryOp::Index: {
+      if (lhs->get_type()->is_array()) {
+        type = lhs->get_type()->get_element_type();
+      }
+      if (!rhs->get_type()->is_int()) {
+        rhs = create_cast_expr(rhs, create_int_type(), driver);
+      }
+      break;
+    }
+  }
+
   auto symbol_entry =
-    create_symbol_entry(Scope::Temp, symbol_name, nullptr, false, std::nullopt);
+    create_symbol_entry(Scope::Temp, symbol_name, type, false, std::nullopt);
 
   symtable->add_symbol_entry(symbol_entry);
 
@@ -107,34 +170,42 @@ ExprPtr create_binary_expr(
   );
 }
 
-ExprPtr create_unary_expr(
-  UnaryOp op,
-  ExprPtr expr,
-  std::string symbol_name,
-  SymbolTablePtr symtable
-) {
+ExprPtr create_unary_expr(UnaryOp op, ExprPtr expr, Driver& driver) {
   if (expr == nullptr) {
     return nullptr;
   }
 
-  // TODO: decide type of the result.
-  auto symbol_entry =
-    create_symbol_entry(Scope::Temp, symbol_name, nullptr, false, std::nullopt);
+  auto symbol_name = driver.get_next_temp_name();
+  auto symtable = driver.curr_symtable;
 
-  symtable->add_symbol_entry(symbol_entry);
+  auto type = expr->symbol_entry->type;
 
-  return std::make_shared<Expr>(ExprKind(expr::Unary{op, expr}), symbol_entry);
+  if (op == UnaryOp::Pos || 
+      op == UnaryOp::Neg || (op == UnaryOp::LogicalNot && type->is_bool())) {
+    auto symbol_entry =
+      create_symbol_entry(Scope::Temp, symbol_name, type, false, std::nullopt);
+    symtable->add_symbol_entry(symbol_entry);
+    return std::make_shared<Expr>(
+      ExprKind(expr::Unary{op, expr}), symbol_entry
+    );
+  } else {
+    // expr is int/float: !expr -> expr == 0
+    auto zero = create_constant_expr(create_zero_comptime_value(type));
+    return create_binary_expr(BinaryOp::Eq, expr, zero, driver);
+  }
 }
 
 ExprPtr create_call_expr(
   SymbolEntryPtr func_symbol_entry,
   std::vector<ExprPtr> args,
-  std::string symbol_name,
-  SymbolTablePtr symtable
+  Driver& driver
 ) {
   if (func_symbol_entry == nullptr) {
     return nullptr;
   }
+
+  auto symbol_name = driver.get_next_temp_name();
+  auto symtable = driver.curr_symtable;
 
   auto func_name = func_symbol_entry->name;
   auto func_type = func_symbol_entry->type;
@@ -150,6 +221,22 @@ ExprPtr create_call_expr(
   return std::make_shared<Expr>(
     ExprKind(expr::Call{func_name, args}), symbol_entry
   );
+}
+
+ExprPtr create_cast_expr(ExprPtr expr, TypePtr type, Driver& driver) {
+  if (expr == nullptr || type == nullptr) {
+    return nullptr;
+  }
+
+  auto symbol_name = driver.get_next_temp_name();
+  auto symtable = driver.curr_symtable;
+
+  auto symbol_entry =
+    create_symbol_entry(Scope::Temp, symbol_name, type, false, std::nullopt);
+
+  symtable->add_symbol_entry(symbol_entry);
+
+  return std::make_shared<Expr>(ExprKind(expr::Cast{expr, type}), symbol_entry);
 }
 
 StmtPtr create_blank_stmt() {

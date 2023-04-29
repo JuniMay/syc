@@ -11,7 +11,11 @@ SymbolEntry::SymbolEntry(
   bool is_const,
   std::optional<ComptimeValue> maybe_value
 )
-  : scope(scope), name(name), type(type), is_const(is_const), maybe_value(maybe_value) {}
+  : scope(scope),
+    name(name),
+    type(type),
+    is_const(is_const),
+    maybe_value(maybe_value) {}
 
 SymbolEntryPtr create_symbol_entry(
   Scope scope,
@@ -29,6 +33,37 @@ bool SymbolEntry::has_ir_operand() const {
 
 bool SymbolEntry::is_comptime() const {
   return maybe_value.has_value();
+}
+
+std::string SymbolEntry::to_string() const {
+  std::stringstream ss;
+  switch (scope) {
+    case Scope::Global:
+      ss << "global";
+      break;
+    case Scope::Param:
+      ss << "param";
+      break;
+    case Scope::Local:
+      ss << "local";
+      break;
+    case Scope::Temp:
+      ss << "temp";
+      break;
+  }
+  ss << " " << name << " ";
+  if (type != nullptr) {
+    ss << type->to_string();
+  } else {
+    ss << "UNKNOWN_TYPE";
+  }
+  if (is_const) {
+    ss << " (const)";
+  }
+  if (maybe_value.has_value()) {
+    ss << " = " << maybe_value.value().to_string();
+  }
+  return ss.str();
 }
 
 SymbolTablePtr create_symbol_table(SymbolTablePtr parent) {
@@ -50,6 +85,15 @@ SymbolEntryPtr SymbolTable::lookup(const std::string& name) {
 
 void SymbolTable::add_symbol_entry(SymbolEntryPtr symbol_entry) {
   table[symbol_entry->name] = symbol_entry;
+}
+
+std::string SymbolTable::to_string() const {
+  std::stringstream ss;
+  ss << "SymbolTable: " << std::endl;
+  for (auto& [name, symbol_entry] : table) {
+    ss << "  " << symbol_entry->to_string() << std::endl;
+  }
+  return ss.str();
 }
 
 }  // namespace frontend

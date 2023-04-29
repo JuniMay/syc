@@ -51,6 +51,8 @@ struct SymbolEntry {
   bool has_ir_operand() const;
 
   bool is_comptime() const;
+
+  std::string to_string() const;
 };
 
 /// Symbol Table
@@ -70,6 +72,8 @@ struct SymbolTable {
 
   /// Add a symbol entry into the symbol table.
   void add_symbol_entry(SymbolEntryPtr symbol_entry);
+
+  std::string to_string() const;
 };
 
 /// Create a new symbol entry.

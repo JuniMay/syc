@@ -32,6 +32,10 @@ bool Type::is_pointer() const {
   return std::holds_alternative<type::Pointer>(kind);
 }
 
+bool Type::is_function() const {
+  return std::holds_alternative<type::Function>(kind);
+}
+
 TypePtr Type::get_element_type() const {
   if (!is_array()) {
     return nullptr;
@@ -59,6 +63,45 @@ TypePtr Type::get_value_type() const {
     return std::get<type::Pointer>(kind).value_type;
   }
   return nullptr;
+}
+
+std::string Type::to_string() const {
+  if (is_bool()) {
+    return "bool";
+  }
+  if (is_int()) {
+    return "int";
+  }
+  if (is_float()) {
+    return "float";
+  }
+  if (is_array()) {
+    auto array = std::get<type::Array>(kind);
+    std::string size = array.maybe_size.has_value()
+                         ? std::to_string(array.maybe_size.value())
+                         : "";
+    return array.element_type->to_string() + "[" + size + "]";
+  }
+  if (is_void()) {
+    return "void";
+  }
+  if (is_pointer()) {
+    return get_value_type()->to_string() + "*";
+  }
+  if (is_function()) {
+    auto function = std::get<type::Function>(kind);
+    std::string params = "";
+    for (auto param : function.param_types) {
+      params += param->to_string() + ", ";
+    }
+    if (params.size() > 0) {
+      params.pop_back();
+      params.pop_back();
+    }
+    return function.ret_type->to_string() + "(" + params + ")";
+  }
+  // unreachable actually.
+  return "";
 }
 
 TypePtr create_int_type() {

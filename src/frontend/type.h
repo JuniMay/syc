@@ -53,6 +53,7 @@ struct Type {
   bool is_array() const;
   bool is_void() const;
   bool is_pointer() const;
+  bool is_function() const;
 
   /// Get the element type of an array type.
   /// Returns nullptr if the type is not an array.
@@ -65,6 +66,9 @@ struct Type {
   /// Get the value type of a pointer type.
   /// Returns nullptr if the type is not a pointer.
   TypePtr get_value_type() const;
+
+  /// Convert the type to string.
+  std::string to_string() const;
 };
 
 TypePtr create_int_type();

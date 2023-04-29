@@ -104,6 +104,9 @@ void Driver::quit_block() {
     throw std::runtime_error("Cannot pop a block in global scope.");
   }
 
+  // debug
+  // std::cout << this->curr_symtable->to_string() << std::endl;
+
   this->block_stack.pop();
 
   if (this->block_stack.empty()) {
@@ -135,6 +138,9 @@ void Driver::add_function(
 }
 
 void Driver::quit_function() {
+  // debug
+  // std::cout << this->curr_symtable->to_string() << std::endl;
+
   this->curr_block = nullptr;
   while (!this->block_stack.empty()) {
     this->block_stack.pop();
