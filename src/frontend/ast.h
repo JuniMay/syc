@@ -84,6 +84,10 @@ struct Unary {
 struct InitializerList {
   /// values, represented as expressions.
   std::vector<ExprPtr> init_list;
+  /// Type of the initializer list.
+  std::optional<TypePtr> maybe_type;
+
+  void set_type(TypePtr);
 };
 
 /// Call expression.
@@ -136,6 +140,8 @@ struct Expr {
   TypePtr get_type() const;
 
   std::string to_string() const;
+
+  bool is_initializer_list() const;
 };
 
 namespace stmt {

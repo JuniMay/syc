@@ -188,10 +188,24 @@ Def
     $$ = std::make_tuple($2, $1, std::nullopt);
   }
   | IDENTIFIER '=' InitVal {
-    $$ = std::make_tuple(driver.curr_decl_type, $1, std::make_optional($3));
+    auto init_val = $3;
+    if (init_val->is_initializer_list()) {
+      std::get<frontend::ast::expr::InitializerList>(init_val->kind)
+        .set_type(driver.curr_decl_type);
+    }
+    $$ = std::make_tuple(
+      driver.curr_decl_type, 
+      $1, 
+      std::make_optional(init_val)
+    );
   }
   | IDENTIFIER ArrayIndices '=' InitVal {
-    $$ = std::make_tuple($2, $1, std::make_optional($4));
+    auto init_val = $4;
+    if (init_val->is_initializer_list()) {
+      std::get<frontend::ast::expr::InitializerList>(init_val->kind)
+        .set_type($2);
+    }
+    $$ = std::make_tuple($2, $1, std::make_optional(init_val));
   }
   ;
 
