@@ -22,7 +22,8 @@
 - [ ] AST display
   - [x] Compunit
   - [x] Statement
-  - [ ] Expression
+  - [x] Expression
+  - [ ] Prettify
 - [ ] IR Generation
 - [ ] Code generation
 - [ ] Code print
@@ -32,4 +33,5 @@
 
 ## Fixme
 
-- [ ] Temporary symbol duplication in the symbol table.
+- [x] Temporary symbol duplication in the symbol table.
+  - Fixed. The actual problem is that if there is a while/if/else, the block will be added twice: once by the driver and another time by the while/if/else statement.

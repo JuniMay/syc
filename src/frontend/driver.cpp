@@ -92,9 +92,6 @@ void Driver::add_block() {
   if (this->curr_block == nullptr) {
     // Set the block as the function's body.
     std::get<ast::stmt::FuncDef>(this->curr_function->kind).set_body(new_block);
-  } else {
-    // Just add the block as a compound statement.
-    this->add_stmt(new_block);
   }
 
   this->curr_block = new_block;

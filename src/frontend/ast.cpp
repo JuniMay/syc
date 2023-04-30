@@ -275,7 +275,7 @@ create_if_stmt(ExprPtr cond, StmtPtr then_stmt, StmtPtr maybe_else_stmt) {
 
 StmtPtr create_while_stmt(ExprPtr cond, StmtPtr body) {
   if (body == nullptr) {
-    std::cout << "null body for while!!!" << std::endl;
+    std::cerr << "Null body statement for while statement" << std::endl;
   }
   return std::make_shared<Stmt>(StmtKind(stmt::While{cond, body}));
 }

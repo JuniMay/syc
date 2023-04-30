@@ -130,8 +130,6 @@ Stmt
   | BlankStmt {
     $$ = $1;
   }
-  // Blocks and functions are created by the driver and are treated as a part
-  // of the context. 
   | BlockStmt {
     $$ = $1;
   }
