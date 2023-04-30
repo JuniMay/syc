@@ -66,21 +66,21 @@ std::string SymbolEntry::to_string() const {
   return ss.str();
 }
 
-SymbolTablePtr create_symbol_table(SymbolTablePtr parent) {
+SymbolTablePtr create_symbol_table(std::optional<SymbolTablePtr> maybe_parent) {
   auto table = std::make_shared<SymbolTable>();
-  table->parent = parent;
+  table->maybe_parent = maybe_parent;
   return table;
 }
 
-SymbolEntryPtr SymbolTable::lookup(const std::string& name) {
+std::optional<SymbolEntryPtr> SymbolTable::lookup(const std::string& name) {
   auto it = table.find(name);
   if (it != table.end()) {
     return it->second;
   }
-  if (parent) {
-    return parent->lookup(name);
+  if (this->maybe_parent.has_value()) {
+    return this->maybe_parent.value()->lookup(name);
   }
-  return nullptr;
+  return std::nullopt;
 }
 
 void SymbolTable::add_symbol_entry(SymbolEntryPtr symbol_entry) {

@@ -18,7 +18,7 @@ bool Expr::is_comptime() const {
       [](const expr::Cast& kind) { return kind.expr->is_comptime(); },
       [](const expr::Constant& kind) { return true; },
       [this](const expr::Identifier& kind) {
-        auto symbol_entry = this->symbol_entry;
+        auto symbol_entry = this->maybe_symbol_entry.value();
         if (symbol_entry->is_const) {
           return true;
         } else {
@@ -68,7 +68,7 @@ std::optional<ComptimeValue> Expr::get_comptime_value() const {
         return std::make_optional(kind.value);
       },
       [this](const expr::Identifier& kind) -> std::optional<ComptimeValue> {
-        auto symbol_entry = this->symbol_entry;
+        auto symbol_entry = this->maybe_symbol_entry.value();
         return symbol_entry->maybe_value;
       },
       [](const auto&) -> std::optional<ComptimeValue> { return std::nullopt; },
@@ -78,8 +78,8 @@ std::optional<ComptimeValue> Expr::get_comptime_value() const {
 }
 
 TypePtr Expr::get_type() const {
-  if (this->symbol_entry != nullptr) {
-    return this->symbol_entry->type;
+  if (this->maybe_symbol_entry.has_value()) {
+    return this->maybe_symbol_entry.value()->type;
   } else {
     if (std::holds_alternative<expr::Constant>(this->kind)) {
       return std::get<expr::Constant>(this->kind).value.type;
@@ -89,11 +89,11 @@ TypePtr Expr::get_type() const {
   }
 }
 
-Compunit::Compunit() : symtable(create_symbol_table(nullptr)), stmts({}) {}
+Compunit::Compunit() : symtable(create_symbol_table(std::nullopt)), stmts({}) {}
 
 ExprPtr create_initializer_list_expr(std::vector<ExprPtr> init_list) {
   return std::make_shared<Expr>(
-    ExprKind(expr::InitializerList{init_list}), nullptr
+    ExprKind(expr::InitializerList{init_list}), std::nullopt
   );
 }
 
@@ -107,7 +107,7 @@ ExprPtr create_identifier_expr(SymbolEntryPtr symbol_entry) {
 }
 
 ExprPtr create_constant_expr(ComptimeValue value) {
-  return std::make_shared<Expr>(ExprKind(expr::Constant{value}), nullptr);
+  return std::make_shared<Expr>(ExprKind(expr::Constant{value}), std::nullopt);
 }
 
 ExprPtr
@@ -255,7 +255,7 @@ StmtPtr create_blank_stmt() {
   return std::make_shared<Stmt>(StmtKind(stmt::Blank{}));
 }
 
-StmtPtr create_return_stmt(ExprPtr expr) {
+StmtPtr create_return_stmt(std::optional<ExprPtr> expr) {
   return std::make_shared<Stmt>(StmtKind(stmt::Return{expr}));
 }
 
@@ -267,8 +267,11 @@ StmtPtr create_continue_stmt() {
   return std::make_shared<Stmt>(StmtKind(stmt::Continue{}));
 }
 
-StmtPtr
-create_if_stmt(ExprPtr cond, StmtPtr then_stmt, StmtPtr maybe_else_stmt) {
+StmtPtr create_if_stmt(
+  ExprPtr cond,
+  StmtPtr then_stmt,
+  std::optional<StmtPtr> maybe_else_stmt
+) {
   return std::make_shared<Stmt>(StmtKind(stmt::If{
     cond, then_stmt, maybe_else_stmt}));
 }
@@ -318,14 +321,14 @@ StmtPtr create_func_def_stmt(
     symtable,
     symbol_entry,
     param_names,
-    nullptr,
+    std::nullopt,
   }));
 }
 
 StmtPtr create_decl_stmt(
   Scope scope,
   bool is_const,
-  std::vector<std::tuple<TypePtr, std::string, ExprPtr>> defs
+  std::vector<std::tuple<TypePtr, std::string, std::optional<ExprPtr>>> defs
 ) {
   return std::make_shared<Stmt>(StmtKind(stmt::Decl{scope, is_const, defs}));
 }
@@ -371,7 +374,11 @@ void stmt::FuncDef::set_body(StmtPtr body) {
     );
   }
 
-  this->body = body;
+  if (body == nullptr) {
+    throw std::runtime_error("Null body statement for function definition.");
+  }
+
+  this->maybe_body = std::make_optional(body);
 }
 
 void Compunit::add_stmt(StmtPtr stmt) {
@@ -404,9 +411,9 @@ SymbolEntryPtr stmt::Decl::fetch_symbol_entry(size_t idx) const {
   std::optional<ComptimeValue> value = std::nullopt;
 
   if (this->is_const) {
-    if (maybe_init != nullptr) {
-      if (std::holds_alternative<expr::Constant>(maybe_init->kind)) {
-        value = std::get<expr::Constant>(maybe_init->kind).value;
+    if (maybe_init.has_value()) {
+      if (std::holds_alternative<expr::Constant>(maybe_init.value()->kind)) {
+        value = std::get<expr::Constant>(maybe_init.value()->kind).value;
       }
     } else {
       value = create_zero_comptime_value(type);
@@ -416,8 +423,8 @@ SymbolEntryPtr stmt::Decl::fetch_symbol_entry(size_t idx) const {
   return create_symbol_entry(scope, name, type, is_const, value);
 }
 
-Expr::Expr(ExprKind kind, SymbolEntryPtr symbol_entry)
-  : kind(kind), symbol_entry(symbol_entry) {}
+Expr::Expr(ExprKind kind, std::optional<SymbolEntryPtr> maybe_symbol_entry)
+  : kind(kind), maybe_symbol_entry(maybe_symbol_entry) {}
 
 Stmt::Stmt(StmtKind kind) : kind(kind) {}
 

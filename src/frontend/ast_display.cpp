@@ -16,7 +16,8 @@ std::string Expr::to_string() const {
     overloaded{
       [&buf, this](const expr::Identifier& kind) {
         buf << "Identifier: " << kind.name << std::endl;
-        buf << indent_str(this->symbol_entry->to_string(), "\t") << std::endl;
+        buf << indent_str(this->maybe_symbol_entry.value()->to_string(), "\t")
+            << std::endl;
       },
       [&buf, this](const expr::Binary& kind) {
         buf << "Binary ";
@@ -64,7 +65,7 @@ std::string Expr::to_string() const {
             buf << "[]";
             break;
         }
-        buf << " " << this->symbol_entry->name << std::endl;
+        buf << " " << this->maybe_symbol_entry.value()->name << std::endl;
         buf << indent_str(kind.lhs->to_string(), "\t") << std::endl;
         buf << indent_str(kind.rhs->to_string(), "\t") << std::endl;
       },
@@ -81,18 +82,18 @@ std::string Expr::to_string() const {
             buf << "!";
             break;
         }
-        buf << " " << this->symbol_entry->name << std::endl;
+        buf << " " << this->maybe_symbol_entry.value()->name << std::endl;
         buf << indent_str(kind.expr->to_string(), "\t") << std::endl;
       },
       [&buf, this](const expr::Call& kind) {
-        buf << "Call " << this->symbol_entry->name << std::endl;
+        buf << "Call " << this->maybe_symbol_entry.value()->name << std::endl;
         buf << "  function: " << kind.name << std::endl;
         for (auto expr : kind.args) {
           buf << indent_str(expr->to_string(), "\t") << std::endl;
         }
       },
       [&buf, this](const expr::Cast& kind) {
-        buf << "Cast " << this->symbol_entry->name << std::endl;
+        buf << "Cast " << this->maybe_symbol_entry.value()->name << std::endl;
         buf << indent_str(kind.expr->to_string(), "\t") << std::endl;
         buf << indent_str(kind.type->to_string(), "\t") << std::endl;
       },
@@ -127,9 +128,9 @@ std::string Stmt::to_string() const {
         buf << indent_str(kind.cond->to_string(), "\t\t") << std::endl;
         buf << "  then_stmt: " << std::endl;
         buf << indent_str(kind.then_stmt->to_string(), "\t\t") << std::endl;
-        if (kind.maybe_else_stmt != nullptr) {
+        if (kind.maybe_else_stmt.has_value()) {
           buf << "  else_stmt: " << std::endl;
-          buf << indent_str(kind.maybe_else_stmt->to_string(), "\t\t")
+          buf << indent_str(kind.maybe_else_stmt.value()->to_string(), "\t\t")
               << std::endl;
         }
       },
@@ -144,8 +145,9 @@ std::string Stmt::to_string() const {
       [&buf](const stmt::Continue& kind) { buf << "Continue" << std::endl; },
       [&buf](const stmt::Return& kind) {
         buf << "Return" << std::endl;
-        if (kind.expr != nullptr) {
-          buf << indent_str(kind.expr->to_string(), "\t") << std::endl;
+        if (kind.maybe_expr.has_value()) {
+          buf << indent_str(kind.maybe_expr.value()->to_string(), "\t")
+              << std::endl;
         }
       },
       [&buf](const stmt::Assign& kind) {
@@ -181,8 +183,9 @@ std::string Stmt::to_string() const {
           buf << "  Def" << std::endl;
           buf << indent_str(type->to_string(), "\t\t") << " " << name
               << std::endl;
-          if (maybe_init != nullptr) {
-            buf << indent_str(maybe_init->to_string(), "\t\t") << std::endl;
+          if (maybe_init.has_value()) {
+            buf << indent_str(maybe_init.value()->to_string(), "\t\t")
+                << std::endl;
           }
         }
       },
@@ -191,9 +194,10 @@ std::string Stmt::to_string() const {
         buf << indent_str(kind.symtable->to_string(), "\t") << std::endl
             << std::endl;
         buf << indent_str(kind.symbol_entry->to_string(), "\t") << std::endl;
-        // If the function is a declaration, body is nullptr.
-        if (kind.body != nullptr) {
-          buf << indent_str(kind.body->to_string(), "\t") << std::endl;
+        // If the function is a declaration, body is nullopt.
+        if (kind.maybe_body.has_value()) {
+          buf << indent_str(kind.maybe_body.value()->to_string(), "\t")
+              << std::endl;
         }
       },
       [&buf](const stmt::Block& kind) {

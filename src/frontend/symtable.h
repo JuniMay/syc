@@ -63,12 +63,12 @@ struct SymbolTable {
   /// The parent table.
   /// The hierarchy can be resolved while traversing the AST.
   /// `parent` here is used for looking up the symbol.
-  SymbolTablePtr parent;
+  std::optional<SymbolTablePtr> maybe_parent;
 
   /// Lookup a symbol in the table by its name.
   /// If the symbol is not found in the current table, the parent table will be
-  /// searched. Return nullptr if no symbol is found.
-  SymbolEntryPtr lookup(const std::string& name);
+  /// searched. Return nullopt if no symbol is found.
+  std::optional<SymbolEntryPtr> lookup(const std::string& name);
 
   /// Add a symbol entry into the symbol table.
   void add_symbol_entry(SymbolEntryPtr symbol_entry);
@@ -86,7 +86,9 @@ SymbolEntryPtr create_symbol_entry(
 );
 
 /// Create a new symbol table.
-SymbolTablePtr create_symbol_table(SymbolTablePtr parent = nullptr);
+SymbolTablePtr create_symbol_table(
+  std::optional<SymbolTablePtr> maybe_parent = std::nullopt
+);
 
 }  // namespace frontend
 }  // namespace syc

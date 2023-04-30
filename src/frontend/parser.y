@@ -65,8 +65,8 @@
 %type <AstStmtPtr> Stmt IfStmt WhileStmt ReturnStmt BreakStmt ExprStmt
 %type <AstStmtPtr> ContinueStmt BlankStmt DeclStmt AssignStmt BlockStmt
 
-%type <std::tuple<AstTypePtr, std::string, AstExprPtr>> Def
-%type <std::vector<std::tuple<AstTypePtr, std::string, AstExprPtr>>> DefList
+%type <std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> Def
+%type <std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>>> DefList
 
 %type <AstExprPtr> Expr AddExpr LOrExpr PrimaryExpr RelExpr MulExpr
 %type <AstExprPtr> LAndExpr EqExpr UnaryExpr LVal InitVal Cond
@@ -182,16 +182,16 @@ DefList
 
 Def 
   : IDENTIFIER {
-    $$ = std::make_tuple(driver.curr_decl_type, $1, nullptr);
+    $$ = std::make_tuple(driver.curr_decl_type, $1, std::nullopt);
   } 
   | IDENTIFIER ArrayIndices {
-    $$ = std::make_tuple($2, $1, nullptr);
+    $$ = std::make_tuple($2, $1, std::nullopt);
   }
   | IDENTIFIER '=' InitVal {
-    $$ = std::make_tuple(driver.curr_decl_type, $1, $3);
+    $$ = std::make_tuple(driver.curr_decl_type, $1, std::make_optional($3));
   }
   | IDENTIFIER ArrayIndices '=' InitVal {
-    $$ = std::make_tuple($2, $1, $4);
+    $$ = std::make_tuple($2, $1, std::make_optional($4));
   }
   ;
 
@@ -243,10 +243,10 @@ InitValList
 
 IfStmt 
   : IF '(' Cond ')' Stmt %prec THEN {
-    $$ = frontend::ast::create_if_stmt($3, $5, nullptr);
+    $$ = frontend::ast::create_if_stmt($3, $5, std::nullopt);
   }
   | IF '(' Cond ')' Stmt ELSE Stmt {
-    $$ = frontend::ast::create_if_stmt($3, $5, $7);
+    $$ = frontend::ast::create_if_stmt($3, $5, std::make_optional($7));
   }
   ;
 
@@ -258,10 +258,10 @@ WhileStmt
 
 ReturnStmt 
   : RETURN Expr ';' {
-    $$ = frontend::ast::create_return_stmt($2);
+    $$ = frontend::ast::create_return_stmt(std::make_optional($2));
   }
   | RETURN ';' {
-    $$ = frontend::ast::create_return_stmt(nullptr);
+    $$ = frontend::ast::create_return_stmt(std::nullopt);
   }
   ;
 
@@ -326,12 +326,12 @@ PrimaryExpr
 
 LVal
   : IDENTIFIER {
-    auto symbol_entry = driver.curr_symtable->lookup($1);
-    if (symbol_entry == nullptr) {
+    auto maybe_symbol_entry = driver.curr_symtable->lookup($1);
+    if (!maybe_symbol_entry.has_value()) {
       std::cerr << @1 << ":" << "Undefined identifier: " + $1;
       YYABORT;
     }
-    $$ = frontend::ast::create_identifier_expr(symbol_entry);
+    $$ = frontend::ast::create_identifier_expr(maybe_symbol_entry.value());
   }
   | LVal '[' Expr ']' {
     $$ = frontend::ast::create_binary_expr(
@@ -363,42 +363,54 @@ UnaryExpr
       frontend::UnaryOp::LogicalNot, $2, driver);
   }
   | IDENTIFIER '(' FuncArgList ')' {
-    auto symbol_entry = driver.compunit.symtable->lookup($1);
-    if (symbol_entry == nullptr) {
+    auto maybe_symbol_entry = driver.compunit.symtable->lookup($1);
+    if (!maybe_symbol_entry.has_value()) {
       std::cerr << @1 << ":" << "Undefined identifier: " + $1;
       YYABORT;
     }
-    auto maybe_func_type = symbol_entry->type;
+    auto maybe_func_type = maybe_symbol_entry.value()->type;
     if (
       !std::holds_alternative<frontend::type::Function>(maybe_func_type->kind)
     ) {
       std::cerr << @1 << ":" << "Not a function: " + $1;
       YYABORT;
     }
-    $$ = frontend::ast::create_call_expr(symbol_entry, $3, driver);
+    $$ = frontend::ast::create_call_expr(
+      maybe_symbol_entry.value(), 
+      $3, 
+      driver
+    );
   }
   | IDENTIFIER '(' ')' {
     if ($1 == "starttime" || $1 == "stoptime") {
-      auto symbol_entry = driver.compunit.symtable->lookup("_sysy_" + $1);
+      auto maybe_symbol_entry = driver.compunit.symtable->lookup("_sysy_" + $1);
       int lineno = @1.end.line;
       auto lineno_expr = frontend::ast::create_constant_expr(
         frontend::create_comptime_value(lineno, frontend::create_int_type()));
-      $$ = frontend::ast::create_call_expr(symbol_entry, {lineno_expr}, driver);
+      $$ = frontend::ast::create_call_expr(
+        maybe_symbol_entry.value(), 
+        {lineno_expr}, 
+        driver
+      );
       YYACCEPT;
     }
-    auto symbol_entry = driver.compunit.symtable->lookup($1);
-    if (symbol_entry == nullptr) {
+    auto maybe_symbol_entry = driver.compunit.symtable->lookup($1);
+    if (!maybe_symbol_entry.has_value()) {
       std::cerr << @1 << ":" << "Undefined identifier: " + $1;
       YYABORT;
     }
-    auto maybe_func_type = symbol_entry->type;
+    auto maybe_func_type = maybe_symbol_entry.value()->type;
     if (
       !std::holds_alternative<frontend::type::Function>(maybe_func_type->kind)
     ) {
       std::cerr << @1 << ":" << "Not a function: " + $1;
       YYABORT;
     }
-    $$ = frontend::ast::create_call_expr(symbol_entry, {}, driver);
+    $$ = frontend::ast::create_call_expr(
+      maybe_symbol_entry.value(), 
+      {}, 
+      driver
+    );
   }
   ;
 

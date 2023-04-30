@@ -118,13 +118,13 @@ struct Expr {
   /// If the expression is a identifier, the symbol entry is corresponding to
   /// the name. Otherwise the symbol entry is temporary.
   /// If the expression is a literal value, the symbol entry is
-  /// nullptr.
+  /// nullopt.
   /// TODO: type for initializer list. The expression in init list is not always
   /// the same type.
-  SymbolEntryPtr symbol_entry;
+  std::optional<SymbolEntryPtr> maybe_symbol_entry;
 
   /// Constructor
-  Expr(ExprKind kind, SymbolEntryPtr symbol_entry);
+  Expr(ExprKind kind, std::optional<SymbolEntryPtr> maybe_symbol_entry);
 
   /// If the expression is compile-time computable.
   bool is_comptime() const;
@@ -148,8 +148,8 @@ struct If {
   ExprPtr cond;
   /// True branch
   StmtPtr then_stmt;
-  /// False branch, nullptr if no else statement.
-  StmtPtr maybe_else_stmt;
+  /// False branch, nullopt if no else statement.
+  std::optional<StmtPtr> maybe_else_stmt;
 };
 
 /// While statement.
@@ -169,7 +169,7 @@ struct Continue {};
 /// Return
 struct Return {
   /// Return expression.
-  ExprPtr expr;
+  std::optional<ExprPtr> maybe_expr;
 };
 
 /// Block statement.
@@ -205,7 +205,7 @@ struct Decl {
   /// If the declaration is a constant.
   bool is_const;
   /// A declaration may contain multiple definitions.
-  std::vector<std::tuple<TypePtr, std::string, ExprPtr>> defs;
+  std::vector<std::tuple<TypePtr, std::string, std::optional<ExprPtr>>> defs;
 
   /// Get the number of definitions.
   size_t get_def_cnt() const;
@@ -224,9 +224,9 @@ struct FuncDef {
   /// Parameter names.
   std::vector<std::string> param_names;
   /// A block statement.
-  /// If the body is nulltr, the function is a declaration.
+  /// If the body is nullopt, the function is a declaration.
   /// e.g. functions in the runtime library.
-  StmtPtr body;
+  std::optional<StmtPtr> maybe_body;
 
   void set_body(StmtPtr body);
 };
@@ -295,7 +295,7 @@ ExprPtr create_initializer_list_expr(std::vector<ExprPtr> init_list);
 StmtPtr create_blank_stmt();
 
 /// Create a return statement.
-StmtPtr create_return_stmt(ExprPtr expr);
+StmtPtr create_return_stmt(std::optional<ExprPtr> maybe_expr = std::nullopt);
 
 /// Create a break statement.
 StmtPtr create_break_stmt();
@@ -307,7 +307,7 @@ StmtPtr create_continue_stmt();
 StmtPtr create_if_stmt(
   ExprPtr cond,
   StmtPtr then_stmt,
-  StmtPtr maybe_else_stmt = nullptr
+  std::optional<StmtPtr> maybe_else_stmt = std::nullopt
 );
 
 /// Create a while statement.
@@ -329,7 +329,7 @@ StmtPtr create_func_def_stmt(
 StmtPtr create_decl_stmt(
   Scope scope,
   bool is_const,
-  std::vector<std::tuple<TypePtr, std::string, ExprPtr>> defs
+  std::vector<std::tuple<TypePtr, std::string, std::optional<ExprPtr>>> defs
 );
 
 StmtPtr create_expr_stmt(ExprPtr expr);
