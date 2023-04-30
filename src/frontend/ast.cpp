@@ -190,7 +190,7 @@ ExprPtr create_unary_expr(UnaryOp op, ExprPtr expr, Driver& driver) {
   auto symbol_name = driver.get_next_temp_name();
   auto symtable = driver.curr_symtable;
 
-  auto type = expr->symbol_entry->type;
+  auto type = expr->get_type();
 
   if (op == UnaryOp::Pos || 
       op == UnaryOp::Neg || (op == UnaryOp::LogicalNot && type->is_bool())) {
