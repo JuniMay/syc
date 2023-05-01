@@ -36,33 +36,32 @@ bool Type::is_function() const {
   return std::holds_alternative<type::Function>(kind);
 }
 
-TypePtr Type::get_element_type() const {
+std::optional<TypePtr> Type::get_element_type() const {
   if (!is_array()) {
-    return nullptr;
+    return std::nullopt;
   }
 
   return std::get<type::Array>(kind).element_type;
 }
 
-TypePtr Type::get_root_element_type() const {
+std::optional<TypePtr> Type::get_root_element_type() const {
   if (!is_array()) {
-    return nullptr;
+    return std::nullopt;
   }
 
-  TypePtr element_type = std::get<type::Array>(kind).element_type;
-
+  auto element_type = std::get<type::Array>(kind).element_type;
   while (element_type->is_array()) {
-    element_type = element_type->get_element_type();
+    element_type = element_type->get_element_type().value();
   }
 
   return element_type;
 }
 
-TypePtr Type::get_value_type() const {
-  if (is_pointer()) {
-    return std::get<type::Pointer>(kind).value_type;
+std::optional<TypePtr> Type::get_value_type() const {
+  if (!is_pointer()) {
+    return std::nullopt;
   }
-  return nullptr;
+  return std::get<type::Pointer>(kind).value_type;
 }
 
 std::string Type::to_string() const {
@@ -86,7 +85,7 @@ std::string Type::to_string() const {
     return "void";
   }
   if (is_pointer()) {
-    return get_value_type()->to_string() + "*";
+    return get_value_type().value()->to_string() + "*";
   }
   if (is_function()) {
     auto function = std::get<type::Function>(kind);

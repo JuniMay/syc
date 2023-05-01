@@ -145,8 +145,7 @@ create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver) {
         type = create_float_type();
         lhs = create_cast_expr(lhs, type.value(), driver);
       } else {
-        std::cerr << "Error: type mismatch for binary expression." << std::endl;
-        type = lhs->get_type();
+        throw std::runtime_error("Error: type mismatch for binary expression.");
       }
       break;
     }
@@ -169,7 +168,7 @@ create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver) {
       if (lhs->get_type()->is_array()) {
         type = lhs->get_type()->get_element_type();
       } else {
-        throw std::runtime_error("Error: index on non-array.");
+        throw std::runtime_error("Error: indexing on non-array type.");
       }
       if (!rhs->get_type()->is_int()) {
         rhs = create_cast_expr(rhs, create_int_type(), driver);

@@ -51,12 +51,7 @@ std::string SymbolEntry::to_string() const {
       ss << "temp";
       break;
   }
-  ss << " " << name << " ";
-  if (type != nullptr) {
-    ss << type->to_string();
-  } else {
-    ss << "UNKNOWN_TYPE";
-  }
+  ss << " " << name << " " << type->to_string();
   if (is_const) {
     ss << " (const)";
   }

@@ -16,7 +16,9 @@
   - [x] Fix symbol table for identifier.
   - [x] Expand macro for timing functions.
     - Not tested yet (AST display).
-  - [ ] Use `std::optional` to replace nullptr in nullable pointers (memory safety).
+  - [x] Use `std::optional` to replace nullptr in nullable pointers (memory safety).
+    - Change the nullptr in AST, symbol table and type to std::nullopt.
+    - nullptr in the driver still remains.
   - [ ] Suppot string.
   - [ ] Replace YYABORT with better error handling.
 - [ ] AST display

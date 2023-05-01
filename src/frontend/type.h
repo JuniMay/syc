@@ -56,16 +56,16 @@ struct Type {
   bool is_function() const;
 
   /// Get the element type of an array type.
-  /// Returns nullptr if the type is not an array.
-  TypePtr get_element_type() const;
+  /// If the type is not an array, return `std::nullopt`.
+  std::optional<TypePtr> get_element_type() const;
 
   /// Get the most elementary type of an array type.
-  /// Returns nullptr if the type is not an array.
-  TypePtr get_root_element_type() const;
+  /// If the type is not an array, return `std::nullopt`.
+  std::optional<TypePtr> get_root_element_type() const;
 
   /// Get the value type of a pointer type.
-  /// Returns nullptr if the type is not a pointer.
-  TypePtr get_value_type() const;
+  /// If the type is not a pointer, return `std::nullopt`.
+  std::optional<TypePtr> get_value_type() const;
 
   /// Convert the type to string.
   std::string to_string() const;
