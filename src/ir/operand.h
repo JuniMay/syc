@@ -18,6 +18,7 @@ struct Global {
   bool is_zero_initialized;
   /// Initial value/initializer of the global variable.
   /// If the variable is an array, this is a list of initial values.
+  /// Otherwise, the first element of the list is the initial value.
   std::vector<OperandID> initializer;
 };
 

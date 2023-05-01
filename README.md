@@ -27,6 +27,11 @@
   - [x] Expression
   - [ ] Prettify
 - [ ] IR Generation
+  - [ ] Compunit
+  - [ ] Stmt
+  - [ ] Expr
+  - [ ] Type
+  - [ ] Symbol entry -> operand
 - [ ] Code generation
 - [ ] Code print
 - [ ] AST simplification

@@ -37,7 +37,7 @@ struct SymbolEntry {
 
   /// (Optional) IR operand ID of the symbol.
   /// This is set during the IR generation phase.
-  std::optional<ir::OperandID> ir_operand_id = std::nullopt;
+  std::optional<ir::OperandID> maybe_ir_operand_id = std::nullopt;
 
   /// Constructor
   SymbolEntry(

@@ -28,7 +28,7 @@ SymbolEntryPtr create_symbol_entry(
 }
 
 bool SymbolEntry::has_ir_operand() const {
-  return ir_operand_id.has_value();
+  return maybe_ir_operand_id.has_value();
 }
 
 bool SymbolEntry::is_comptime() const {
