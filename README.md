@@ -8,7 +8,7 @@
 ## Todo List
 
 - [ ] Flatten source code for submit
-- [ ] Commandline arguments
+- [x] Command-line arguments
 - [ ] Parser & Lexer
   - [x] Solve shift/reduce conflict of function and declaration.
     - Ref: [Midrule-Conflicts](https://www.gnu.org/software/bison/manual/html_node/Midrule-Conflicts.html)
