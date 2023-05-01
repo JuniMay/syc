@@ -159,14 +159,11 @@ ExprStmt
 
 DeclStmt
   : Type DefList ';' {
-    auto scope = driver.is_curr_global() ? frontend::Scope::Global 
-                                         : frontend::Scope::Local;
-    $$ = frontend::ast::create_decl_stmt(scope, false, $2);
+    $$ = frontend::ast::create_decl_stmt(driver.curr_decl_scope, false, $2);
   }
   | CONST Type DefList ';' {
-    auto scope = driver.is_curr_global() ? frontend::Scope::Global 
-                                         : frontend::Scope::Local;
-    $$ = frontend::ast::create_decl_stmt(scope, true, $3);
+    $$ = frontend::ast::create_decl_stmt(driver.curr_decl_scope, true, $3);
+    driver.is_curr_decl_const = false;
   }
   ;
 
@@ -174,9 +171,23 @@ DefList
   : DefList ',' Def {
     $$ = $1;
     $$.push_back($3);
+
+    auto symbol_entry = frontend::ast::create_symbol_entry_from_decl_def(
+      driver.curr_decl_scope,
+      driver.is_curr_decl_const,
+      $3
+    );
+    driver.curr_symtable->add_symbol_entry(symbol_entry);
   }
   | Def {
     $$.push_back($1);
+
+    auto symbol_entry = frontend::ast::create_symbol_entry_from_decl_def(
+      driver.curr_decl_scope,
+      driver.is_curr_decl_const,
+      $1
+    );
+    driver.curr_symtable->add_symbol_entry(symbol_entry);
   }
   ;
 
@@ -564,14 +575,21 @@ Type
   : INT {
     $$ = frontend::create_int_type();
     driver.curr_decl_type = $$;
+    driver.curr_decl_scope = driver.is_curr_global() ? frontend::Scope::Global 
+                                                     : frontend::Scope::Local;
+
   }
   | FLOAT {
     $$ = frontend::create_float_type();
     driver.curr_decl_type = $$;
+    driver.curr_decl_scope = driver.is_curr_global() ? frontend::Scope::Global 
+                                                     : frontend::Scope::Local;
   }
   | VOID {
     $$ = frontend::create_void_type();
     driver.curr_decl_type = $$;
+    driver.curr_decl_scope = driver.is_curr_global() ? frontend::Scope::Global 
+                                                     : frontend::Scope::Local;
   }
   ;
 

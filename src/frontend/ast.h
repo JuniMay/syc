@@ -215,8 +215,6 @@ struct Decl {
 
   /// Get the number of definitions.
   size_t get_def_cnt() const;
-  /// Get the symbol entry.
-  SymbolEntryPtr fetch_symbol_entry(size_t idx) const;
 };
 
 /// Function definition.
@@ -341,6 +339,12 @@ StmtPtr create_decl_stmt(
 StmtPtr create_expr_stmt(ExprPtr expr);
 
 StmtPtr create_assign_stmt(ExprPtr lhs, ExprPtr rhs);
+
+SymbolEntryPtr create_symbol_entry_from_decl_def(
+  Scope scope,
+  bool is_const,
+  std::tuple<TypePtr, std::string, std::optional<ExprPtr>> def
+);
 
 }  // namespace ast
 

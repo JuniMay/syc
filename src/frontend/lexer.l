@@ -188,6 +188,7 @@ HEX_FP (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][
 
 "const" {
   driver.add_token("CONST");
+  driver.is_curr_decl_const = true;
   return parser::make_CONST(loc);
 }
 

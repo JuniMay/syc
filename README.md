@@ -30,6 +30,7 @@
 - [ ] Code generation
 - [ ] Code print
 - [ ] AST simplification
+  - [ ] Compile-time value for initializer list
 - [ ] IR Optimization
 - [ ] Code Optimization
 

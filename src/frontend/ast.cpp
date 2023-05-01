@@ -338,24 +338,27 @@ StmtPtr create_assign_stmt(ExprPtr lhs, ExprPtr rhs) {
   return std::make_shared<Stmt>(StmtKind(stmt::Assign{lhs, rhs}));
 }
 
+SymbolEntryPtr create_symbol_entry_from_decl_def(
+  Scope scope,
+  bool is_const,
+  std::tuple<TypePtr, std::string, std::optional<ExprPtr>> def
+) {
+  auto [type, name, maybe_init] = def;
+  std::optional<ComptimeValue> maybe_value = std::nullopt;
+
+  if (is_const) {
+    if (maybe_init.has_value()) {
+      maybe_value = maybe_init.value()->get_comptime_value();
+    } else {
+      maybe_value = create_zero_comptime_value(type);
+    }
+  }
+
+  return create_symbol_entry(scope, name, type, is_const, maybe_value);
+}
+
 void stmt::Block::add_stmt(StmtPtr stmt) {
   this->stmts.push_back(stmt);
-
-  std::visit(
-    overloaded{
-      [this](const stmt::Decl& decl) {
-        size_t def_cnt = decl.get_def_cnt();
-        for (size_t i = 0; i < def_cnt; i++) {
-          auto entry = decl.fetch_symbol_entry(i);
-          this->symtable->add_symbol_entry(entry);
-        }
-      },
-      [](const auto& others) {
-        // do nothing
-      },
-    },
-    stmt->kind
-  );
 }
 
 void stmt::FuncDef::set_body(StmtPtr body) {
@@ -369,44 +372,10 @@ void stmt::FuncDef::set_body(StmtPtr body) {
 
 void Compunit::add_stmt(StmtPtr stmt) {
   this->stmts.push_back(stmt);
-
-  std::visit(
-    overloaded{
-      [this](const stmt::Decl& decl) {
-        size_t def_cnt = decl.get_def_cnt();
-        for (size_t i = 0; i < def_cnt; i++) {
-          auto entry = decl.fetch_symbol_entry(i);
-          this->symtable->add_symbol_entry(entry);
-        }
-      },
-      [](const auto& others) {
-        // do nothing
-      },
-    },
-    stmt->kind
-  );
 }
 
 size_t stmt::Decl::get_def_cnt() const {
   return this->defs.size();
-}
-
-SymbolEntryPtr stmt::Decl::fetch_symbol_entry(size_t idx) const {
-  auto [type, name, maybe_init] = this->defs.at(idx);
-
-  std::optional<ComptimeValue> value = std::nullopt;
-
-  if (this->is_const) {
-    if (maybe_init.has_value()) {
-      if (std::holds_alternative<expr::Constant>(maybe_init.value()->kind)) {
-        value = std::get<expr::Constant>(maybe_init.value()->kind).value;
-      }
-    } else {
-      value = create_zero_comptime_value(type);
-    }
-  }
-
-  return create_symbol_entry(scope, name, type, is_const, value);
 }
 
 Expr::Expr(ExprKind kind, std::optional<SymbolEntryPtr> maybe_symbol_entry)
