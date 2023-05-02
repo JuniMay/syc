@@ -212,9 +212,6 @@ struct Decl {
   bool is_const;
   /// A declaration may contain multiple definitions.
   std::vector<std::tuple<TypePtr, std::string, std::optional<ExprPtr>>> defs;
-
-  /// Get the number of definitions.
-  size_t get_def_cnt() const;
 };
 
 /// Function definition.

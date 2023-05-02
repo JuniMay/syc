@@ -15,7 +15,7 @@ std::string ComptimeValue::to_string() const {
     buf << "COMPTIME FLOAT " << std::get<float>(this->value);
   } else {
     throw std::runtime_error(
-      "Unsupported type for compile-rime value to be converted to string."
+      "Unsupported type for compile-time value to be converted to string."
     );
   }
 

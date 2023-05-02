@@ -1,6 +1,6 @@
-#line 2 "frontend/generated/lexer.cpp"
+#line 1 "frontend/generated/lexer.cpp"
 
-#line 4 "frontend/generated/lexer.cpp"
+#line 3 "frontend/generated/lexer.cpp"
 
 #define  YY_INT_ALIGNED short int
 
@@ -47,6 +47,7 @@ typedef int16_t flex_int16_t;
 typedef uint16_t flex_uint16_t;
 typedef int32_t flex_int32_t;
 typedef uint32_t flex_uint32_t;
+typedef uint64_t flex_uint64_t;
 #else
 typedef signed char flex_int8_t;
 typedef short int flex_int16_t;
@@ -185,7 +186,7 @@ typedef size_t yy_size_t;
      */
     #define  YY_LESS_LINENO(n) \
             do { \
-                int yyl;\
+                yy_size_t yyl;\
                 for ( yyl = n; yyl < yyleng; ++yyl )\
                     if ( yytext[yyl] == '\n' )\
                         --yylineno;\
@@ -230,7 +231,7 @@ struct yy_buffer_state
 	/* Number of characters read into yy_ch_buf, not including EOB
 	 * characters.
 	 */
-	int yy_n_chars;
+	yy_size_t yy_n_chars;
 
 	/* Whether we "own" the buffer - i.e., we know we created it,
 	 * and can realloc() it to grow it, and should free() it to
@@ -307,7 +308,7 @@ static void yy_init_buffer ( YY_BUFFER_STATE b, FILE *file , yyscan_t yyscanner 
 
 YY_BUFFER_STATE yy_scan_buffer ( char *base, yy_size_t size , yyscan_t yyscanner );
 YY_BUFFER_STATE yy_scan_string ( const char *yy_str , yyscan_t yyscanner );
-YY_BUFFER_STATE yy_scan_bytes ( const char *bytes, int len , yyscan_t yyscanner );
+YY_BUFFER_STATE yy_scan_bytes ( const char *bytes, yy_size_t len , yyscan_t yyscanner );
 
 void *yyalloc ( yy_size_t , yyscan_t yyscanner );
 void *yyrealloc ( void *, yy_size_t , yyscan_t yyscanner );
@@ -354,7 +355,7 @@ static void yynoreturn yy_fatal_error ( const char* msg , yyscan_t yyscanner );
  */
 #define YY_DO_BEFORE_ACTION \
 	yyg->yytext_ptr = yy_bp; \
-	yyleng = (int) (yy_cp - yy_bp); \
+	yyleng = (yy_size_t) (yy_cp - yy_bp); \
 	yyg->yy_hold_char = *yy_cp; \
 	*yy_cp = '\0'; \
 	yyg->yy_c_buf_p = yy_cp;
@@ -552,8 +553,8 @@ static const flex_int32_t yy_rule_can_match_eol[47] =
 
 using namespace syc;
 
-#define YY_DECL yy::parser::symbol_type yylex( \
-  yyscan_t yyscanner, yy::location&loc, frontend::Driver& driver)
+#define YY_DECL frontend::Parser::symbol_type yylex( \
+  yyscan_t yyscanner, frontend::location&loc, frontend::Driver& driver)
 
 #define YY_USER_ACTION                      \
   loc.begin.line = loc.end.line = yylineno; \
@@ -561,18 +562,19 @@ using namespace syc;
   loc.end.column = yycolumn + yyleng - 1;   \
   yycolumn += yyleng;
 
-#define yyterminate() return yy::parser::make_END(loc)
+#define yyterminate() return frontend::Parser::make_END(loc)
 
 #include "frontend__generated__parser.h"
 
-using namespace yy;
+// using namespace yy;
 
-using token = yy::parser::token;
-using token_type = yy::parser::token_type;
+using frontend::Parser;
+using token = frontend::Parser::token;
+using token_type = frontend::Parser::token_type;
 
-#line 574 "frontend/generated/lexer.cpp"
+#line 575 "frontend/generated/lexer.cpp"
 
-#line 576 "frontend/generated/lexer.cpp"
+#line 577 "frontend/generated/lexer.cpp"
 
 #define INITIAL 0
 #define BLOCK_COMMENT 1
@@ -602,8 +604,8 @@ struct yyguts_t
     size_t yy_buffer_stack_max; /**< capacity of stack. */
     YY_BUFFER_STATE * yy_buffer_stack; /**< Stack as an array. */
     char yy_hold_char;
-    int yy_n_chars;
-    int yyleng_r;
+    yy_size_t yy_n_chars;
+    yy_size_t yyleng_r;
     char *yy_c_buf_p;
     int yy_init;
     int yy_start;
@@ -650,7 +652,7 @@ FILE *yyget_out ( yyscan_t yyscanner );
 
 void yyset_out  ( FILE * _out_str , yyscan_t yyscanner );
 
-			int yyget_leng ( yyscan_t yyscanner );
+			yy_size_t yyget_leng ( yyscan_t yyscanner );
 
 char *yyget_text ( yyscan_t yyscanner );
 
@@ -721,7 +723,7 @@ static int input ( yyscan_t yyscanner );
 	if ( YY_CURRENT_BUFFER_LVALUE->yy_is_interactive ) \
 		{ \
 		int c = '*'; \
-		int n; \
+		yy_size_t n; \
 		for ( n = 0; n < max_size && \
 			     (c = getc( yyin )) != EOF && c != '\n'; ++n ) \
 			buf[n] = (char) c; \
@@ -831,15 +833,15 @@ YY_DECL
 		}
 
 	{
-#line 53 "frontend/lexer.l"
+#line 54 "frontend/lexer.l"
 
 
 
-#line 57 "frontend/lexer.l"
+#line 58 "frontend/lexer.l"
   loc.step();
 
 
-#line 843 "frontend/generated/lexer.cpp"
+#line 844 "frontend/generated/lexer.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -887,7 +889,7 @@ yy_find_action:
 
 		if ( yy_act != YY_END_OF_BUFFER && yy_rule_can_match_eol[yy_act] )
 			{
-			int yyl;
+			yy_size_t yyl;
 			for ( yyl = 0; yyl < yyleng; ++yyl )
 				if ( yytext[yyl] == '\n' )
 					
@@ -910,374 +912,374 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 60 "frontend/lexer.l"
+#line 61 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('+'), loc);
+  return Parser::symbol_type(token_type('+'), loc);
 }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 65 "frontend/lexer.l"
+#line 66 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('-'), loc);
+  return Parser::symbol_type(token_type('-'), loc);
 }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 70 "frontend/lexer.l"
+#line 71 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('*'), loc);
+  return Parser::symbol_type(token_type('*'), loc);
 }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 75 "frontend/lexer.l"
+#line 76 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('/'), loc);
+  return Parser::symbol_type(token_type('/'), loc);
 }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 80 "frontend/lexer.l"
+#line 81 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('%'), loc);
+  return Parser::symbol_type(token_type('%'), loc);
 }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 85 "frontend/lexer.l"
+#line 86 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('='), loc);
+  return Parser::symbol_type(token_type('='), loc);
 }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 90 "frontend/lexer.l"
+#line 91 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('['), loc);
+  return Parser::symbol_type(token_type('['), loc);
 }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 95 "frontend/lexer.l"
+#line 96 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type(']'), loc);
+  return Parser::symbol_type(token_type(']'), loc);
 }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 100 "frontend/lexer.l"
+#line 101 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('{'), loc);
+  return Parser::symbol_type(token_type('{'), loc);
 }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 105 "frontend/lexer.l"
+#line 106 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('}'), loc);
+  return Parser::symbol_type(token_type('}'), loc);
 }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 110 "frontend/lexer.l"
+#line 111 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('('), loc);
+  return Parser::symbol_type(token_type('('), loc);
 }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 115 "frontend/lexer.l"
+#line 116 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type(')'), loc);
+  return Parser::symbol_type(token_type(')'), loc);
 }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 120 "frontend/lexer.l"
+#line 121 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('!'), loc);
+  return Parser::symbol_type(token_type('!'), loc);
 }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 125 "frontend/lexer.l"
+#line 126 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type(','), loc);
+  return Parser::symbol_type(token_type(','), loc);
 }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 130 "frontend/lexer.l"
+#line 131 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type(';'), loc);
+  return Parser::symbol_type(token_type(';'), loc);
 }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 135 "frontend/lexer.l"
+#line 136 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('>'), loc);
+  return Parser::symbol_type(token_type('>'), loc);
 }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 140 "frontend/lexer.l"
+#line 141 "frontend/lexer.l"
 {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('<'), loc);
+  return Parser::symbol_type(token_type('<'), loc);
 }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 145 "frontend/lexer.l"
+#line 146 "frontend/lexer.l"
 {
   driver.add_token("LE");
-  return parser::make_LE(loc);
+  return Parser::make_LE(loc);
 }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 150 "frontend/lexer.l"
+#line 151 "frontend/lexer.l"
 {
   driver.add_token("GE");
-  return parser::make_GE(loc);
+  return Parser::make_GE(loc);
 }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 155 "frontend/lexer.l"
+#line 156 "frontend/lexer.l"
 {
   driver.add_token("EQ");
-  return parser::make_EQ(loc);
+  return Parser::make_EQ(loc);
 }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 160 "frontend/lexer.l"
+#line 161 "frontend/lexer.l"
 {
   driver.add_token("NE");
-  return parser::make_NE(loc);
+  return Parser::make_NE(loc);
 }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 165 "frontend/lexer.l"
+#line 166 "frontend/lexer.l"
 {
   driver.add_token("LOR");
-  return parser::make_LOR(loc);
+  return Parser::make_LOR(loc);
 }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 170 "frontend/lexer.l"
+#line 171 "frontend/lexer.l"
 {
   driver.add_token("LAND");
-  return parser::make_LAND(loc);
+  return Parser::make_LAND(loc);
 }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 175 "frontend/lexer.l"
+#line 176 "frontend/lexer.l"
 {
   driver.add_token("INT");
-  return parser::make_INT(loc);
+  return Parser::make_INT(loc);
 }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 180 "frontend/lexer.l"
+#line 181 "frontend/lexer.l"
 {
   driver.add_token("FLOAT");
-  return parser::make_FLOAT(loc);
+  return Parser::make_FLOAT(loc);
 }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 185 "frontend/lexer.l"
+#line 186 "frontend/lexer.l"
 {
   driver.add_token("VOID");
-  return parser::make_VOID(loc);
+  return Parser::make_VOID(loc);
 }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 190 "frontend/lexer.l"
+#line 191 "frontend/lexer.l"
 {
   driver.add_token("CONST");
   driver.is_curr_decl_const = true;
-  return parser::make_CONST(loc);
+  return Parser::make_CONST(loc);
 }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 196 "frontend/lexer.l"
+#line 197 "frontend/lexer.l"
 {
   driver.add_token("IF");
-  return parser::make_IF(loc);
+  return Parser::make_IF(loc);
 }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 201 "frontend/lexer.l"
+#line 202 "frontend/lexer.l"
 {
   driver.add_token("ELSE");
-  return parser::make_ELSE(loc);
+  return Parser::make_ELSE(loc);
 }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 206 "frontend/lexer.l"
+#line 207 "frontend/lexer.l"
 {
   driver.add_token("RETURN");
-  return parser::make_RETURN(loc);
+  return Parser::make_RETURN(loc);
 }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 211 "frontend/lexer.l"
+#line 212 "frontend/lexer.l"
 {
   driver.add_token("BREAK");
-  return parser::make_BREAK(loc);
+  return Parser::make_BREAK(loc);
 }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 216 "frontend/lexer.l"
+#line 217 "frontend/lexer.l"
 {
   driver.add_token("CONTINUE");
-  return parser::make_CONTINUE(loc);
+  return Parser::make_CONTINUE(loc);
 }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 221 "frontend/lexer.l"
+#line 222 "frontend/lexer.l"
 {
   driver.add_token("WHILE");
-  return parser::make_WHILE(loc);
+  return Parser::make_WHILE(loc);
 }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 226 "frontend/lexer.l"
+#line 227 "frontend/lexer.l"
 {
   driver.add_token(std::string("IDENTIFIER ") + yytext);
-  return parser::make_IDENTIFIER(yytext, loc);
+  return Parser::make_IDENTIFIER(yytext, loc);
 }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 231 "frontend/lexer.l"
+#line 232 "frontend/lexer.l"
 {
   auto value = frontend::create_comptime_value(
     std::stoi(yytext, nullptr, 10), frontend::create_int_type());
 
   driver.add_token(value.to_string());
 
-  return parser::make_INTEGER(value, loc);
+  return Parser::make_INTEGER(value, loc);
 }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 240 "frontend/lexer.l"
+#line 241 "frontend/lexer.l"
 {
   auto value = frontend::create_comptime_value(
     std::stoi(yytext, nullptr, 8), frontend::create_int_type());
 
   driver.add_token(value.to_string());
   
-  return parser::make_INTEGER(value, loc);
+  return Parser::make_INTEGER(value, loc);
 }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 249 "frontend/lexer.l"
+#line 250 "frontend/lexer.l"
 {
   auto value = frontend::create_comptime_value(
     std::stoi(yytext, nullptr, 16), frontend::create_int_type());
 
   driver.add_token(value.to_string());
 
-  return parser::make_INTEGER(value, loc);
+  return Parser::make_INTEGER(value, loc);
 }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 258 "frontend/lexer.l"
+#line 259 "frontend/lexer.l"
 {
   auto value = frontend::create_comptime_value(
     std::stof(yytext, nullptr), frontend::create_float_type());
 
   driver.add_token(value.to_string());
 
-  return parser::make_FLOATING(value, loc);
+  return Parser::make_FLOATING(value, loc);
 }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 267 "frontend/lexer.l"
+#line 268 "frontend/lexer.l"
 {
   auto value = frontend::create_comptime_value(
     std::stof(yytext, nullptr), frontend::create_float_type());
 
   driver.add_token(value.to_string());
 
-  return parser::make_FLOATING(value, loc);
+  return Parser::make_FLOATING(value, loc);
 }
 	YY_BREAK
 case 40:
 /* rule 40 can match eol */
 YY_RULE_SETUP
-#line 276 "frontend/lexer.l"
+#line 277 "frontend/lexer.l"
 { yycolumn = 1; }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 277 "frontend/lexer.l"
+#line 278 "frontend/lexer.l"
 {}
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 278 "frontend/lexer.l"
+#line 279 "frontend/lexer.l"
 {}
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 279 "frontend/lexer.l"
+#line 280 "frontend/lexer.l"
 {BEGIN BLOCK_COMMENT;}
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 280 "frontend/lexer.l"
+#line 281 "frontend/lexer.l"
 {}
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 281 "frontend/lexer.l"
+#line 282 "frontend/lexer.l"
 {BEGIN INITIAL;}
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 283 "frontend/lexer.l"
+#line 284 "frontend/lexer.l"
 ECHO;
 	YY_BREAK
-#line 1281 "frontend/generated/lexer.cpp"
+#line 1282 "frontend/generated/lexer.cpp"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(BLOCK_COMMENT):
 	yyterminate();
@@ -1466,7 +1468,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 	else
 		{
-			int num_to_read =
+			yy_size_t num_to_read =
 			YY_CURRENT_BUFFER_LVALUE->yy_buf_size - number_to_move - 1;
 
 		while ( num_to_read <= 0 )
@@ -1480,7 +1482,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 			if ( b->yy_is_our_buffer )
 				{
-				int new_size = b->yy_buf_size * 2;
+				yy_size_t new_size = b->yy_buf_size * 2;
 
 				if ( new_size <= 0 )
 					b->yy_buf_size += b->yy_buf_size / 8;
@@ -1538,7 +1540,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 	if ((yyg->yy_n_chars + number_to_move) > YY_CURRENT_BUFFER_LVALUE->yy_buf_size) {
 		/* Extend the array by 50%, plus the number we really need. */
-		int new_size = yyg->yy_n_chars + number_to_move + (yyg->yy_n_chars >> 1);
+		yy_size_t new_size = yyg->yy_n_chars + number_to_move + (yyg->yy_n_chars >> 1);
 		YY_CURRENT_BUFFER_LVALUE->yy_ch_buf = (char *) yyrealloc(
 			(void *) YY_CURRENT_BUFFER_LVALUE->yy_ch_buf, (yy_size_t) new_size , yyscanner );
 		if ( ! YY_CURRENT_BUFFER_LVALUE->yy_ch_buf )
@@ -1645,7 +1647,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 		else
 			{ /* need more input */
-			int offset = (int) (yyg->yy_c_buf_p - yyg->yytext_ptr);
+			yy_size_t offset = yyg->yy_c_buf_p - yyg->yytext_ptr;
 			++yyg->yy_c_buf_p;
 
 			switch ( yy_get_next_buffer( yyscanner ) )
@@ -2030,12 +2032,12 @@ YY_BUFFER_STATE yy_scan_string (const char * yystr , yyscan_t yyscanner)
  * @param yyscanner The scanner object.
  * @return the newly allocated buffer state object.
  */
-YY_BUFFER_STATE yy_scan_bytes  (const char * yybytes, int  _yybytes_len , yyscan_t yyscanner)
+YY_BUFFER_STATE yy_scan_bytes  (const char * yybytes, yy_size_t  _yybytes_len , yyscan_t yyscanner)
 {
 	YY_BUFFER_STATE b;
 	char *buf;
 	yy_size_t n;
-	int i;
+	yy_size_t i;
     
 	/* Get memory for full buffer, including space for trailing EOB's. */
 	n = (yy_size_t) (_yybytes_len + 2);
@@ -2079,7 +2081,7 @@ static void yynoreturn yy_fatal_error (const char* msg , yyscan_t yyscanner)
 	do \
 		{ \
 		/* Undo effects of setting up yytext. */ \
-        int yyless_macro_arg = (n); \
+        yy_size_t yyless_macro_arg = (n); \
         YY_LESS_LINENO(yyless_macro_arg);\
 		yytext[yyleng] = yyg->yy_hold_char; \
 		yyg->yy_c_buf_p = yytext + yyless_macro_arg; \
@@ -2147,7 +2149,7 @@ FILE *yyget_out  (yyscan_t yyscanner)
 /** Get the length of the current token.
  * @param yyscanner The scanner object.
  */
-int yyget_leng  (yyscan_t yyscanner)
+yy_size_t yyget_leng  (yyscan_t yyscanner)
 {
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
     return yyleng;
@@ -2416,5 +2418,5 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 283 "frontend/lexer.l"
+#line 284 "frontend/lexer.l"
 

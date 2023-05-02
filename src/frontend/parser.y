@@ -13,8 +13,11 @@
 %define parse.trace
 %define parse.error verbose
 
+
 %define api.location.file "location.h"
 %define api.location.include { "frontend/generated/location.h" }
+%define api.parser.class { Parser }
+%define api.namespace { syc::frontend }
 
 %code requires {
   typedef void* yyscan_t;
@@ -28,26 +31,18 @@
 
   using namespace syc;
 
-  using AstStmtPtr = frontend::ast::StmtPtr;
-  using AstExprPtr = frontend::ast::ExprPtr;
-  using AstTypePtr = frontend::TypePtr;
-  using AstBinaryOp = frontend::BinaryOp;
-  using AstUnaryOp = frontend::UnaryOp;
-  using AstComptimeValue = frontend::ComptimeValue;
-
 }
 
 %code {
-
-  yy::parser::symbol_type yylex(
+  syc::frontend::Parser::symbol_type yylex(
     yyscan_t yyscanner, 
-    yy::location& loc, 
-    frontend::Driver& driver
+    syc::frontend::location& loc, 
+    syc::frontend::Driver& driver
   );
 }
 
-%lex-param { yyscan_t yyscanner } { yy::location& loc } { frontend::Driver& driver }
-%parse-param { yyscan_t yyscanner } { yy::location& loc } { frontend::Driver& driver }
+%lex-param { yyscan_t yyscanner } { location& loc } { Driver& driver }
+%parse-param { yyscan_t yyscanner } { location& loc } { Driver& driver }
 
 %token END 0;
 
@@ -55,29 +50,30 @@
 %token LE GE EQ NE LOR LAND
 
 %token <std::string> IDENTIFIER 
-%token <AstComptimeValue> INTEGER FLOATING
+%token <ComptimeValue> INTEGER FLOATING
 
 %token IF ELSE WHILE RETURN BREAK CONTINUE 
 %token CONST INT FLOAT VOID
 
 %start Program
 
-%type <AstStmtPtr> Stmt IfStmt WhileStmt ReturnStmt BreakStmt ExprStmt
-%type <AstStmtPtr> ContinueStmt BlankStmt DeclStmt AssignStmt BlockStmt
+%type <ast::StmtPtr> Stmt IfStmt WhileStmt ReturnStmt BreakStmt ExprStmt
+%type <ast::StmtPtr> ContinueStmt BlankStmt DeclStmt AssignStmt BlockStmt
 
-%type <std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> Def
-%type <std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>>> DefList
+%type <std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>> Def
+%type <std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>>> DefList
 
-%type <AstExprPtr> Expr AddExpr LOrExpr PrimaryExpr RelExpr MulExpr
-%type <AstExprPtr> LAndExpr EqExpr UnaryExpr LVal InitVal Cond
+%type <ast::ExprPtr> Expr AddExpr LOrExpr PrimaryExpr RelExpr MulExpr
+%type <ast::ExprPtr> LAndExpr EqExpr UnaryExpr LVal InitVal Cond
 
-%type <std::vector<AstExprPtr>> InitValList
+%type <std::vector<ast::ExprPtr>> InitValList
 
-%type <std::tuple<AstTypePtr, std::string>> FuncParam
-%type <std::vector<std::tuple<AstTypePtr, std::string>>> FuncParamList
-%type <std::vector<AstExprPtr>> FuncArgList
+%type <std::tuple<TypePtr, std::string>> FuncParam
+%type <std::vector<std::tuple<TypePtr, std::string>>> FuncParamList
+%type <std::vector<ast::ExprPtr>> FuncArgList
 
-%type <AstTypePtr> Type ArrayIndices
+%type <TypePtr> Type 
+%type <std::vector<ast::ExprPtr>> ArrayIndices
 
 %precedence THEN
 %precedence ELSE
@@ -153,16 +149,16 @@ FuncDef
 
 ExprStmt
   : Expr ';' {
-    $$ = frontend::ast::create_expr_stmt($1);
+    $$ = ast::create_expr_stmt($1);
   }
   ;
 
 DeclStmt
   : Type DefList ';' {
-    $$ = frontend::ast::create_decl_stmt(driver.curr_decl_scope, false, $2);
+    $$ = ast::create_decl_stmt(driver.curr_decl_scope, false, $2);
   }
   | CONST Type DefList ';' {
-    $$ = frontend::ast::create_decl_stmt(driver.curr_decl_scope, true, $3);
+    $$ = ast::create_decl_stmt(driver.curr_decl_scope, true, $3);
     driver.is_curr_decl_const = false;
   }
   ;
@@ -172,7 +168,7 @@ DefList
     $$ = $1;
     $$.push_back($3);
 
-    auto symbol_entry = frontend::ast::create_symbol_entry_from_decl_def(
+    auto symbol_entry = ast::create_symbol_entry_from_decl_def(
       driver.curr_decl_scope,
       driver.is_curr_decl_const,
       $3
@@ -182,7 +178,7 @@ DefList
   | Def {
     $$.push_back($1);
 
-    auto symbol_entry = frontend::ast::create_symbol_entry_from_decl_def(
+    auto symbol_entry = ast::create_symbol_entry_from_decl_def(
       driver.curr_decl_scope,
       driver.is_curr_decl_const,
       $1
@@ -196,12 +192,28 @@ Def
     $$ = std::make_tuple(driver.curr_decl_type, $1, std::nullopt);
   } 
   | IDENTIFIER ArrayIndices {
-    $$ = std::make_tuple($2, $1, std::nullopt);
+    TypePtr decl_type = driver.curr_decl_type;
+
+    auto curr_index_expr = $2.rbegin();
+    while (curr_index_expr != $2.rend()) {
+      auto maybe_decl_type = create_array_type_from_expr(
+        decl_type, *curr_index_expr);
+      if (!maybe_decl_type.has_value()) {
+        std::cerr << @2 << ":"
+                  << "Array length must be compile-time available value" 
+                  << std::endl;
+        YYABORT;
+      }
+      decl_type = maybe_decl_type.value();
+      ++curr_index_expr;
+    }
+
+    $$ = std::make_tuple(decl_type, $1, std::nullopt);
   }
   | IDENTIFIER '=' InitVal {
     auto init_val = $3;
     if (init_val->is_initializer_list()) {
-      std::get<frontend::ast::expr::InitializerList>(init_val->kind)
+      std::get<ast::expr::InitializerList>(init_val->kind)
         .set_type(driver.curr_decl_type);
     }
     $$ = std::make_tuple(
@@ -211,36 +223,37 @@ Def
     );
   }
   | IDENTIFIER ArrayIndices '=' InitVal {
+    TypePtr decl_type = driver.curr_decl_type;
+
+    auto curr_index_expr = $2.rbegin();
+    while (curr_index_expr != $2.rend()) {
+      auto maybe_decl_type = create_array_type_from_expr(
+        decl_type, *curr_index_expr);
+      if (!maybe_decl_type.has_value()) {
+        std::cerr << @2 << ":"
+                  << "Array length must be compile-time available value" 
+                  << std::endl;
+        YYABORT;
+      }
+      decl_type = maybe_decl_type.value();
+      ++curr_index_expr;
+    }
+
     auto init_val = $4;
     if (init_val->is_initializer_list()) {
-      std::get<frontend::ast::expr::InitializerList>(init_val->kind)
-        .set_type($2);
+      std::get<ast::expr::InitializerList>(init_val->kind).set_type(decl_type);
     }
-    $$ = std::make_tuple($2, $1, std::make_optional(init_val));
+    $$ = std::make_tuple(decl_type, $1, std::make_optional(init_val));
   }
   ;
 
 ArrayIndices
   : '[' Expr ']' {
-    // Get the corresponding array type from the `curr_decl_type`.
-    auto maybe_type = frontend::create_array_type_from_expr(
-      driver.curr_decl_type, std::make_optional($2));
-    if (!maybe_type.has_value()) {
-      std::cerr << @2 << ":" 
-                << "Array length must be const expression." << std::endl;
-      YYABORT;
-    }
-    $$ = maybe_type.value();
+    $$ = { $2 };
   }
   | ArrayIndices '[' Expr ']' {
-    auto maybe_type = frontend::create_array_type_from_expr(
-      $1, std::make_optional($3));
-    if (!maybe_type.has_value()) {
-      std::cerr << @3 << ":" 
-                << "Array length must be const expression." << std::endl;
-      YYABORT;
-    }
-    $$ = maybe_type.value();
+    $$ = $1;
+    $$.push_back($3);
   }
   ;
 
@@ -249,10 +262,10 @@ InitVal
     $$ = $1;
   }
   | '{' '}' {
-    $$ = frontend::ast::create_initializer_list_expr({});
+    $$ = ast::create_initializer_list_expr({});
   }
   | '{' InitValList '}' {
-    $$ = frontend::ast::create_initializer_list_expr($2);
+    $$ = ast::create_initializer_list_expr($2);
   }
   ;
 
@@ -268,37 +281,37 @@ InitValList
 
 IfStmt 
   : IF '(' Cond ')' Stmt %prec THEN {
-    $$ = frontend::ast::create_if_stmt($3, $5, std::nullopt);
+    $$ = ast::create_if_stmt($3, $5, std::nullopt);
   }
   | IF '(' Cond ')' Stmt ELSE Stmt {
-    $$ = frontend::ast::create_if_stmt($3, $5, std::make_optional($7));
+    $$ = ast::create_if_stmt($3, $5, std::make_optional($7));
   }
   ;
 
 WhileStmt 
   : WHILE '(' Cond ')' Stmt {
-    $$ = frontend::ast::create_while_stmt($3, $5);
+    $$ = ast::create_while_stmt($3, $5);
   }
   ;
 
 ReturnStmt 
   : RETURN Expr ';' {
-    $$ = frontend::ast::create_return_stmt(std::make_optional($2));
+    $$ = ast::create_return_stmt(std::make_optional($2));
   }
   | RETURN ';' {
-    $$ = frontend::ast::create_return_stmt(std::nullopt);
+    $$ = ast::create_return_stmt(std::nullopt);
   }
   ;
 
 ContinueStmt 
   : CONTINUE ';' {
-    $$ = frontend::ast::create_continue_stmt();
+    $$ = ast::create_continue_stmt();
   }
   ;
 
 BreakStmt 
   : BREAK ';' {
-    $$ = frontend::ast::create_break_stmt();
+    $$ = ast::create_break_stmt();
   }
   ;
 
@@ -311,13 +324,13 @@ BlockStmt
   }
   | '{' '}' {
     // Just ignore.
-    $$ = frontend::ast::create_blank_stmt();
+    $$ = ast::create_blank_stmt();
   }
   ;
 
 BlankStmt 
   : ';' {
-    $$ = frontend::ast::create_blank_stmt();
+    $$ = ast::create_blank_stmt();
   }
   ;
 
@@ -342,10 +355,10 @@ PrimaryExpr
     $$ = $1;
   }
   | INTEGER {
-    $$ = frontend::ast::create_constant_expr($1);
+    $$ = ast::create_constant_expr($1);
   }
   | FLOATING {
-    $$ = frontend::ast::create_constant_expr($1);
+    $$ = ast::create_constant_expr($1);
   }
   ;
 
@@ -356,18 +369,18 @@ LVal
       std::cerr << @1 << ":" << "Undefined identifier: " + $1;
       YYABORT;
     }
-    $$ = frontend::ast::create_identifier_expr(maybe_symbol_entry.value());
+    $$ = ast::create_identifier_expr(maybe_symbol_entry.value());
   }
   | LVal '[' Expr ']' {
-    $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Index, $1, $3, driver
+    $$ = ast::create_binary_expr(
+      BinaryOp::Index, $1, $3, driver
     );
   }
   ;
 
 AssignStmt
   : LVal '=' Expr ';' {
-    $$ = frontend::ast::create_assign_stmt($1, $3);
+    $$ = ast::create_assign_stmt($1, $3);
   }
   ;
 
@@ -376,16 +389,13 @@ UnaryExpr
     $$ = $1;
   }
   | '+' UnaryExpr {
-    $$ = frontend::ast::create_unary_expr(
-      frontend::UnaryOp::Pos, $2, driver);
+    $$ = ast::create_unary_expr(UnaryOp::Pos, $2, driver);
   }
   | '-' UnaryExpr {
-    $$ = frontend::ast::create_unary_expr(
-      frontend::UnaryOp::Neg, $2, driver);
+    $$ = ast::create_unary_expr(UnaryOp::Neg, $2, driver);
   }
   | '!' UnaryExpr {
-    $$ = frontend::ast::create_unary_expr(
-      frontend::UnaryOp::LogicalNot, $2, driver);
+    $$ = ast::create_unary_expr(UnaryOp::LogicalNot, $2, driver);
   }
   | IDENTIFIER '(' FuncArgList ')' {
     auto maybe_symbol_entry = driver.compunit.symtable->lookup($1);
@@ -395,12 +405,12 @@ UnaryExpr
     }
     auto maybe_func_type = maybe_symbol_entry.value()->type;
     if (
-      !std::holds_alternative<frontend::type::Function>(maybe_func_type->kind)
+      !std::holds_alternative<type::Function>(maybe_func_type->kind)
     ) {
       std::cerr << @1 << ":" << "Not a function: " + $1;
       YYABORT;
     }
-    $$ = frontend::ast::create_call_expr(
+    $$ = ast::create_call_expr(
       maybe_symbol_entry.value(), 
       $3, 
       driver
@@ -410,9 +420,9 @@ UnaryExpr
     if ($1 == "starttime" || $1 == "stoptime") {
       auto maybe_symbol_entry = driver.compunit.symtable->lookup("_sysy_" + $1);
       int lineno = @1.end.line;
-      auto lineno_expr = frontend::ast::create_constant_expr(
-        frontend::create_comptime_value(lineno, frontend::create_int_type()));
-      $$ = frontend::ast::create_call_expr(
+      auto lineno_expr = ast::create_constant_expr(
+        create_comptime_value(lineno, create_int_type()));
+      $$ = ast::create_call_expr(
         maybe_symbol_entry.value(), 
         {lineno_expr}, 
         driver
@@ -426,12 +436,12 @@ UnaryExpr
     }
     auto maybe_func_type = maybe_symbol_entry.value()->type;
     if (
-      !std::holds_alternative<frontend::type::Function>(maybe_func_type->kind)
+      !std::holds_alternative<type::Function>(maybe_func_type->kind)
     ) {
       std::cerr << @1 << ":" << "Not a function: " + $1;
       YYABORT;
     }
-    $$ = frontend::ast::create_call_expr(
+    $$ = ast::create_call_expr(
       maybe_symbol_entry.value(), 
       {}, 
       driver
@@ -444,16 +454,16 @@ MulExpr
     $$ = $1;
   }
   | MulExpr '*' UnaryExpr {
-    $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Mul, $1, $3, driver);
+    $$ = ast::create_binary_expr(
+      BinaryOp::Mul, $1, $3, driver);
   }
   | MulExpr '/' UnaryExpr {
-    $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Div, $1, $3, driver);
+    $$ = ast::create_binary_expr(
+      BinaryOp::Div, $1, $3, driver);
   }
   | MulExpr '%' UnaryExpr {
-    $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Mod, $1, $3, driver);
+    $$ = ast::create_binary_expr(
+      BinaryOp::Mod, $1, $3, driver);
   }
   ;
 
@@ -462,12 +472,12 @@ AddExpr
     $$ = $1;
   }
   | AddExpr '+' MulExpr {
-    $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Add, $1, $3, driver);
+    $$ = ast::create_binary_expr(
+      BinaryOp::Add, $1, $3, driver);
   }
   | AddExpr '-' MulExpr {
-    $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Sub, $1, $3, driver);
+    $$ = ast::create_binary_expr(
+      BinaryOp::Sub, $1, $3, driver);
   }
   ;
 
@@ -476,20 +486,20 @@ RelExpr
     $$ = $1;
   }
   | RelExpr '<' AddExpr {
-    $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Lt, $1, $3, driver);
+    $$ = ast::create_binary_expr(
+      BinaryOp::Lt, $1, $3, driver);
   }
   | RelExpr '>' AddExpr {
-    $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Gt, $1, $3, driver);
+    $$ = ast::create_binary_expr(
+      BinaryOp::Gt, $1, $3, driver);
   }
   | RelExpr LE AddExpr {
-    $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Le, $1, $3, driver);
+    $$ = ast::create_binary_expr(
+      BinaryOp::Le, $1, $3, driver);
   }
   | RelExpr GE AddExpr {
-    $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Ge, $1, $3, driver);
+    $$ = ast::create_binary_expr(
+      BinaryOp::Ge, $1, $3, driver);
   }
   ;
 
@@ -498,12 +508,12 @@ EqExpr
     $$ = $1;
   }
   | EqExpr EQ RelExpr {
-    $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Eq, $1, $3, driver);
+    $$ = ast::create_binary_expr(
+      BinaryOp::Eq, $1, $3, driver);
   }
   | EqExpr NE RelExpr {
-    $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Ne, $1, $3, driver);
+    $$ = ast::create_binary_expr(
+      BinaryOp::Ne, $1, $3, driver);
   }
   ;
 
@@ -512,8 +522,8 @@ LAndExpr
     $$ = $1;
   }
   | LAndExpr LAND EqExpr {
-    $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::LogicalAnd, $1, $3, driver);
+    $$ = ast::create_binary_expr(
+      BinaryOp::LogicalAnd, $1, $3, driver);
   }
   ;
 
@@ -522,8 +532,8 @@ LOrExpr
     $$ = $1;
   }
   | LOrExpr LOR LAndExpr {
-    $$ = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::LogicalOr, $1, $3, driver);
+    $$ = ast::create_binary_expr(
+      BinaryOp::LogicalOr, $1, $3, driver);
   }
   ;
 
@@ -551,51 +561,78 @@ FuncParam
   : Type IDENTIFIER {
     $$ = std::make_tuple($1, $2);
   }
-  | FuncParam '[' Expr ']' {
-    auto maybe_type = frontend::create_array_type_from_expr(
-      std::get<0>($1), std::make_optional($3));
+  | Type IDENTIFIER ArrayIndices {
+    TypePtr type = $1;
 
-    if (!maybe_type.has_value()) {
-      std::cerr << @3 << ":" 
-                << "Array length must be const expression." << std::endl;
-      YYABORT;
+    auto curr_index_expr = $3.rbegin();
+    while (curr_index_expr != $3.rend()) {
+      auto maybe_type = create_array_type_from_expr(
+        type, *curr_index_expr);
+      if (!maybe_type.has_value()) {
+        std::cerr << @2 << ":"
+                  << "Array length must be compile-time available value" 
+                  << std::endl;
+        YYABORT;
+      }
+      type = maybe_type.value();
+      ++curr_index_expr;
     }
 
-    auto type = maybe_type.value();
-
-    $$ = std::make_tuple(type, std::get<1>($1));
+    $$ = std::make_tuple(type, $2);
   }
-  | FuncParam '[' ']' {
-    auto type = frontend::create_array_type_from_expr(
-      std::get<0>($1), std::nullopt).value();
-    $$ = std::make_tuple(type, std::get<1>($1));
+  | Type IDENTIFIER '[' ']' ArrayIndices {
+    TypePtr type = $1;
+
+    auto curr_index_expr = $5.rbegin();
+    while (curr_index_expr != $5.rend()) {
+      auto maybe_type = create_array_type_from_expr(
+        type, *curr_index_expr);
+      if (!maybe_type.has_value()) {
+        std::cerr << @2 << ":"
+                  << "Array length must be compile-time available value" 
+                  << std::endl;
+        YYABORT;
+      }
+      type = maybe_type.value();
+      ++curr_index_expr;
+    }
+
+    type = create_array_type(type, std::nullopt);
+
+    $$ = std::make_tuple(type, $2);
   }
   ;
 
 Type
   : INT {
-    $$ = frontend::create_int_type();
+    $$ = create_int_type();
     driver.curr_decl_type = $$;
-    driver.curr_decl_scope = driver.is_curr_global() ? frontend::Scope::Global 
-                                                     : frontend::Scope::Local;
+    driver.curr_decl_scope = driver.is_curr_global() ? Scope::Global 
+                                                     : Scope::Local;
 
   }
   | FLOAT {
-    $$ = frontend::create_float_type();
+    $$ = create_float_type();
     driver.curr_decl_type = $$;
-    driver.curr_decl_scope = driver.is_curr_global() ? frontend::Scope::Global 
-                                                     : frontend::Scope::Local;
+    driver.curr_decl_scope = driver.is_curr_global() ? Scope::Global 
+                                                     : Scope::Local;
   }
   | VOID {
-    $$ = frontend::create_void_type();
+    $$ = create_void_type();
     driver.curr_decl_type = $$;
-    driver.curr_decl_scope = driver.is_curr_global() ? frontend::Scope::Global 
-                                                     : frontend::Scope::Local;
+    driver.curr_decl_scope = driver.is_curr_global() ? Scope::Global 
+                                                     : Scope::Local;
   }
   ;
 
 %%
 
-void yy::parser::error (const location_type& loc, const std::string& msg) {
+namespace syc {
+namespace frontend {
+
+void Parser::error (const location_type& loc, const std::string& msg) {
   std::cerr << loc << ": " << msg << std::endl;
 }
+
+} // namespace frontend
+} // namespace syc

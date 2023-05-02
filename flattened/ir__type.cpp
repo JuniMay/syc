@@ -17,12 +17,7 @@ std::string to_string(const Type& type) {
       [&ss](const Integer& a) { ss << "i" << a.size; },
       [&ss](const Float& a) { ss << "float"; },
       [&ss](const Array& a) {
-        if (a.length.has_value()) {
-          ss << "[" << a.length.value() << " x " << to_string(*a.element_type)
-             << "]";
-        } else {
-          ss << "[" << to_string(*a.element_type) << "]";
-        }
+        ss << "[" << a.length << " x " << to_string(*a.element_type) << "]";
       },
       [&ss](const Pointer& a) { ss << to_string(*a.value_type) << "*"; }},
     type
@@ -75,9 +70,9 @@ size_t get_size(const Type& type) {
       [](const Integer& a) -> size_t { return a.size; },
       [](const Float& a) -> size_t { return 32; },
       [](const Array& a) -> size_t {
-        return a.length.value_or(0) * get_size(*a.element_type);
+        return a.length * get_size(*a.element_type);
       },
-      [](const Pointer& a) -> size_t { return 32; }},
+      [](const Pointer& a) -> size_t { return 64; }},
     type
   );
 }

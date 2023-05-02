@@ -1,4 +1,4 @@
-// A Bison parser, made by GNU Bison 3.8.
+// A Bison parser, made by GNU Bison 3.8.2.
 
 // Skeleton implementation for Bison LALR(1) parsers in C++
 
@@ -42,16 +42,15 @@
 
 
 // Unqualified %code blocks.
-#line 40 "frontend/parser.y"
+#line 36 "frontend/parser.y"
 
-
-  yy::parser::symbol_type yylex(
+  syc::frontend::Parser::symbol_type yylex(
     yyscan_t yyscanner, 
-    yy::location& loc, 
-    frontend::Driver& driver
+    syc::frontend::location& loc, 
+    syc::frontend::Driver& driver
   );
 
-#line 55 "frontend/generated/parser.cpp"
+#line 54 "frontend/generated/parser.cpp"
 
 
 #ifndef YY_
@@ -142,11 +141,12 @@
 #define YYERROR         goto yyerrorlab
 #define YYRECOVERING()  (!!yyerrstatus_)
 
-namespace yy {
+#line 20 "frontend/parser.y"
+namespace  syc { namespace frontend  {
 #line 147 "frontend/generated/parser.cpp"
 
   /// Build a parser object.
-  parser::parser (yyscan_t yyscanner_yyarg, yy::location& loc_yyarg, frontend::Driver& driver_yyarg)
+   Parser :: Parser  (yyscan_t yyscanner_yyarg, location& loc_yyarg, Driver& driver_yyarg)
 #if YYDEBUG
     : yydebug_ (false),
       yycdebug_ (&std::cerr),
@@ -158,46 +158,46 @@ namespace yy {
       driver (driver_yyarg)
   {}
 
-  parser::~parser ()
+   Parser ::~ Parser  ()
   {}
 
-  parser::syntax_error::~syntax_error () YY_NOEXCEPT YY_NOTHROW
+   Parser ::syntax_error::~syntax_error () YY_NOEXCEPT YY_NOTHROW
   {}
 
-  /*---------------.
-  | symbol kinds.  |
-  `---------------*/
+  /*---------.
+  | symbol.  |
+  `---------*/
 
 
 
   // by_state.
-  parser::by_state::by_state () YY_NOEXCEPT
+   Parser ::by_state::by_state () YY_NOEXCEPT
     : state (empty_state)
   {}
 
-  parser::by_state::by_state (const by_state& that) YY_NOEXCEPT
+   Parser ::by_state::by_state (const by_state& that) YY_NOEXCEPT
     : state (that.state)
   {}
 
   void
-  parser::by_state::clear () YY_NOEXCEPT
+   Parser ::by_state::clear () YY_NOEXCEPT
   {
     state = empty_state;
   }
 
   void
-  parser::by_state::move (by_state& that)
+   Parser ::by_state::move (by_state& that)
   {
     state = that.state;
     that.clear ();
   }
 
-  parser::by_state::by_state (state_type s) YY_NOEXCEPT
+   Parser ::by_state::by_state (state_type s) YY_NOEXCEPT
     : state (s)
   {}
 
-  parser::symbol_kind_type
-  parser::by_state::kind () const YY_NOEXCEPT
+   Parser ::symbol_kind_type
+   Parser ::by_state::kind () const YY_NOEXCEPT
   {
     if (state == empty_state)
       return symbol_kind::S_YYEMPTY;
@@ -205,17 +205,21 @@ namespace yy {
       return YY_CAST (symbol_kind_type, yystos_[+state]);
   }
 
-  parser::stack_symbol_type::stack_symbol_type ()
+   Parser ::stack_symbol_type::stack_symbol_type ()
   {}
 
-  parser::stack_symbol_type::stack_symbol_type (YY_RVREF (stack_symbol_type) that)
+   Parser ::stack_symbol_type::stack_symbol_type (YY_RVREF (stack_symbol_type) that)
     : super_type (YY_MOVE (that.state), YY_MOVE (that.location))
   {
     switch (that.kind ())
     {
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_FLOATING: // FLOATING
-        value.YY_MOVE_OR_COPY< AstComptimeValue > (YY_MOVE (that.value));
+        value.YY_MOVE_OR_COPY< ComptimeValue > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_Type: // Type
+        value.YY_MOVE_OR_COPY< TypePtr > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_InitVal: // InitVal
@@ -230,7 +234,7 @@ namespace yy {
       case symbol_kind::S_EqExpr: // EqExpr
       case symbol_kind::S_LAndExpr: // LAndExpr
       case symbol_kind::S_LOrExpr: // LOrExpr
-        value.YY_MOVE_OR_COPY< AstExprPtr > (YY_MOVE (that.value));
+        value.YY_MOVE_OR_COPY< ast::ExprPtr > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_Stmt: // Stmt
@@ -244,12 +248,7 @@ namespace yy {
       case symbol_kind::S_BlockStmt: // BlockStmt
       case symbol_kind::S_BlankStmt: // BlankStmt
       case symbol_kind::S_AssignStmt: // AssignStmt
-        value.YY_MOVE_OR_COPY< AstStmtPtr > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_ArrayIndices: // ArrayIndices
-      case symbol_kind::S_Type: // Type
-        value.YY_MOVE_OR_COPY< AstTypePtr > (YY_MOVE (that.value));
+        value.YY_MOVE_OR_COPY< ast::StmtPtr > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
@@ -257,24 +256,25 @@ namespace yy {
         break;
 
       case symbol_kind::S_Def: // Def
-        value.YY_MOVE_OR_COPY< std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > (YY_MOVE (that.value));
+        value.YY_MOVE_OR_COPY< std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_FuncParam: // FuncParam
-        value.YY_MOVE_OR_COPY< std::tuple<AstTypePtr, std::string> > (YY_MOVE (that.value));
+        value.YY_MOVE_OR_COPY< std::tuple<TypePtr, std::string> > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_ArrayIndices: // ArrayIndices
       case symbol_kind::S_InitValList: // InitValList
       case symbol_kind::S_FuncArgList: // FuncArgList
-        value.YY_MOVE_OR_COPY< std::vector<AstExprPtr> > (YY_MOVE (that.value));
+        value.YY_MOVE_OR_COPY< std::vector<ast::ExprPtr> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_DefList: // DefList
-        value.YY_MOVE_OR_COPY< std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> > (YY_MOVE (that.value));
+        value.YY_MOVE_OR_COPY< std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_FuncParamList: // FuncParamList
-        value.YY_MOVE_OR_COPY< std::vector<std::tuple<AstTypePtr, std::string>> > (YY_MOVE (that.value));
+        value.YY_MOVE_OR_COPY< std::vector<std::tuple<TypePtr, std::string>> > (YY_MOVE (that.value));
         break;
 
       default:
@@ -287,14 +287,18 @@ namespace yy {
 #endif
   }
 
-  parser::stack_symbol_type::stack_symbol_type (state_type s, YY_MOVE_REF (symbol_type) that)
+   Parser ::stack_symbol_type::stack_symbol_type (state_type s, YY_MOVE_REF (symbol_type) that)
     : super_type (s, YY_MOVE (that.location))
   {
     switch (that.kind ())
     {
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_FLOATING: // FLOATING
-        value.move< AstComptimeValue > (YY_MOVE (that.value));
+        value.move< ComptimeValue > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_Type: // Type
+        value.move< TypePtr > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_InitVal: // InitVal
@@ -309,7 +313,7 @@ namespace yy {
       case symbol_kind::S_EqExpr: // EqExpr
       case symbol_kind::S_LAndExpr: // LAndExpr
       case symbol_kind::S_LOrExpr: // LOrExpr
-        value.move< AstExprPtr > (YY_MOVE (that.value));
+        value.move< ast::ExprPtr > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_Stmt: // Stmt
@@ -323,12 +327,7 @@ namespace yy {
       case symbol_kind::S_BlockStmt: // BlockStmt
       case symbol_kind::S_BlankStmt: // BlankStmt
       case symbol_kind::S_AssignStmt: // AssignStmt
-        value.move< AstStmtPtr > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_ArrayIndices: // ArrayIndices
-      case symbol_kind::S_Type: // Type
-        value.move< AstTypePtr > (YY_MOVE (that.value));
+        value.move< ast::StmtPtr > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
@@ -336,24 +335,25 @@ namespace yy {
         break;
 
       case symbol_kind::S_Def: // Def
-        value.move< std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > (YY_MOVE (that.value));
+        value.move< std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_FuncParam: // FuncParam
-        value.move< std::tuple<AstTypePtr, std::string> > (YY_MOVE (that.value));
+        value.move< std::tuple<TypePtr, std::string> > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_ArrayIndices: // ArrayIndices
       case symbol_kind::S_InitValList: // InitValList
       case symbol_kind::S_FuncArgList: // FuncArgList
-        value.move< std::vector<AstExprPtr> > (YY_MOVE (that.value));
+        value.move< std::vector<ast::ExprPtr> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_DefList: // DefList
-        value.move< std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> > (YY_MOVE (that.value));
+        value.move< std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_FuncParamList: // FuncParamList
-        value.move< std::vector<std::tuple<AstTypePtr, std::string>> > (YY_MOVE (that.value));
+        value.move< std::vector<std::tuple<TypePtr, std::string>> > (YY_MOVE (that.value));
         break;
 
       default:
@@ -365,15 +365,19 @@ namespace yy {
   }
 
 #if YY_CPLUSPLUS < 201103L
-  parser::stack_symbol_type&
-  parser::stack_symbol_type::operator= (const stack_symbol_type& that)
+   Parser ::stack_symbol_type&
+   Parser ::stack_symbol_type::operator= (const stack_symbol_type& that)
   {
     state = that.state;
     switch (that.kind ())
     {
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_FLOATING: // FLOATING
-        value.copy< AstComptimeValue > (that.value);
+        value.copy< ComptimeValue > (that.value);
+        break;
+
+      case symbol_kind::S_Type: // Type
+        value.copy< TypePtr > (that.value);
         break;
 
       case symbol_kind::S_InitVal: // InitVal
@@ -388,7 +392,7 @@ namespace yy {
       case symbol_kind::S_EqExpr: // EqExpr
       case symbol_kind::S_LAndExpr: // LAndExpr
       case symbol_kind::S_LOrExpr: // LOrExpr
-        value.copy< AstExprPtr > (that.value);
+        value.copy< ast::ExprPtr > (that.value);
         break;
 
       case symbol_kind::S_Stmt: // Stmt
@@ -402,12 +406,7 @@ namespace yy {
       case symbol_kind::S_BlockStmt: // BlockStmt
       case symbol_kind::S_BlankStmt: // BlankStmt
       case symbol_kind::S_AssignStmt: // AssignStmt
-        value.copy< AstStmtPtr > (that.value);
-        break;
-
-      case symbol_kind::S_ArrayIndices: // ArrayIndices
-      case symbol_kind::S_Type: // Type
-        value.copy< AstTypePtr > (that.value);
+        value.copy< ast::StmtPtr > (that.value);
         break;
 
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
@@ -415,24 +414,25 @@ namespace yy {
         break;
 
       case symbol_kind::S_Def: // Def
-        value.copy< std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > (that.value);
+        value.copy< std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > (that.value);
         break;
 
       case symbol_kind::S_FuncParam: // FuncParam
-        value.copy< std::tuple<AstTypePtr, std::string> > (that.value);
+        value.copy< std::tuple<TypePtr, std::string> > (that.value);
         break;
 
+      case symbol_kind::S_ArrayIndices: // ArrayIndices
       case symbol_kind::S_InitValList: // InitValList
       case symbol_kind::S_FuncArgList: // FuncArgList
-        value.copy< std::vector<AstExprPtr> > (that.value);
+        value.copy< std::vector<ast::ExprPtr> > (that.value);
         break;
 
       case symbol_kind::S_DefList: // DefList
-        value.copy< std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> > (that.value);
+        value.copy< std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>> > (that.value);
         break;
 
       case symbol_kind::S_FuncParamList: // FuncParamList
-        value.copy< std::vector<std::tuple<AstTypePtr, std::string>> > (that.value);
+        value.copy< std::vector<std::tuple<TypePtr, std::string>> > (that.value);
         break;
 
       default:
@@ -443,15 +443,19 @@ namespace yy {
     return *this;
   }
 
-  parser::stack_symbol_type&
-  parser::stack_symbol_type::operator= (stack_symbol_type& that)
+   Parser ::stack_symbol_type&
+   Parser ::stack_symbol_type::operator= (stack_symbol_type& that)
   {
     state = that.state;
     switch (that.kind ())
     {
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_FLOATING: // FLOATING
-        value.move< AstComptimeValue > (that.value);
+        value.move< ComptimeValue > (that.value);
+        break;
+
+      case symbol_kind::S_Type: // Type
+        value.move< TypePtr > (that.value);
         break;
 
       case symbol_kind::S_InitVal: // InitVal
@@ -466,7 +470,7 @@ namespace yy {
       case symbol_kind::S_EqExpr: // EqExpr
       case symbol_kind::S_LAndExpr: // LAndExpr
       case symbol_kind::S_LOrExpr: // LOrExpr
-        value.move< AstExprPtr > (that.value);
+        value.move< ast::ExprPtr > (that.value);
         break;
 
       case symbol_kind::S_Stmt: // Stmt
@@ -480,12 +484,7 @@ namespace yy {
       case symbol_kind::S_BlockStmt: // BlockStmt
       case symbol_kind::S_BlankStmt: // BlankStmt
       case symbol_kind::S_AssignStmt: // AssignStmt
-        value.move< AstStmtPtr > (that.value);
-        break;
-
-      case symbol_kind::S_ArrayIndices: // ArrayIndices
-      case symbol_kind::S_Type: // Type
-        value.move< AstTypePtr > (that.value);
+        value.move< ast::StmtPtr > (that.value);
         break;
 
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
@@ -493,24 +492,25 @@ namespace yy {
         break;
 
       case symbol_kind::S_Def: // Def
-        value.move< std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > (that.value);
+        value.move< std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > (that.value);
         break;
 
       case symbol_kind::S_FuncParam: // FuncParam
-        value.move< std::tuple<AstTypePtr, std::string> > (that.value);
+        value.move< std::tuple<TypePtr, std::string> > (that.value);
         break;
 
+      case symbol_kind::S_ArrayIndices: // ArrayIndices
       case symbol_kind::S_InitValList: // InitValList
       case symbol_kind::S_FuncArgList: // FuncArgList
-        value.move< std::vector<AstExprPtr> > (that.value);
+        value.move< std::vector<ast::ExprPtr> > (that.value);
         break;
 
       case symbol_kind::S_DefList: // DefList
-        value.move< std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> > (that.value);
+        value.move< std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>> > (that.value);
         break;
 
       case symbol_kind::S_FuncParamList: // FuncParamList
-        value.move< std::vector<std::tuple<AstTypePtr, std::string>> > (that.value);
+        value.move< std::vector<std::tuple<TypePtr, std::string>> > (that.value);
         break;
 
       default:
@@ -526,7 +526,7 @@ namespace yy {
 
   template <typename Base>
   void
-  parser::yy_destroy_ (const char* yymsg, basic_symbol<Base>& yysym) const
+   Parser ::yy_destroy_ (const char* yymsg, basic_symbol<Base>& yysym) const
   {
     if (yymsg)
       YY_SYMBOL_PRINT (yymsg, yysym);
@@ -535,7 +535,7 @@ namespace yy {
 #if YYDEBUG
   template <typename Base>
   void
-  parser::yy_print_ (std::ostream& yyo, const basic_symbol<Base>& yysym) const
+   Parser ::yy_print_ (std::ostream& yyo, const basic_symbol<Base>& yysym) const
   {
     std::ostream& yyoutput = yyo;
     YY_USE (yyoutput);
@@ -554,7 +554,7 @@ namespace yy {
 #endif
 
   void
-  parser::yypush_ (const char* m, YY_MOVE_REF (stack_symbol_type) sym)
+   Parser ::yypush_ (const char* m, YY_MOVE_REF (stack_symbol_type) sym)
   {
     if (m)
       YY_SYMBOL_PRINT (m, sym);
@@ -562,7 +562,7 @@ namespace yy {
   }
 
   void
-  parser::yypush_ (const char* m, state_type s, YY_MOVE_REF (symbol_type) sym)
+   Parser ::yypush_ (const char* m, state_type s, YY_MOVE_REF (symbol_type) sym)
   {
 #if 201103L <= YY_CPLUSPLUS
     yypush_ (m, stack_symbol_type (s, std::move (sym)));
@@ -573,40 +573,40 @@ namespace yy {
   }
 
   void
-  parser::yypop_ (int n)
+   Parser ::yypop_ (int n) YY_NOEXCEPT
   {
     yystack_.pop (n);
   }
 
 #if YYDEBUG
   std::ostream&
-  parser::debug_stream () const
+   Parser ::debug_stream () const
   {
     return *yycdebug_;
   }
 
   void
-  parser::set_debug_stream (std::ostream& o)
+   Parser ::set_debug_stream (std::ostream& o)
   {
     yycdebug_ = &o;
   }
 
 
-  parser::debug_level_type
-  parser::debug_level () const
+   Parser ::debug_level_type
+   Parser ::debug_level () const
   {
     return yydebug_;
   }
 
   void
-  parser::set_debug_level (debug_level_type l)
+   Parser ::set_debug_level (debug_level_type l)
   {
     yydebug_ = l;
   }
 #endif // YYDEBUG
 
-  parser::state_type
-  parser::yy_lr_goto_state_ (state_type yystate, int yysym)
+   Parser ::state_type
+   Parser ::yy_lr_goto_state_ (state_type yystate, int yysym)
   {
     int yyr = yypgoto_[yysym - YYNTOKENS] + yystate;
     if (0 <= yyr && yyr <= yylast_ && yycheck_[yyr] == yystate)
@@ -616,25 +616,25 @@ namespace yy {
   }
 
   bool
-  parser::yy_pact_value_is_default_ (int yyvalue)
+   Parser ::yy_pact_value_is_default_ (int yyvalue) YY_NOEXCEPT
   {
     return yyvalue == yypact_ninf_;
   }
 
   bool
-  parser::yy_table_value_is_error_ (int yyvalue)
+   Parser ::yy_table_value_is_error_ (int yyvalue) YY_NOEXCEPT
   {
     return yyvalue == yytable_ninf_;
   }
 
   int
-  parser::operator() ()
+   Parser ::operator() ()
   {
     return parse ();
   }
 
   int
-  parser::parse ()
+   Parser ::parse ()
   {
     int yyn;
     /// Length of the RHS of the rule being reduced.
@@ -774,7 +774,11 @@ namespace yy {
     {
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_FLOATING: // FLOATING
-        yylhs.value.emplace< AstComptimeValue > ();
+        yylhs.value.emplace< ComptimeValue > ();
+        break;
+
+      case symbol_kind::S_Type: // Type
+        yylhs.value.emplace< TypePtr > ();
         break;
 
       case symbol_kind::S_InitVal: // InitVal
@@ -789,7 +793,7 @@ namespace yy {
       case symbol_kind::S_EqExpr: // EqExpr
       case symbol_kind::S_LAndExpr: // LAndExpr
       case symbol_kind::S_LOrExpr: // LOrExpr
-        yylhs.value.emplace< AstExprPtr > ();
+        yylhs.value.emplace< ast::ExprPtr > ();
         break;
 
       case symbol_kind::S_Stmt: // Stmt
@@ -803,12 +807,7 @@ namespace yy {
       case symbol_kind::S_BlockStmt: // BlockStmt
       case symbol_kind::S_BlankStmt: // BlankStmt
       case symbol_kind::S_AssignStmt: // AssignStmt
-        yylhs.value.emplace< AstStmtPtr > ();
-        break;
-
-      case symbol_kind::S_ArrayIndices: // ArrayIndices
-      case symbol_kind::S_Type: // Type
-        yylhs.value.emplace< AstTypePtr > ();
+        yylhs.value.emplace< ast::StmtPtr > ();
         break;
 
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
@@ -816,24 +815,25 @@ namespace yy {
         break;
 
       case symbol_kind::S_Def: // Def
-        yylhs.value.emplace< std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > ();
+        yylhs.value.emplace< std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > ();
         break;
 
       case symbol_kind::S_FuncParam: // FuncParam
-        yylhs.value.emplace< std::tuple<AstTypePtr, std::string> > ();
+        yylhs.value.emplace< std::tuple<TypePtr, std::string> > ();
         break;
 
+      case symbol_kind::S_ArrayIndices: // ArrayIndices
       case symbol_kind::S_InitValList: // InitValList
       case symbol_kind::S_FuncArgList: // FuncArgList
-        yylhs.value.emplace< std::vector<AstExprPtr> > ();
+        yylhs.value.emplace< std::vector<ast::ExprPtr> > ();
         break;
 
       case symbol_kind::S_DefList: // DefList
-        yylhs.value.emplace< std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> > ();
+        yylhs.value.emplace< std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>> > ();
         break;
 
       case symbol_kind::S_FuncParamList: // FuncParamList
-        yylhs.value.emplace< std::vector<std::tuple<AstTypePtr, std::string>> > ();
+        yylhs.value.emplace< std::vector<std::tuple<TypePtr, std::string>> > ();
         break;
 
       default:
@@ -857,123 +857,123 @@ namespace yy {
           switch (yyn)
             {
   case 3: // Stmts: Stmt
-#line 93 "frontend/parser.y"
+#line 89 "frontend/parser.y"
          {
-    if (yystack_[0].value.as < AstStmtPtr > () != nullptr) {
-      driver.add_stmt(yystack_[0].value.as < AstStmtPtr > ());
+    if (yystack_[0].value.as < ast::StmtPtr > () != nullptr) {
+      driver.add_stmt(yystack_[0].value.as < ast::StmtPtr > ());
     }
   }
 #line 867 "frontend/generated/parser.cpp"
     break;
 
   case 4: // Stmts: Stmts Stmt
-#line 98 "frontend/parser.y"
+#line 94 "frontend/parser.y"
                {
-    if (yystack_[0].value.as < AstStmtPtr > () != nullptr) {
-      driver.add_stmt(yystack_[0].value.as < AstStmtPtr > ());
+    if (yystack_[0].value.as < ast::StmtPtr > () != nullptr) {
+      driver.add_stmt(yystack_[0].value.as < ast::StmtPtr > ());
     }
   }
 #line 877 "frontend/generated/parser.cpp"
     break;
 
   case 5: // Stmt: AssignStmt
-#line 106 "frontend/parser.y"
+#line 102 "frontend/parser.y"
                {
-    yylhs.value.as < AstStmtPtr > () = yystack_[0].value.as < AstStmtPtr > ();
+    yylhs.value.as < ast::StmtPtr > () = yystack_[0].value.as < ast::StmtPtr > ();
   }
 #line 885 "frontend/generated/parser.cpp"
     break;
 
   case 6: // Stmt: IfStmt
-#line 109 "frontend/parser.y"
+#line 105 "frontend/parser.y"
            {
-    yylhs.value.as < AstStmtPtr > () = yystack_[0].value.as < AstStmtPtr > ();
+    yylhs.value.as < ast::StmtPtr > () = yystack_[0].value.as < ast::StmtPtr > ();
   }
 #line 893 "frontend/generated/parser.cpp"
     break;
 
   case 7: // Stmt: WhileStmt
-#line 112 "frontend/parser.y"
+#line 108 "frontend/parser.y"
               {
-    yylhs.value.as < AstStmtPtr > () = yystack_[0].value.as < AstStmtPtr > ();
+    yylhs.value.as < ast::StmtPtr > () = yystack_[0].value.as < ast::StmtPtr > ();
   }
 #line 901 "frontend/generated/parser.cpp"
     break;
 
   case 8: // Stmt: ReturnStmt
-#line 115 "frontend/parser.y"
+#line 111 "frontend/parser.y"
                {
-    yylhs.value.as < AstStmtPtr > () = yystack_[0].value.as < AstStmtPtr > ();
+    yylhs.value.as < ast::StmtPtr > () = yystack_[0].value.as < ast::StmtPtr > ();
   }
 #line 909 "frontend/generated/parser.cpp"
     break;
 
   case 9: // Stmt: ContinueStmt
-#line 118 "frontend/parser.y"
+#line 114 "frontend/parser.y"
                  {
-    yylhs.value.as < AstStmtPtr > () = yystack_[0].value.as < AstStmtPtr > ();
+    yylhs.value.as < ast::StmtPtr > () = yystack_[0].value.as < ast::StmtPtr > ();
   }
 #line 917 "frontend/generated/parser.cpp"
     break;
 
   case 10: // Stmt: BreakStmt
-#line 121 "frontend/parser.y"
+#line 117 "frontend/parser.y"
               {
-    yylhs.value.as < AstStmtPtr > () = yystack_[0].value.as < AstStmtPtr > ();
+    yylhs.value.as < ast::StmtPtr > () = yystack_[0].value.as < ast::StmtPtr > ();
   }
 #line 925 "frontend/generated/parser.cpp"
     break;
 
   case 11: // Stmt: DeclStmt
-#line 124 "frontend/parser.y"
+#line 120 "frontend/parser.y"
              {
-    yylhs.value.as < AstStmtPtr > () = yystack_[0].value.as < AstStmtPtr > ();
+    yylhs.value.as < ast::StmtPtr > () = yystack_[0].value.as < ast::StmtPtr > ();
   }
 #line 933 "frontend/generated/parser.cpp"
     break;
 
   case 12: // Stmt: ExprStmt
-#line 127 "frontend/parser.y"
+#line 123 "frontend/parser.y"
              {
-    yylhs.value.as < AstStmtPtr > () = yystack_[0].value.as < AstStmtPtr > ();
+    yylhs.value.as < ast::StmtPtr > () = yystack_[0].value.as < ast::StmtPtr > ();
   }
 #line 941 "frontend/generated/parser.cpp"
     break;
 
   case 13: // Stmt: BlankStmt
-#line 130 "frontend/parser.y"
+#line 126 "frontend/parser.y"
               {
-    yylhs.value.as < AstStmtPtr > () = yystack_[0].value.as < AstStmtPtr > ();
+    yylhs.value.as < ast::StmtPtr > () = yystack_[0].value.as < ast::StmtPtr > ();
   }
 #line 949 "frontend/generated/parser.cpp"
     break;
 
   case 14: // Stmt: BlockStmt
-#line 133 "frontend/parser.y"
+#line 129 "frontend/parser.y"
               {
-    yylhs.value.as < AstStmtPtr > () = yystack_[0].value.as < AstStmtPtr > ();
+    yylhs.value.as < ast::StmtPtr > () = yystack_[0].value.as < ast::StmtPtr > ();
   }
 #line 957 "frontend/generated/parser.cpp"
     break;
 
   case 15: // Stmt: FuncDef
-#line 136 "frontend/parser.y"
+#line 132 "frontend/parser.y"
             {
-    yylhs.value.as < AstStmtPtr > () = nullptr;
+    yylhs.value.as < ast::StmtPtr > () = nullptr;
   }
 #line 965 "frontend/generated/parser.cpp"
     break;
 
   case 16: // $@1: %empty
-#line 142 "frontend/parser.y"
+#line 138 "frontend/parser.y"
                             {
-    driver.add_function(yystack_[3].value.as < AstTypePtr > (), yystack_[2].value.as < std::string > (), {});
+    driver.add_function(yystack_[3].value.as < TypePtr > (), yystack_[2].value.as < std::string > (), {});
   }
 #line 973 "frontend/generated/parser.cpp"
     break;
 
   case 17: // FuncDef: Type IDENTIFIER '(' ')' $@1 BlockStmt
-#line 144 "frontend/parser.y"
+#line 140 "frontend/parser.y"
               {
     driver.quit_function();
   }
@@ -981,15 +981,15 @@ namespace yy {
     break;
 
   case 18: // $@2: %empty
-#line 147 "frontend/parser.y"
+#line 143 "frontend/parser.y"
                                           {
-    driver.add_function(yystack_[4].value.as < AstTypePtr > (), yystack_[3].value.as < std::string > (), yystack_[1].value.as < std::vector<std::tuple<AstTypePtr, std::string>> > ());
+    driver.add_function(yystack_[4].value.as < TypePtr > (), yystack_[3].value.as < std::string > (), yystack_[1].value.as < std::vector<std::tuple<TypePtr, std::string>> > ());
   }
 #line 989 "frontend/generated/parser.cpp"
     break;
 
   case 19: // FuncDef: Type IDENTIFIER '(' FuncParamList ')' $@2 BlockStmt
-#line 149 "frontend/parser.y"
+#line 145 "frontend/parser.y"
               {
     driver.quit_function();
   }
@@ -997,40 +997,40 @@ namespace yy {
     break;
 
   case 20: // ExprStmt: Expr ';'
-#line 155 "frontend/parser.y"
+#line 151 "frontend/parser.y"
              {
-    yylhs.value.as < AstStmtPtr > () = frontend::ast::create_expr_stmt(yystack_[1].value.as < AstExprPtr > ());
+    yylhs.value.as < ast::StmtPtr > () = ast::create_expr_stmt(yystack_[1].value.as < ast::ExprPtr > ());
   }
 #line 1005 "frontend/generated/parser.cpp"
     break;
 
   case 21: // DeclStmt: Type DefList ';'
-#line 161 "frontend/parser.y"
+#line 157 "frontend/parser.y"
                      {
-    yylhs.value.as < AstStmtPtr > () = frontend::ast::create_decl_stmt(driver.curr_decl_scope, false, yystack_[1].value.as < std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> > ());
+    yylhs.value.as < ast::StmtPtr > () = ast::create_decl_stmt(driver.curr_decl_scope, false, yystack_[1].value.as < std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>> > ());
   }
 #line 1013 "frontend/generated/parser.cpp"
     break;
 
   case 22: // DeclStmt: CONST Type DefList ';'
-#line 164 "frontend/parser.y"
+#line 160 "frontend/parser.y"
                            {
-    yylhs.value.as < AstStmtPtr > () = frontend::ast::create_decl_stmt(driver.curr_decl_scope, true, yystack_[1].value.as < std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> > ());
+    yylhs.value.as < ast::StmtPtr > () = ast::create_decl_stmt(driver.curr_decl_scope, true, yystack_[1].value.as < std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>> > ());
     driver.is_curr_decl_const = false;
   }
 #line 1022 "frontend/generated/parser.cpp"
     break;
 
   case 23: // DefList: DefList ',' Def
-#line 171 "frontend/parser.y"
+#line 167 "frontend/parser.y"
                     {
-    yylhs.value.as < std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> > () = yystack_[2].value.as < std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> > ();
-    yylhs.value.as < std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> > ().push_back(yystack_[0].value.as < std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > ());
+    yylhs.value.as < std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>> > () = yystack_[2].value.as < std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>> > ();
+    yylhs.value.as < std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>> > ().push_back(yystack_[0].value.as < std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > ());
 
-    auto symbol_entry = frontend::ast::create_symbol_entry_from_decl_def(
+    auto symbol_entry = ast::create_symbol_entry_from_decl_def(
       driver.curr_decl_scope,
       driver.is_curr_decl_const,
-      yystack_[0].value.as < std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > ()
+      yystack_[0].value.as < std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > ()
     );
     driver.curr_symtable->add_symbol_entry(symbol_entry);
   }
@@ -1038,14 +1038,14 @@ namespace yy {
     break;
 
   case 24: // DefList: Def
-#line 182 "frontend/parser.y"
+#line 178 "frontend/parser.y"
         {
-    yylhs.value.as < std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> > ().push_back(yystack_[0].value.as < std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > ());
+    yylhs.value.as < std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>> > ().push_back(yystack_[0].value.as < std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > ());
 
-    auto symbol_entry = frontend::ast::create_symbol_entry_from_decl_def(
+    auto symbol_entry = ast::create_symbol_entry_from_decl_def(
       driver.curr_decl_scope,
       driver.is_curr_decl_const,
-      yystack_[0].value.as < std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > ()
+      yystack_[0].value.as < std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > ()
     );
     driver.curr_symtable->add_symbol_entry(symbol_entry);
   }
@@ -1053,329 +1053,343 @@ namespace yy {
     break;
 
   case 25: // Def: IDENTIFIER
-#line 195 "frontend/parser.y"
+#line 191 "frontend/parser.y"
                {
-    yylhs.value.as < std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > () = std::make_tuple(driver.curr_decl_type, yystack_[0].value.as < std::string > (), std::nullopt);
+    yylhs.value.as < std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > () = std::make_tuple(driver.curr_decl_type, yystack_[0].value.as < std::string > (), std::nullopt);
   }
 #line 1061 "frontend/generated/parser.cpp"
     break;
 
   case 26: // Def: IDENTIFIER ArrayIndices
-#line 198 "frontend/parser.y"
+#line 194 "frontend/parser.y"
                             {
-    yylhs.value.as < std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > () = std::make_tuple(yystack_[0].value.as < AstTypePtr > (), yystack_[1].value.as < std::string > (), std::nullopt);
+    TypePtr decl_type = driver.curr_decl_type;
+
+    auto curr_index_expr = yystack_[0].value.as < std::vector<ast::ExprPtr> > ().rbegin();
+    while (curr_index_expr != yystack_[0].value.as < std::vector<ast::ExprPtr> > ().rend()) {
+      auto maybe_decl_type = create_array_type_from_expr(
+        decl_type, *curr_index_expr);
+      if (!maybe_decl_type.has_value()) {
+        std::cerr << yystack_[0].location << ":"
+                  << "Array length must be compile-time available value" 
+                  << std::endl;
+        YYABORT;
+      }
+      decl_type = maybe_decl_type.value();
+      ++curr_index_expr;
+    }
+
+    yylhs.value.as < std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > () = std::make_tuple(decl_type, yystack_[1].value.as < std::string > (), std::nullopt);
   }
-#line 1069 "frontend/generated/parser.cpp"
+#line 1085 "frontend/generated/parser.cpp"
     break;
 
   case 27: // Def: IDENTIFIER '=' InitVal
-#line 201 "frontend/parser.y"
+#line 213 "frontend/parser.y"
                            {
-    auto init_val = yystack_[0].value.as < AstExprPtr > ();
+    auto init_val = yystack_[0].value.as < ast::ExprPtr > ();
     if (init_val->is_initializer_list()) {
-      std::get<frontend::ast::expr::InitializerList>(init_val->kind)
+      std::get<ast::expr::InitializerList>(init_val->kind)
         .set_type(driver.curr_decl_type);
     }
-    yylhs.value.as < std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > () = std::make_tuple(
+    yylhs.value.as < std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > () = std::make_tuple(
       driver.curr_decl_type, 
       yystack_[2].value.as < std::string > (), 
       std::make_optional(init_val)
     );
   }
-#line 1086 "frontend/generated/parser.cpp"
+#line 1102 "frontend/generated/parser.cpp"
     break;
 
   case 28: // Def: IDENTIFIER ArrayIndices '=' InitVal
-#line 213 "frontend/parser.y"
+#line 225 "frontend/parser.y"
                                         {
-    auto init_val = yystack_[0].value.as < AstExprPtr > ();
+    TypePtr decl_type = driver.curr_decl_type;
+
+    auto curr_index_expr = yystack_[2].value.as < std::vector<ast::ExprPtr> > ().rbegin();
+    while (curr_index_expr != yystack_[2].value.as < std::vector<ast::ExprPtr> > ().rend()) {
+      auto maybe_decl_type = create_array_type_from_expr(
+        decl_type, *curr_index_expr);
+      if (!maybe_decl_type.has_value()) {
+        std::cerr << yystack_[2].location << ":"
+                  << "Array length must be compile-time available value" 
+                  << std::endl;
+        YYABORT;
+      }
+      decl_type = maybe_decl_type.value();
+      ++curr_index_expr;
+    }
+
+    auto init_val = yystack_[0].value.as < ast::ExprPtr > ();
     if (init_val->is_initializer_list()) {
-      std::get<frontend::ast::expr::InitializerList>(init_val->kind)
-        .set_type(yystack_[2].value.as < AstTypePtr > ());
+      std::get<ast::expr::InitializerList>(init_val->kind).set_type(decl_type);
     }
-    yylhs.value.as < std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > () = std::make_tuple(yystack_[2].value.as < AstTypePtr > (), yystack_[3].value.as < std::string > (), std::make_optional(init_val));
-  }
-#line 1099 "frontend/generated/parser.cpp"
-    break;
-
-  case 29: // ArrayIndices: '[' Expr ']'
-#line 224 "frontend/parser.y"
-                 {
-    // Get the corresponding array type from the `curr_decl_type`.
-    auto maybe_type = frontend::create_array_type_from_expr(
-      driver.curr_decl_type, std::make_optional(yystack_[1].value.as < AstExprPtr > ()));
-    if (!maybe_type.has_value()) {
-      std::cerr << yystack_[1].location << ":" 
-                << "Array size must be const expression." << std::endl;
-      YYABORT;
-    }
-    yylhs.value.as < AstTypePtr > () = maybe_type.value();
-  }
-#line 1115 "frontend/generated/parser.cpp"
-    break;
-
-  case 30: // ArrayIndices: ArrayIndices '[' Expr ']'
-#line 235 "frontend/parser.y"
-                              {
-    auto maybe_type = frontend::create_array_type_from_expr(
-      yystack_[3].value.as < AstTypePtr > (), std::make_optional(yystack_[1].value.as < AstExprPtr > ()));
-    if (!maybe_type.has_value()) {
-      std::cerr << yystack_[1].location << ":" 
-                << "Array size must be const expression." << std::endl;
-      YYABORT;
-    }
-    yylhs.value.as < AstTypePtr > () = maybe_type.value();
+    yylhs.value.as < std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > () = std::make_tuple(decl_type, yystack_[3].value.as < std::string > (), std::make_optional(init_val));
   }
 #line 1130 "frontend/generated/parser.cpp"
     break;
 
-  case 31: // InitVal: Expr
-#line 248 "frontend/parser.y"
-         {
-    yylhs.value.as < AstExprPtr > () = yystack_[0].value.as < AstExprPtr > ();
+  case 29: // ArrayIndices: '[' Expr ']'
+#line 251 "frontend/parser.y"
+                 {
+    yylhs.value.as < std::vector<ast::ExprPtr> > () = { yystack_[1].value.as < ast::ExprPtr > () };
   }
 #line 1138 "frontend/generated/parser.cpp"
     break;
 
-  case 32: // InitVal: '{' '}'
-#line 251 "frontend/parser.y"
-            {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_initializer_list_expr({});
+  case 30: // ArrayIndices: ArrayIndices '[' Expr ']'
+#line 254 "frontend/parser.y"
+                              {
+    yylhs.value.as < std::vector<ast::ExprPtr> > () = yystack_[3].value.as < std::vector<ast::ExprPtr> > ();
+    yylhs.value.as < std::vector<ast::ExprPtr> > ().push_back(yystack_[1].value.as < ast::ExprPtr > ());
   }
-#line 1146 "frontend/generated/parser.cpp"
+#line 1147 "frontend/generated/parser.cpp"
+    break;
+
+  case 31: // InitVal: Expr
+#line 261 "frontend/parser.y"
+         {
+    yylhs.value.as < ast::ExprPtr > () = yystack_[0].value.as < ast::ExprPtr > ();
+  }
+#line 1155 "frontend/generated/parser.cpp"
+    break;
+
+  case 32: // InitVal: '{' '}'
+#line 264 "frontend/parser.y"
+            {
+    yylhs.value.as < ast::ExprPtr > () = ast::create_initializer_list_expr({});
+  }
+#line 1163 "frontend/generated/parser.cpp"
     break;
 
   case 33: // InitVal: '{' InitValList '}'
-#line 254 "frontend/parser.y"
+#line 267 "frontend/parser.y"
                         {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_initializer_list_expr(yystack_[1].value.as < std::vector<AstExprPtr> > ());
-  }
-#line 1154 "frontend/generated/parser.cpp"
-    break;
-
-  case 34: // InitValList: InitVal
-#line 260 "frontend/parser.y"
-            {
-    yylhs.value.as < std::vector<AstExprPtr> > ().push_back(yystack_[0].value.as < AstExprPtr > ());
-  }
-#line 1162 "frontend/generated/parser.cpp"
-    break;
-
-  case 35: // InitValList: InitValList ',' InitVal
-#line 263 "frontend/parser.y"
-                            {
-    yylhs.value.as < std::vector<AstExprPtr> > () = yystack_[2].value.as < std::vector<AstExprPtr> > ();
-    yylhs.value.as < std::vector<AstExprPtr> > ().push_back(yystack_[0].value.as < AstExprPtr > ());
+    yylhs.value.as < ast::ExprPtr > () = ast::create_initializer_list_expr(yystack_[1].value.as < std::vector<ast::ExprPtr> > ());
   }
 #line 1171 "frontend/generated/parser.cpp"
     break;
 
-  case 36: // IfStmt: IF '(' Cond ')' Stmt
-#line 270 "frontend/parser.y"
-                                    {
-    yylhs.value.as < AstStmtPtr > () = frontend::ast::create_if_stmt(yystack_[2].value.as < AstExprPtr > (), yystack_[0].value.as < AstStmtPtr > (), std::nullopt);
+  case 34: // InitValList: InitVal
+#line 273 "frontend/parser.y"
+            {
+    yylhs.value.as < std::vector<ast::ExprPtr> > ().push_back(yystack_[0].value.as < ast::ExprPtr > ());
   }
 #line 1179 "frontend/generated/parser.cpp"
     break;
 
-  case 37: // IfStmt: IF '(' Cond ')' Stmt ELSE Stmt
-#line 273 "frontend/parser.y"
-                                   {
-    yylhs.value.as < AstStmtPtr > () = frontend::ast::create_if_stmt(yystack_[4].value.as < AstExprPtr > (), yystack_[2].value.as < AstStmtPtr > (), std::make_optional(yystack_[0].value.as < AstStmtPtr > ()));
+  case 35: // InitValList: InitValList ',' InitVal
+#line 276 "frontend/parser.y"
+                            {
+    yylhs.value.as < std::vector<ast::ExprPtr> > () = yystack_[2].value.as < std::vector<ast::ExprPtr> > ();
+    yylhs.value.as < std::vector<ast::ExprPtr> > ().push_back(yystack_[0].value.as < ast::ExprPtr > ());
   }
-#line 1187 "frontend/generated/parser.cpp"
+#line 1188 "frontend/generated/parser.cpp"
+    break;
+
+  case 36: // IfStmt: IF '(' Cond ')' Stmt
+#line 283 "frontend/parser.y"
+                                    {
+    yylhs.value.as < ast::StmtPtr > () = ast::create_if_stmt(yystack_[2].value.as < ast::ExprPtr > (), yystack_[0].value.as < ast::StmtPtr > (), std::nullopt);
+  }
+#line 1196 "frontend/generated/parser.cpp"
+    break;
+
+  case 37: // IfStmt: IF '(' Cond ')' Stmt ELSE Stmt
+#line 286 "frontend/parser.y"
+                                   {
+    yylhs.value.as < ast::StmtPtr > () = ast::create_if_stmt(yystack_[4].value.as < ast::ExprPtr > (), yystack_[2].value.as < ast::StmtPtr > (), std::make_optional(yystack_[0].value.as < ast::StmtPtr > ()));
+  }
+#line 1204 "frontend/generated/parser.cpp"
     break;
 
   case 38: // WhileStmt: WHILE '(' Cond ')' Stmt
-#line 279 "frontend/parser.y"
+#line 292 "frontend/parser.y"
                             {
-    yylhs.value.as < AstStmtPtr > () = frontend::ast::create_while_stmt(yystack_[2].value.as < AstExprPtr > (), yystack_[0].value.as < AstStmtPtr > ());
+    yylhs.value.as < ast::StmtPtr > () = ast::create_while_stmt(yystack_[2].value.as < ast::ExprPtr > (), yystack_[0].value.as < ast::StmtPtr > ());
   }
-#line 1195 "frontend/generated/parser.cpp"
+#line 1212 "frontend/generated/parser.cpp"
     break;
 
   case 39: // ReturnStmt: RETURN Expr ';'
-#line 285 "frontend/parser.y"
+#line 298 "frontend/parser.y"
                     {
-    yylhs.value.as < AstStmtPtr > () = frontend::ast::create_return_stmt(std::make_optional(yystack_[1].value.as < AstExprPtr > ()));
+    yylhs.value.as < ast::StmtPtr > () = ast::create_return_stmt(std::make_optional(yystack_[1].value.as < ast::ExprPtr > ()));
   }
-#line 1203 "frontend/generated/parser.cpp"
+#line 1220 "frontend/generated/parser.cpp"
     break;
 
   case 40: // ReturnStmt: RETURN ';'
-#line 288 "frontend/parser.y"
+#line 301 "frontend/parser.y"
                {
-    yylhs.value.as < AstStmtPtr > () = frontend::ast::create_return_stmt(std::nullopt);
+    yylhs.value.as < ast::StmtPtr > () = ast::create_return_stmt(std::nullopt);
   }
-#line 1211 "frontend/generated/parser.cpp"
+#line 1228 "frontend/generated/parser.cpp"
     break;
 
   case 41: // ContinueStmt: CONTINUE ';'
-#line 294 "frontend/parser.y"
+#line 307 "frontend/parser.y"
                  {
-    yylhs.value.as < AstStmtPtr > () = frontend::ast::create_continue_stmt();
+    yylhs.value.as < ast::StmtPtr > () = ast::create_continue_stmt();
   }
-#line 1219 "frontend/generated/parser.cpp"
+#line 1236 "frontend/generated/parser.cpp"
     break;
 
   case 42: // BreakStmt: BREAK ';'
-#line 300 "frontend/parser.y"
+#line 313 "frontend/parser.y"
               {
-    yylhs.value.as < AstStmtPtr > () = frontend::ast::create_break_stmt();
-  }
-#line 1227 "frontend/generated/parser.cpp"
-    break;
-
-  case 43: // $@3: %empty
-#line 306 "frontend/parser.y"
-        {
-    driver.add_block();
-  }
-#line 1235 "frontend/generated/parser.cpp"
-    break;
-
-  case 44: // BlockStmt: '{' $@3 Stmts '}'
-#line 308 "frontend/parser.y"
-              {
-    yylhs.value.as < AstStmtPtr > () = driver.curr_block;
-    driver.quit_block();
+    yylhs.value.as < ast::StmtPtr > () = ast::create_break_stmt();
   }
 #line 1244 "frontend/generated/parser.cpp"
     break;
 
-  case 45: // BlockStmt: '{' '}'
-#line 312 "frontend/parser.y"
-            {
-    // Just ignore.
-    yylhs.value.as < AstStmtPtr > () = frontend::ast::create_blank_stmt();
-  }
-#line 1253 "frontend/generated/parser.cpp"
-    break;
-
-  case 46: // BlankStmt: ';'
+  case 43: // $@3: %empty
 #line 319 "frontend/parser.y"
         {
-    yylhs.value.as < AstStmtPtr > () = frontend::ast::create_blank_stmt();
+    driver.add_block();
+  }
+#line 1252 "frontend/generated/parser.cpp"
+    break;
+
+  case 44: // BlockStmt: '{' $@3 Stmts '}'
+#line 321 "frontend/parser.y"
+              {
+    yylhs.value.as < ast::StmtPtr > () = driver.curr_block;
+    driver.quit_block();
   }
 #line 1261 "frontend/generated/parser.cpp"
     break;
 
-  case 47: // Expr: AddExpr
-#line 326 "frontend/parser.y"
+  case 45: // BlockStmt: '{' '}'
+#line 325 "frontend/parser.y"
             {
-    yylhs.value.as < AstExprPtr > () = yystack_[0].value.as < AstExprPtr > ();
+    // Just ignore.
+    yylhs.value.as < ast::StmtPtr > () = ast::create_blank_stmt();
   }
-#line 1269 "frontend/generated/parser.cpp"
+#line 1270 "frontend/generated/parser.cpp"
+    break;
+
+  case 46: // BlankStmt: ';'
+#line 332 "frontend/parser.y"
+        {
+    yylhs.value.as < ast::StmtPtr > () = ast::create_blank_stmt();
+  }
+#line 1278 "frontend/generated/parser.cpp"
+    break;
+
+  case 47: // Expr: AddExpr
+#line 339 "frontend/parser.y"
+            {
+    yylhs.value.as < ast::ExprPtr > () = yystack_[0].value.as < ast::ExprPtr > ();
+  }
+#line 1286 "frontend/generated/parser.cpp"
     break;
 
   case 48: // Cond: LOrExpr
-#line 332 "frontend/parser.y"
+#line 345 "frontend/parser.y"
             {
-    yylhs.value.as < AstExprPtr > () = yystack_[0].value.as < AstExprPtr > ();
+    yylhs.value.as < ast::ExprPtr > () = yystack_[0].value.as < ast::ExprPtr > ();
   }
-#line 1277 "frontend/generated/parser.cpp"
+#line 1294 "frontend/generated/parser.cpp"
     break;
 
   case 49: // PrimaryExpr: '(' Expr ')'
-#line 338 "frontend/parser.y"
+#line 351 "frontend/parser.y"
                  {
-    yylhs.value.as < AstExprPtr > () = yystack_[1].value.as < AstExprPtr > ();
+    yylhs.value.as < ast::ExprPtr > () = yystack_[1].value.as < ast::ExprPtr > ();
   }
-#line 1285 "frontend/generated/parser.cpp"
+#line 1302 "frontend/generated/parser.cpp"
     break;
 
   case 50: // PrimaryExpr: LVal
-#line 341 "frontend/parser.y"
+#line 354 "frontend/parser.y"
          {
-    yylhs.value.as < AstExprPtr > () = yystack_[0].value.as < AstExprPtr > ();
+    yylhs.value.as < ast::ExprPtr > () = yystack_[0].value.as < ast::ExprPtr > ();
   }
-#line 1293 "frontend/generated/parser.cpp"
+#line 1310 "frontend/generated/parser.cpp"
     break;
 
   case 51: // PrimaryExpr: INTEGER
-#line 344 "frontend/parser.y"
+#line 357 "frontend/parser.y"
             {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_constant_expr(yystack_[0].value.as < AstComptimeValue > ());
+    yylhs.value.as < ast::ExprPtr > () = ast::create_constant_expr(yystack_[0].value.as < ComptimeValue > ());
   }
-#line 1301 "frontend/generated/parser.cpp"
+#line 1318 "frontend/generated/parser.cpp"
     break;
 
   case 52: // PrimaryExpr: FLOATING
-#line 347 "frontend/parser.y"
+#line 360 "frontend/parser.y"
              {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_constant_expr(yystack_[0].value.as < AstComptimeValue > ());
+    yylhs.value.as < ast::ExprPtr > () = ast::create_constant_expr(yystack_[0].value.as < ComptimeValue > ());
   }
-#line 1309 "frontend/generated/parser.cpp"
+#line 1326 "frontend/generated/parser.cpp"
     break;
 
   case 53: // LVal: IDENTIFIER
-#line 353 "frontend/parser.y"
+#line 366 "frontend/parser.y"
                {
     auto maybe_symbol_entry = driver.curr_symtable->lookup(yystack_[0].value.as < std::string > ());
     if (!maybe_symbol_entry.has_value()) {
       std::cerr << yystack_[0].location << ":" << "Undefined identifier: " + yystack_[0].value.as < std::string > ();
       YYABORT;
     }
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_identifier_expr(maybe_symbol_entry.value());
+    yylhs.value.as < ast::ExprPtr > () = ast::create_identifier_expr(maybe_symbol_entry.value());
   }
-#line 1322 "frontend/generated/parser.cpp"
+#line 1339 "frontend/generated/parser.cpp"
     break;
 
   case 54: // LVal: LVal '[' Expr ']'
-#line 361 "frontend/parser.y"
+#line 374 "frontend/parser.y"
                       {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Index, yystack_[3].value.as < AstExprPtr > (), yystack_[1].value.as < AstExprPtr > (), driver
+    yylhs.value.as < ast::ExprPtr > () = ast::create_binary_expr(
+      BinaryOp::Index, yystack_[3].value.as < ast::ExprPtr > (), yystack_[1].value.as < ast::ExprPtr > (), driver
     );
   }
-#line 1332 "frontend/generated/parser.cpp"
+#line 1349 "frontend/generated/parser.cpp"
     break;
 
   case 55: // AssignStmt: LVal '=' Expr ';'
-#line 369 "frontend/parser.y"
+#line 382 "frontend/parser.y"
                       {
-    yylhs.value.as < AstStmtPtr > () = frontend::ast::create_assign_stmt(yystack_[3].value.as < AstExprPtr > (), yystack_[1].value.as < AstExprPtr > ());
-  }
-#line 1340 "frontend/generated/parser.cpp"
-    break;
-
-  case 56: // UnaryExpr: PrimaryExpr
-#line 375 "frontend/parser.y"
-                {
-    yylhs.value.as < AstExprPtr > () = yystack_[0].value.as < AstExprPtr > ();
-  }
-#line 1348 "frontend/generated/parser.cpp"
-    break;
-
-  case 57: // UnaryExpr: '+' UnaryExpr
-#line 378 "frontend/parser.y"
-                  {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_unary_expr(
-      frontend::UnaryOp::Pos, yystack_[0].value.as < AstExprPtr > (), driver);
+    yylhs.value.as < ast::StmtPtr > () = ast::create_assign_stmt(yystack_[3].value.as < ast::ExprPtr > (), yystack_[1].value.as < ast::ExprPtr > ());
   }
 #line 1357 "frontend/generated/parser.cpp"
     break;
 
-  case 58: // UnaryExpr: '-' UnaryExpr
-#line 382 "frontend/parser.y"
-                  {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_unary_expr(
-      frontend::UnaryOp::Neg, yystack_[0].value.as < AstExprPtr > (), driver);
+  case 56: // UnaryExpr: PrimaryExpr
+#line 388 "frontend/parser.y"
+                {
+    yylhs.value.as < ast::ExprPtr > () = yystack_[0].value.as < ast::ExprPtr > ();
   }
-#line 1366 "frontend/generated/parser.cpp"
+#line 1365 "frontend/generated/parser.cpp"
+    break;
+
+  case 57: // UnaryExpr: '+' UnaryExpr
+#line 391 "frontend/parser.y"
+                  {
+    yylhs.value.as < ast::ExprPtr > () = ast::create_unary_expr(UnaryOp::Pos, yystack_[0].value.as < ast::ExprPtr > (), driver);
+  }
+#line 1373 "frontend/generated/parser.cpp"
+    break;
+
+  case 58: // UnaryExpr: '-' UnaryExpr
+#line 394 "frontend/parser.y"
+                  {
+    yylhs.value.as < ast::ExprPtr > () = ast::create_unary_expr(UnaryOp::Neg, yystack_[0].value.as < ast::ExprPtr > (), driver);
+  }
+#line 1381 "frontend/generated/parser.cpp"
     break;
 
   case 59: // UnaryExpr: '!' UnaryExpr
-#line 386 "frontend/parser.y"
+#line 397 "frontend/parser.y"
                   {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_unary_expr(
-      frontend::UnaryOp::LogicalNot, yystack_[0].value.as < AstExprPtr > (), driver);
+    yylhs.value.as < ast::ExprPtr > () = ast::create_unary_expr(UnaryOp::LogicalNot, yystack_[0].value.as < ast::ExprPtr > (), driver);
   }
-#line 1375 "frontend/generated/parser.cpp"
+#line 1389 "frontend/generated/parser.cpp"
     break;
 
   case 60: // UnaryExpr: IDENTIFIER '(' FuncArgList ')'
-#line 390 "frontend/parser.y"
+#line 400 "frontend/parser.y"
                                    {
     auto maybe_symbol_entry = driver.compunit.symtable->lookup(yystack_[3].value.as < std::string > ());
     if (!maybe_symbol_entry.has_value()) {
@@ -1384,29 +1398,29 @@ namespace yy {
     }
     auto maybe_func_type = maybe_symbol_entry.value()->type;
     if (
-      !std::holds_alternative<frontend::type::Function>(maybe_func_type->kind)
+      !std::holds_alternative<type::Function>(maybe_func_type->kind)
     ) {
       std::cerr << yystack_[3].location << ":" << "Not a function: " + yystack_[3].value.as < std::string > ();
       YYABORT;
     }
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_call_expr(
+    yylhs.value.as < ast::ExprPtr > () = ast::create_call_expr(
       maybe_symbol_entry.value(), 
-      yystack_[1].value.as < std::vector<AstExprPtr> > (), 
+      yystack_[1].value.as < std::vector<ast::ExprPtr> > (), 
       driver
     );
   }
-#line 1399 "frontend/generated/parser.cpp"
+#line 1413 "frontend/generated/parser.cpp"
     break;
 
   case 61: // UnaryExpr: IDENTIFIER '(' ')'
-#line 409 "frontend/parser.y"
+#line 419 "frontend/parser.y"
                        {
     if (yystack_[2].value.as < std::string > () == "starttime" || yystack_[2].value.as < std::string > () == "stoptime") {
       auto maybe_symbol_entry = driver.compunit.symtable->lookup("_sysy_" + yystack_[2].value.as < std::string > ());
       int lineno = yystack_[2].location.end.line;
-      auto lineno_expr = frontend::ast::create_constant_expr(
-        frontend::create_comptime_value(lineno, frontend::create_int_type()));
-      yylhs.value.as < AstExprPtr > () = frontend::ast::create_call_expr(
+      auto lineno_expr = ast::create_constant_expr(
+        create_comptime_value(lineno, create_int_type()));
+      yylhs.value.as < ast::ExprPtr > () = ast::create_call_expr(
         maybe_symbol_entry.value(), 
         {lineno_expr}, 
         driver
@@ -1420,291 +1434,313 @@ namespace yy {
     }
     auto maybe_func_type = maybe_symbol_entry.value()->type;
     if (
-      !std::holds_alternative<frontend::type::Function>(maybe_func_type->kind)
+      !std::holds_alternative<type::Function>(maybe_func_type->kind)
     ) {
       std::cerr << yystack_[2].location << ":" << "Not a function: " + yystack_[2].value.as < std::string > ();
       YYABORT;
     }
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_call_expr(
+    yylhs.value.as < ast::ExprPtr > () = ast::create_call_expr(
       maybe_symbol_entry.value(), 
       {}, 
       driver
     );
   }
-#line 1435 "frontend/generated/parser.cpp"
+#line 1449 "frontend/generated/parser.cpp"
     break;
 
   case 62: // MulExpr: UnaryExpr
-#line 443 "frontend/parser.y"
+#line 453 "frontend/parser.y"
               {
-    yylhs.value.as < AstExprPtr > () = yystack_[0].value.as < AstExprPtr > ();
+    yylhs.value.as < ast::ExprPtr > () = yystack_[0].value.as < ast::ExprPtr > ();
   }
-#line 1443 "frontend/generated/parser.cpp"
+#line 1457 "frontend/generated/parser.cpp"
     break;
 
   case 63: // MulExpr: MulExpr '*' UnaryExpr
-#line 446 "frontend/parser.y"
+#line 456 "frontend/parser.y"
                           {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Mul, yystack_[2].value.as < AstExprPtr > (), yystack_[0].value.as < AstExprPtr > (), driver);
+    yylhs.value.as < ast::ExprPtr > () = ast::create_binary_expr(
+      BinaryOp::Mul, yystack_[2].value.as < ast::ExprPtr > (), yystack_[0].value.as < ast::ExprPtr > (), driver);
   }
-#line 1452 "frontend/generated/parser.cpp"
+#line 1466 "frontend/generated/parser.cpp"
     break;
 
   case 64: // MulExpr: MulExpr '/' UnaryExpr
-#line 450 "frontend/parser.y"
+#line 460 "frontend/parser.y"
                           {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Div, yystack_[2].value.as < AstExprPtr > (), yystack_[0].value.as < AstExprPtr > (), driver);
+    yylhs.value.as < ast::ExprPtr > () = ast::create_binary_expr(
+      BinaryOp::Div, yystack_[2].value.as < ast::ExprPtr > (), yystack_[0].value.as < ast::ExprPtr > (), driver);
   }
-#line 1461 "frontend/generated/parser.cpp"
+#line 1475 "frontend/generated/parser.cpp"
     break;
 
   case 65: // MulExpr: MulExpr '%' UnaryExpr
-#line 454 "frontend/parser.y"
+#line 464 "frontend/parser.y"
                           {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Mod, yystack_[2].value.as < AstExprPtr > (), yystack_[0].value.as < AstExprPtr > (), driver);
+    yylhs.value.as < ast::ExprPtr > () = ast::create_binary_expr(
+      BinaryOp::Mod, yystack_[2].value.as < ast::ExprPtr > (), yystack_[0].value.as < ast::ExprPtr > (), driver);
   }
-#line 1470 "frontend/generated/parser.cpp"
+#line 1484 "frontend/generated/parser.cpp"
     break;
 
   case 66: // AddExpr: MulExpr
-#line 461 "frontend/parser.y"
+#line 471 "frontend/parser.y"
             {
-    yylhs.value.as < AstExprPtr > () = yystack_[0].value.as < AstExprPtr > ();
+    yylhs.value.as < ast::ExprPtr > () = yystack_[0].value.as < ast::ExprPtr > ();
   }
-#line 1478 "frontend/generated/parser.cpp"
+#line 1492 "frontend/generated/parser.cpp"
     break;
 
   case 67: // AddExpr: AddExpr '+' MulExpr
-#line 464 "frontend/parser.y"
+#line 474 "frontend/parser.y"
                         {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Add, yystack_[2].value.as < AstExprPtr > (), yystack_[0].value.as < AstExprPtr > (), driver);
+    yylhs.value.as < ast::ExprPtr > () = ast::create_binary_expr(
+      BinaryOp::Add, yystack_[2].value.as < ast::ExprPtr > (), yystack_[0].value.as < ast::ExprPtr > (), driver);
   }
-#line 1487 "frontend/generated/parser.cpp"
+#line 1501 "frontend/generated/parser.cpp"
     break;
 
   case 68: // AddExpr: AddExpr '-' MulExpr
-#line 468 "frontend/parser.y"
+#line 478 "frontend/parser.y"
                         {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Sub, yystack_[2].value.as < AstExprPtr > (), yystack_[0].value.as < AstExprPtr > (), driver);
+    yylhs.value.as < ast::ExprPtr > () = ast::create_binary_expr(
+      BinaryOp::Sub, yystack_[2].value.as < ast::ExprPtr > (), yystack_[0].value.as < ast::ExprPtr > (), driver);
   }
-#line 1496 "frontend/generated/parser.cpp"
+#line 1510 "frontend/generated/parser.cpp"
     break;
 
   case 69: // RelExpr: AddExpr
-#line 475 "frontend/parser.y"
+#line 485 "frontend/parser.y"
             {
-    yylhs.value.as < AstExprPtr > () = yystack_[0].value.as < AstExprPtr > ();
+    yylhs.value.as < ast::ExprPtr > () = yystack_[0].value.as < ast::ExprPtr > ();
   }
-#line 1504 "frontend/generated/parser.cpp"
+#line 1518 "frontend/generated/parser.cpp"
     break;
 
   case 70: // RelExpr: RelExpr '<' AddExpr
-#line 478 "frontend/parser.y"
+#line 488 "frontend/parser.y"
                         {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Lt, yystack_[2].value.as < AstExprPtr > (), yystack_[0].value.as < AstExprPtr > (), driver);
+    yylhs.value.as < ast::ExprPtr > () = ast::create_binary_expr(
+      BinaryOp::Lt, yystack_[2].value.as < ast::ExprPtr > (), yystack_[0].value.as < ast::ExprPtr > (), driver);
   }
-#line 1513 "frontend/generated/parser.cpp"
+#line 1527 "frontend/generated/parser.cpp"
     break;
 
   case 71: // RelExpr: RelExpr '>' AddExpr
-#line 482 "frontend/parser.y"
+#line 492 "frontend/parser.y"
                         {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Gt, yystack_[2].value.as < AstExprPtr > (), yystack_[0].value.as < AstExprPtr > (), driver);
+    yylhs.value.as < ast::ExprPtr > () = ast::create_binary_expr(
+      BinaryOp::Gt, yystack_[2].value.as < ast::ExprPtr > (), yystack_[0].value.as < ast::ExprPtr > (), driver);
   }
-#line 1522 "frontend/generated/parser.cpp"
+#line 1536 "frontend/generated/parser.cpp"
     break;
 
   case 72: // RelExpr: RelExpr LE AddExpr
-#line 486 "frontend/parser.y"
+#line 496 "frontend/parser.y"
                        {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Le, yystack_[2].value.as < AstExprPtr > (), yystack_[0].value.as < AstExprPtr > (), driver);
+    yylhs.value.as < ast::ExprPtr > () = ast::create_binary_expr(
+      BinaryOp::Le, yystack_[2].value.as < ast::ExprPtr > (), yystack_[0].value.as < ast::ExprPtr > (), driver);
   }
-#line 1531 "frontend/generated/parser.cpp"
+#line 1545 "frontend/generated/parser.cpp"
     break;
 
   case 73: // RelExpr: RelExpr GE AddExpr
-#line 490 "frontend/parser.y"
+#line 500 "frontend/parser.y"
                        {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Ge, yystack_[2].value.as < AstExprPtr > (), yystack_[0].value.as < AstExprPtr > (), driver);
+    yylhs.value.as < ast::ExprPtr > () = ast::create_binary_expr(
+      BinaryOp::Ge, yystack_[2].value.as < ast::ExprPtr > (), yystack_[0].value.as < ast::ExprPtr > (), driver);
   }
-#line 1540 "frontend/generated/parser.cpp"
+#line 1554 "frontend/generated/parser.cpp"
     break;
 
   case 74: // EqExpr: RelExpr
-#line 497 "frontend/parser.y"
+#line 507 "frontend/parser.y"
             {
-    yylhs.value.as < AstExprPtr > () = yystack_[0].value.as < AstExprPtr > ();
+    yylhs.value.as < ast::ExprPtr > () = yystack_[0].value.as < ast::ExprPtr > ();
   }
-#line 1548 "frontend/generated/parser.cpp"
+#line 1562 "frontend/generated/parser.cpp"
     break;
 
   case 75: // EqExpr: EqExpr EQ RelExpr
-#line 500 "frontend/parser.y"
+#line 510 "frontend/parser.y"
                       {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Eq, yystack_[2].value.as < AstExprPtr > (), yystack_[0].value.as < AstExprPtr > (), driver);
+    yylhs.value.as < ast::ExprPtr > () = ast::create_binary_expr(
+      BinaryOp::Eq, yystack_[2].value.as < ast::ExprPtr > (), yystack_[0].value.as < ast::ExprPtr > (), driver);
   }
-#line 1557 "frontend/generated/parser.cpp"
+#line 1571 "frontend/generated/parser.cpp"
     break;
 
   case 76: // EqExpr: EqExpr NE RelExpr
-#line 504 "frontend/parser.y"
+#line 514 "frontend/parser.y"
                       {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::Ne, yystack_[2].value.as < AstExprPtr > (), yystack_[0].value.as < AstExprPtr > (), driver);
+    yylhs.value.as < ast::ExprPtr > () = ast::create_binary_expr(
+      BinaryOp::Ne, yystack_[2].value.as < ast::ExprPtr > (), yystack_[0].value.as < ast::ExprPtr > (), driver);
   }
-#line 1566 "frontend/generated/parser.cpp"
+#line 1580 "frontend/generated/parser.cpp"
     break;
 
   case 77: // LAndExpr: EqExpr
-#line 511 "frontend/parser.y"
+#line 521 "frontend/parser.y"
            {
-    yylhs.value.as < AstExprPtr > () = yystack_[0].value.as < AstExprPtr > ();
+    yylhs.value.as < ast::ExprPtr > () = yystack_[0].value.as < ast::ExprPtr > ();
   }
-#line 1574 "frontend/generated/parser.cpp"
+#line 1588 "frontend/generated/parser.cpp"
     break;
 
   case 78: // LAndExpr: LAndExpr LAND EqExpr
-#line 514 "frontend/parser.y"
+#line 524 "frontend/parser.y"
                          {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::LogicalAnd, yystack_[2].value.as < AstExprPtr > (), yystack_[0].value.as < AstExprPtr > (), driver);
+    yylhs.value.as < ast::ExprPtr > () = ast::create_binary_expr(
+      BinaryOp::LogicalAnd, yystack_[2].value.as < ast::ExprPtr > (), yystack_[0].value.as < ast::ExprPtr > (), driver);
   }
-#line 1583 "frontend/generated/parser.cpp"
+#line 1597 "frontend/generated/parser.cpp"
     break;
 
   case 79: // LOrExpr: LAndExpr
-#line 521 "frontend/parser.y"
+#line 531 "frontend/parser.y"
              {
-    yylhs.value.as < AstExprPtr > () = yystack_[0].value.as < AstExprPtr > ();
+    yylhs.value.as < ast::ExprPtr > () = yystack_[0].value.as < ast::ExprPtr > ();
   }
-#line 1591 "frontend/generated/parser.cpp"
+#line 1605 "frontend/generated/parser.cpp"
     break;
 
   case 80: // LOrExpr: LOrExpr LOR LAndExpr
-#line 524 "frontend/parser.y"
+#line 534 "frontend/parser.y"
                          {
-    yylhs.value.as < AstExprPtr > () = frontend::ast::create_binary_expr(
-      frontend::BinaryOp::LogicalOr, yystack_[2].value.as < AstExprPtr > (), yystack_[0].value.as < AstExprPtr > (), driver);
+    yylhs.value.as < ast::ExprPtr > () = ast::create_binary_expr(
+      BinaryOp::LogicalOr, yystack_[2].value.as < ast::ExprPtr > (), yystack_[0].value.as < ast::ExprPtr > (), driver);
   }
-#line 1600 "frontend/generated/parser.cpp"
+#line 1614 "frontend/generated/parser.cpp"
     break;
 
   case 81: // FuncArgList: Expr
-#line 531 "frontend/parser.y"
+#line 541 "frontend/parser.y"
          {
-    yylhs.value.as < std::vector<AstExprPtr> > ().push_back(yystack_[0].value.as < AstExprPtr > ());
+    yylhs.value.as < std::vector<ast::ExprPtr> > ().push_back(yystack_[0].value.as < ast::ExprPtr > ());
   }
-#line 1608 "frontend/generated/parser.cpp"
+#line 1622 "frontend/generated/parser.cpp"
     break;
 
   case 82: // FuncArgList: FuncArgList ',' Expr
-#line 534 "frontend/parser.y"
+#line 544 "frontend/parser.y"
                          {
-    yylhs.value.as < std::vector<AstExprPtr> > () = yystack_[2].value.as < std::vector<AstExprPtr> > ();
-    yylhs.value.as < std::vector<AstExprPtr> > ().push_back(yystack_[0].value.as < AstExprPtr > ());
+    yylhs.value.as < std::vector<ast::ExprPtr> > () = yystack_[2].value.as < std::vector<ast::ExprPtr> > ();
+    yylhs.value.as < std::vector<ast::ExprPtr> > ().push_back(yystack_[0].value.as < ast::ExprPtr > ());
   }
-#line 1617 "frontend/generated/parser.cpp"
+#line 1631 "frontend/generated/parser.cpp"
     break;
 
   case 83: // FuncParamList: FuncParam
-#line 541 "frontend/parser.y"
+#line 551 "frontend/parser.y"
               {
-    yylhs.value.as < std::vector<std::tuple<AstTypePtr, std::string>> > ().push_back(yystack_[0].value.as < std::tuple<AstTypePtr, std::string> > ());
+    yylhs.value.as < std::vector<std::tuple<TypePtr, std::string>> > ().push_back(yystack_[0].value.as < std::tuple<TypePtr, std::string> > ());
   }
-#line 1625 "frontend/generated/parser.cpp"
+#line 1639 "frontend/generated/parser.cpp"
     break;
 
   case 84: // FuncParamList: FuncParamList ',' FuncParam
-#line 544 "frontend/parser.y"
+#line 554 "frontend/parser.y"
                                 {
-    yylhs.value.as < std::vector<std::tuple<AstTypePtr, std::string>> > () = yystack_[2].value.as < std::vector<std::tuple<AstTypePtr, std::string>> > ();
-    yylhs.value.as < std::vector<std::tuple<AstTypePtr, std::string>> > ().push_back(yystack_[0].value.as < std::tuple<AstTypePtr, std::string> > ());
+    yylhs.value.as < std::vector<std::tuple<TypePtr, std::string>> > () = yystack_[2].value.as < std::vector<std::tuple<TypePtr, std::string>> > ();
+    yylhs.value.as < std::vector<std::tuple<TypePtr, std::string>> > ().push_back(yystack_[0].value.as < std::tuple<TypePtr, std::string> > ());
   }
-#line 1634 "frontend/generated/parser.cpp"
+#line 1648 "frontend/generated/parser.cpp"
     break;
 
   case 85: // FuncParam: Type IDENTIFIER
-#line 551 "frontend/parser.y"
+#line 561 "frontend/parser.y"
                     {
-    yylhs.value.as < std::tuple<AstTypePtr, std::string> > () = std::make_tuple(yystack_[1].value.as < AstTypePtr > (), yystack_[0].value.as < std::string > ());
+    yylhs.value.as < std::tuple<TypePtr, std::string> > () = std::make_tuple(yystack_[1].value.as < TypePtr > (), yystack_[0].value.as < std::string > ());
   }
-#line 1642 "frontend/generated/parser.cpp"
+#line 1656 "frontend/generated/parser.cpp"
     break;
 
-  case 86: // FuncParam: FuncParam '[' Expr ']'
-#line 554 "frontend/parser.y"
-                           {
-    auto maybe_type = frontend::create_array_type_from_expr(
-      std::get<0>(yystack_[3].value.as < std::tuple<AstTypePtr, std::string> > ()), std::make_optional(yystack_[1].value.as < AstExprPtr > ()));
+  case 86: // FuncParam: Type IDENTIFIER ArrayIndices
+#line 564 "frontend/parser.y"
+                                 {
+    TypePtr type = yystack_[2].value.as < TypePtr > ();
 
-    if (!maybe_type.has_value()) {
-      std::cerr << yystack_[1].location << ":" << "Array size must be const expression." << std::endl;
-      YYABORT;
+    auto curr_index_expr = yystack_[0].value.as < std::vector<ast::ExprPtr> > ().rbegin();
+    while (curr_index_expr != yystack_[0].value.as < std::vector<ast::ExprPtr> > ().rend()) {
+      auto maybe_type = create_array_type_from_expr(
+        type, *curr_index_expr);
+      if (!maybe_type.has_value()) {
+        std::cerr << yystack_[1].location << ":"
+                  << "Array length must be compile-time available value" 
+                  << std::endl;
+        YYABORT;
+      }
+      type = maybe_type.value();
+      ++curr_index_expr;
     }
 
-    auto type = maybe_type.value();
-
-    yylhs.value.as < std::tuple<AstTypePtr, std::string> > () = std::make_tuple(type, std::get<1>(yystack_[3].value.as < std::tuple<AstTypePtr, std::string> > ()));
+    yylhs.value.as < std::tuple<TypePtr, std::string> > () = std::make_tuple(type, yystack_[1].value.as < std::string > ());
   }
-#line 1660 "frontend/generated/parser.cpp"
+#line 1680 "frontend/generated/parser.cpp"
     break;
 
-  case 87: // FuncParam: FuncParam '[' ']'
-#line 567 "frontend/parser.y"
-                      {
-    auto type = frontend::create_array_type_from_expr(
-      std::get<0>(yystack_[2].value.as < std::tuple<AstTypePtr, std::string> > ()), std::nullopt).value();
-    yylhs.value.as < std::tuple<AstTypePtr, std::string> > () = std::make_tuple(type, std::get<1>(yystack_[2].value.as < std::tuple<AstTypePtr, std::string> > ()));
+  case 87: // FuncParam: Type IDENTIFIER '[' ']' ArrayIndices
+#line 583 "frontend/parser.y"
+                                         {
+    TypePtr type = yystack_[4].value.as < TypePtr > ();
+
+    auto curr_index_expr = yystack_[0].value.as < std::vector<ast::ExprPtr> > ().rbegin();
+    while (curr_index_expr != yystack_[0].value.as < std::vector<ast::ExprPtr> > ().rend()) {
+      auto maybe_type = create_array_type_from_expr(
+        type, *curr_index_expr);
+      if (!maybe_type.has_value()) {
+        std::cerr << yystack_[3].location << ":"
+                  << "Array length must be compile-time available value" 
+                  << std::endl;
+        YYABORT;
+      }
+      type = maybe_type.value();
+      ++curr_index_expr;
+    }
+
+    type = create_array_type(type, std::nullopt);
+
+    yylhs.value.as < std::tuple<TypePtr, std::string> > () = std::make_tuple(type, yystack_[3].value.as < std::string > ());
   }
-#line 1670 "frontend/generated/parser.cpp"
+#line 1706 "frontend/generated/parser.cpp"
     break;
 
   case 88: // Type: INT
-#line 575 "frontend/parser.y"
+#line 607 "frontend/parser.y"
         {
-    yylhs.value.as < AstTypePtr > () = frontend::create_int_type();
-    driver.curr_decl_type = yylhs.value.as < AstTypePtr > ();
-    driver.curr_decl_scope = driver.is_curr_global() ? frontend::Scope::Global 
-                                                     : frontend::Scope::Local;
+    yylhs.value.as < TypePtr > () = create_int_type();
+    driver.curr_decl_type = yylhs.value.as < TypePtr > ();
+    driver.curr_decl_scope = driver.is_curr_global() ? Scope::Global 
+                                                     : Scope::Local;
 
   }
-#line 1682 "frontend/generated/parser.cpp"
+#line 1718 "frontend/generated/parser.cpp"
     break;
 
   case 89: // Type: FLOAT
-#line 582 "frontend/parser.y"
+#line 614 "frontend/parser.y"
           {
-    yylhs.value.as < AstTypePtr > () = frontend::create_float_type();
-    driver.curr_decl_type = yylhs.value.as < AstTypePtr > ();
-    driver.curr_decl_scope = driver.is_curr_global() ? frontend::Scope::Global 
-                                                     : frontend::Scope::Local;
+    yylhs.value.as < TypePtr > () = create_float_type();
+    driver.curr_decl_type = yylhs.value.as < TypePtr > ();
+    driver.curr_decl_scope = driver.is_curr_global() ? Scope::Global 
+                                                     : Scope::Local;
   }
-#line 1693 "frontend/generated/parser.cpp"
+#line 1729 "frontend/generated/parser.cpp"
     break;
 
   case 90: // Type: VOID
-#line 588 "frontend/parser.y"
+#line 620 "frontend/parser.y"
          {
-    yylhs.value.as < AstTypePtr > () = frontend::create_void_type();
-    driver.curr_decl_type = yylhs.value.as < AstTypePtr > ();
-    driver.curr_decl_scope = driver.is_curr_global() ? frontend::Scope::Global 
-                                                     : frontend::Scope::Local;
+    yylhs.value.as < TypePtr > () = create_void_type();
+    driver.curr_decl_type = yylhs.value.as < TypePtr > ();
+    driver.curr_decl_scope = driver.is_curr_global() ? Scope::Global 
+                                                     : Scope::Local;
   }
-#line 1704 "frontend/generated/parser.cpp"
+#line 1740 "frontend/generated/parser.cpp"
     break;
 
 
-#line 1708 "frontend/generated/parser.cpp"
+#line 1744 "frontend/generated/parser.cpp"
 
             default:
               break;
@@ -1877,7 +1913,7 @@ namespace yy {
   }
 
   void
-  parser::error (const syntax_error& yyexc)
+   Parser ::error (const syntax_error& yyexc)
   {
     error (yyexc.location, yyexc.what ());
   }
@@ -1888,7 +1924,7 @@ namespace yy {
      apostrophe, a comma, or backslash (other than backslash-backslash).
      YYSTR is taken from yytname.  */
   std::string
-  parser::yytnamerr_ (const char *yystr)
+   Parser ::yytnamerr_ (const char *yystr)
   {
     if (*yystr == '"')
       {
@@ -1923,21 +1959,21 @@ namespace yy {
   }
 
   std::string
-  parser::symbol_name (symbol_kind_type yysymbol)
+   Parser ::symbol_name (symbol_kind_type yysymbol)
   {
     return yytnamerr_ (yytname_[yysymbol]);
   }
 
 
 
-  // parser::context.
-  parser::context::context (const parser& yyparser, const symbol_type& yyla)
+  //  Parser ::context.
+   Parser ::context::context (const  Parser & yyparser, const symbol_type& yyla)
     : yyparser_ (yyparser)
     , yyla_ (yyla)
   {}
 
   int
-  parser::context::expected_tokens (symbol_kind_type yyarg[], int yyargn) const
+   Parser ::context::expected_tokens (symbol_kind_type yyarg[], int yyargn) const
   {
     // Actual number of expected tokens
     int yycount = 0;
@@ -1976,7 +2012,7 @@ namespace yy {
 
 
   int
-  parser::yy_syntax_error_arguments_ (const context& yyctx,
+   Parser ::yy_syntax_error_arguments_ (const context& yyctx,
                                                  symbol_kind_type yyarg[], int yyargn) const
   {
     /* There are many possibilities here to consider:
@@ -2016,7 +2052,7 @@ namespace yy {
 
   // Generate an error message.
   std::string
-  parser::yysyntax_error_ (const context& yyctx) const
+   Parser ::yysyntax_error_ (const context& yyctx) const
   {
     // Its maximum.
     enum { YYARGS_MAX = 5 };
@@ -2056,33 +2092,33 @@ namespace yy {
   }
 
 
-  const short parser::yypact_ninf_ = -129;
+  const signed char  Parser ::yypact_ninf_ = -124;
 
-  const signed char parser::yytable_ninf_ = -1;
+  const signed char  Parser ::yytable_ninf_ = -1;
 
   const short
-  parser::yypact_[] =
+   Parser ::yypact_[] =
   {
-     172,   206,   206,   206,    14,   206,  -129,    -2,  -129,  -129,
-       6,    48,    36,    62,    87,    52,  -129,  -129,  -129,    49,
-     172,  -129,  -129,  -129,  -129,  -129,  -129,  -129,  -129,  -129,
-    -129,  -129,    96,  -129,    26,  -129,  -129,    61,    39,    74,
-     106,  -129,  -129,    97,  -129,   172,  -129,    81,   206,   206,
-    -129,   101,  -129,  -129,   103,  -129,  -129,  -129,   206,   206,
-     206,   206,   206,   206,   206,    72,    78,  -129,  -129,   138,
-    -129,  -129,    32,   121,    39,    -6,    35,   111,   116,   123,
-    -129,    92,   100,   122,   137,  -129,  -129,  -129,    61,    61,
-      99,   206,    -5,   113,   103,  -129,  -129,  -129,   206,   172,
-     206,   206,   206,   206,   206,   206,   206,   206,   172,  -129,
-    -129,  -129,    12,  -129,  -129,   140,  -129,    38,   145,   132,
-      99,   206,  -129,  -129,   149,    39,    39,    39,    39,    -6,
-      -6,    35,   111,  -129,  -129,  -129,     8,  -129,   147,  -129,
-      52,   133,  -129,  -129,   151,   172,  -129,    99,  -129,   147,
-     145,  -129,   156,  -129,  -129,  -129,  -129,  -129
+     171,   205,   205,   205,     5,   205,  -124,    13,  -124,  -124,
+      40,    50,    17,    58,    63,   -24,  -124,  -124,  -124,    93,
+     171,  -124,  -124,  -124,  -124,  -124,  -124,  -124,  -124,  -124,
+    -124,  -124,    66,  -124,    89,  -124,  -124,    67,    86,    62,
+      95,  -124,  -124,    96,  -124,   171,  -124,    42,   205,   205,
+    -124,   104,  -124,  -124,   100,  -124,  -124,  -124,   205,   205,
+     205,   205,   205,   205,   205,    51,    83,  -124,  -124,   137,
+    -124,  -124,     1,   113,    86,    31,    82,   116,   114,   130,
+    -124,   103,    97,   136,   145,  -124,  -124,  -124,    67,    67,
+      81,   205,    -5,   107,   100,  -124,  -124,  -124,   205,   171,
+     205,   205,   205,   205,   205,   205,   205,   205,   171,  -124,
+    -124,  -124,    12,  -124,  -124,   146,  -124,    23,  -124,   133,
+      81,   205,  -124,  -124,   148,    86,    86,    86,    86,    31,
+      31,    82,   116,  -124,  -124,  -124,    65,  -124,   152,  -124,
+     -24,   168,  -124,   169,   171,  -124,    81,  -124,   152,  -124,
+     134,   172,  -124,  -124,  -124,  -124,   174,   172
   };
 
   const signed char
-  parser::yydefact_[] =
+   Parser ::yydefact_[] =
   {
        0,     0,     0,     0,    43,     0,    46,    53,    51,    52,
        0,     0,     0,     0,     0,     0,    88,    89,    90,     0,
@@ -2098,88 +2134,88 @@ namespace yy {
       55,    54,     0,    27,    31,     0,    16,     0,    83,     0,
        0,     0,    23,    82,    36,    72,    73,    70,    71,    75,
       76,    78,    80,    38,    32,    34,     0,    29,     0,    18,
-       0,     0,    85,    28,     0,     0,    33,     0,    17,     0,
-      84,    87,     0,    30,    37,    35,    19,    86
+       0,    85,    28,     0,     0,    33,     0,    17,     0,    84,
+       0,    86,    30,    37,    35,    19,     0,    87
   };
 
   const short
-  parser::yypgoto_[] =
+   Parser ::yypgoto_[] =
   {
-    -129,  -129,   134,   -17,  -129,  -129,  -129,  -129,  -129,   124,
-      86,  -129,  -106,  -129,  -129,  -129,  -129,  -129,  -129,  -128,
-    -129,  -129,    -1,   135,  -129,     0,  -129,     3,    66,   -30,
-      27,    75,    79,  -129,  -129,  -129,    42,   -14
+    -124,  -124,   135,   -17,  -124,  -124,  -124,  -124,  -124,   124,
+      91,  -123,  -106,  -124,  -124,  -124,  -124,  -124,  -124,   -90,
+    -124,  -124,    -3,   138,  -124,     2,  -124,     3,    56,    28,
+      18,    84,    85,  -124,  -124,  -124,    49,   -14
   };
 
   const unsigned char
-  parser::yydefgoto_[] =
+   Parser ::yydefgoto_[] =
   {
-       0,    19,    20,    21,    22,   138,   149,    23,    24,    66,
+       0,    19,    20,    21,    22,   138,   148,    23,    24,    66,
       67,    93,   113,   136,    25,    26,    27,    28,    29,    30,
       45,    31,    32,    73,    33,    40,    35,    36,    37,    38,
       75,    76,    77,    78,    72,   117,   118,    39
   };
 
   const unsigned char
-  parser::yytable_[] =
+   Parser ::yytable_[] =
   {
-      34,    54,    43,    56,    41,    42,   135,   116,    46,    47,
-     148,    51,   100,   101,   143,     1,     2,    48,    74,    74,
-      34,   156,   146,     3,   147,   112,   134,     5,    44,    16,
-      17,    18,   102,   103,    58,    59,     7,     8,     9,     1,
-       2,   155,    63,    64,    97,    34,    71,     3,    98,    55,
-     139,     5,    56,    50,   140,   104,   105,    83,    84,    49,
-       7,     8,     9,    85,    86,    87,    60,    61,    62,    34,
-     125,   126,   127,   128,    74,    74,    74,    74,   119,    52,
-      90,    91,   124,    92,     1,     2,    16,    17,    18,   114,
-     115,   133,     3,    70,    94,    95,     5,   123,    65,    34,
-      90,    91,     1,     2,    53,     7,     8,     9,    34,    68,
-       3,   114,   112,    57,     5,    59,    94,   109,    80,   114,
-     144,   120,   121,     7,     8,     9,   119,    81,   154,    88,
-      89,   129,   130,    99,   106,   108,     1,     2,   107,   110,
-     152,     1,     2,   151,     3,    34,   114,   111,     5,     3,
-     137,     4,    96,     5,   141,     6,   142,     7,     8,     9,
-       4,   153,     7,     8,     9,    10,   157,    11,    12,    13,
-      14,    15,    16,    17,    18,     1,     2,   145,    82,    69,
-     122,   131,   150,     3,    79,     4,   132,     5,     0,     6,
-       0,     0,     0,     0,     0,     0,     7,     8,     9,    10,
-       0,    11,    12,    13,    14,    15,    16,    17,    18,     1,
-       2,     0,     0,     0,     0,     0,     0,     3,     0,     0,
-       0,     5,     0,     0,     0,     0,     0,     0,     0,     0,
-       7,     8,     9
+      43,    54,    34,    56,    41,    42,   135,   116,    46,    51,
+      16,    17,    18,    97,   142,     1,     2,    98,   151,    44,
+       1,     2,    34,     3,    47,   112,   134,     5,     3,    16,
+      17,    18,     5,   157,    50,   139,     7,     8,     9,   140,
+     154,     7,     8,     9,    71,     1,     2,    34,   147,   100,
+     101,    48,    56,     3,    70,    83,    84,     5,   155,    90,
+      91,    49,    92,    85,    86,    87,     7,     8,     9,   102,
+     103,    34,    60,    61,    62,    52,    74,    74,   119,   145,
+      53,   146,   124,    57,     1,     2,    65,   114,   115,    63,
+      64,   133,     3,    55,   112,   123,     5,    58,    59,    94,
+      95,    34,   104,   105,    59,     7,     8,     9,    68,   114,
+      34,    90,    91,    94,   109,   120,   121,   114,   143,    88,
+      89,    80,   129,   130,    81,    99,   119,   153,   125,   126,
+     127,   128,    74,    74,    74,    74,   107,     1,     2,   106,
+       1,     2,   108,   114,   156,     3,    34,   115,     3,     5,
+       4,    96,     5,   110,     6,   111,   137,   141,     7,     8,
+       9,     7,     8,     9,    10,     4,    11,    12,    13,    14,
+      15,    16,    17,    18,     1,     2,   144,   150,    82,   152,
+      69,   121,     3,    91,     4,   122,     5,    79,     6,   149,
+     131,     0,   132,     0,     0,     7,     8,     9,    10,     0,
+      11,    12,    13,    14,    15,    16,    17,    18,     1,     2,
+       0,     0,     0,     0,     0,     0,     3,     0,     0,     0,
+       5,     0,     0,     0,     0,     0,     0,     0,     0,     7,
+       8,     9
   };
 
   const short
-  parser::yycheck_[] =
+   Parser ::yycheck_[] =
   {
-       0,    15,     3,    20,     1,     2,   112,    12,     5,    11,
-     138,    12,    18,    19,   120,     3,     4,    11,    48,    49,
-      20,   149,    14,    11,    16,    13,    14,    15,    14,    34,
-      35,    36,    38,    39,     8,     9,    24,    25,    26,     3,
-       4,   147,     3,     4,    12,    45,    47,    11,    16,     0,
-      12,    15,    69,    17,    16,    20,    21,    58,    59,    11,
-      24,    25,    26,    60,    61,    62,     5,     6,     7,    69,
-     100,   101,   102,   103,   104,   105,   106,   107,    92,    17,
-       8,     9,    99,    11,     3,     4,    34,    35,    36,    90,
-      91,   108,    11,    12,    16,    17,    15,    98,    24,    99,
-       8,     9,     3,     4,    17,    24,    25,    26,   108,    12,
-      11,   112,    13,    17,    15,     9,    16,    17,    17,   120,
-     121,     8,     9,    24,    25,    26,   140,    24,   145,    63,
-      64,   104,   105,    12,    23,    12,     3,     4,    22,    17,
-     141,     3,     4,    10,    11,   145,   147,    10,    15,    11,
-      10,    13,    14,    15,     9,    17,    24,    24,    25,    26,
-      13,    10,    24,    25,    26,    27,    10,    29,    30,    31,
-      32,    33,    34,    35,    36,     3,     4,    28,    54,    45,
-      94,   106,   140,    11,    49,    13,   107,    15,    -1,    17,
-      -1,    -1,    -1,    -1,    -1,    -1,    24,    25,    26,    27,
-      -1,    29,    30,    31,    32,    33,    34,    35,    36,     3,
-       4,    -1,    -1,    -1,    -1,    -1,    -1,    11,    -1,    -1,
-      -1,    15,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      24,    25,    26
+       3,    15,     0,    20,     1,     2,   112,    12,     5,    12,
+      34,    35,    36,    12,   120,     3,     4,    16,   141,    14,
+       3,     4,    20,    11,    11,    13,    14,    15,    11,    34,
+      35,    36,    15,   156,    17,    12,    24,    25,    26,    16,
+     146,    24,    25,    26,    47,     3,     4,    45,   138,    18,
+      19,    11,    69,    11,    12,    58,    59,    15,   148,     8,
+       9,    11,    11,    60,    61,    62,    24,    25,    26,    38,
+      39,    69,     5,     6,     7,    17,    48,    49,    92,    14,
+      17,    16,    99,    17,     3,     4,    24,    90,    91,     3,
+       4,   108,    11,     0,    13,    98,    15,     8,     9,    16,
+      17,    99,    20,    21,     9,    24,    25,    26,    12,   112,
+     108,     8,     9,    16,    17,     8,     9,   120,   121,    63,
+      64,    17,   104,   105,    24,    12,   140,   144,   100,   101,
+     102,   103,   104,   105,   106,   107,    22,     3,     4,    23,
+       3,     4,    12,   146,    10,    11,   144,   150,    11,    15,
+      13,    14,    15,    17,    17,    10,    10,    24,    24,    25,
+      26,    24,    25,    26,    27,    13,    29,    30,    31,    32,
+      33,    34,    35,    36,     3,     4,    28,     9,    54,    10,
+      45,     9,    11,     9,    13,    94,    15,    49,    17,   140,
+     106,    -1,   107,    -1,    -1,    24,    25,    26,    27,    -1,
+      29,    30,    31,    32,    33,    34,    35,    36,     3,     4,
+      -1,    -1,    -1,    -1,    -1,    -1,    11,    -1,    -1,    -1,
+      15,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    24,
+      25,    26
   };
 
   const signed char
-  parser::yystos_[] =
+   Parser ::yystos_[] =
   {
        0,     3,     4,    11,    13,    15,    17,    24,    25,    26,
       27,    29,    30,    31,    32,    33,    34,    35,    36,    41,
@@ -2195,12 +2231,12 @@ namespace yy {
       17,    10,    13,    52,    62,    62,    12,    75,    76,    77,
        8,     9,    50,    62,    43,    69,    69,    69,    69,    70,
       70,    71,    72,    43,    14,    52,    53,    10,    45,    12,
-      16,     9,    24,    52,    62,    28,    14,    16,    59,    46,
-      76,    10,    62,    10,    43,    52,    59,    10
+      16,    24,    52,    62,    28,    14,    16,    59,    46,    76,
+       9,    51,    10,    43,    52,    59,    10,    51
   };
 
   const signed char
-  parser::yyr1_[] =
+   Parser ::yyr1_[] =
   {
        0,    40,    41,    42,    42,    43,    43,    43,    43,    43,
       43,    43,    43,    43,    43,    43,    45,    44,    46,    44,
@@ -2215,7 +2251,7 @@ namespace yy {
   };
 
   const signed char
-  parser::yyr2_[] =
+   Parser ::yyr2_[] =
   {
        0,     2,     1,     1,     2,     1,     1,     1,     1,     1,
        1,     1,     1,     1,     1,     1,     0,     6,     0,     7,
@@ -2225,7 +2261,7 @@ namespace yy {
        1,     1,     1,     1,     4,     4,     1,     2,     2,     2,
        4,     3,     1,     3,     3,     3,     1,     3,     3,     1,
        3,     3,     3,     3,     1,     3,     3,     1,     3,     1,
-       3,     1,     3,     1,     3,     2,     4,     3,     1,     1,
+       3,     1,     3,     1,     3,     2,     3,     5,     1,     1,
        1
   };
 
@@ -2234,7 +2270,7 @@ namespace yy {
   // YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
   // First, the terminals, then, starting at \a YYNTOKENS, nonterminals.
   const char*
-  const parser::yytname_[] =
+  const  Parser ::yytname_[] =
   {
   "END", "error", "\"invalid token\"", "'+'", "'-'", "'*'", "'/'", "'%'",
   "'='", "'['", "']'", "'('", "')'", "'{'", "'}'", "'!'", "','", "';'",
@@ -2254,22 +2290,22 @@ namespace yy {
 
 #if YYDEBUG
   const short
-  parser::yyrline_[] =
+   Parser ::yyrline_[] =
   {
-       0,    89,    89,    93,    98,   106,   109,   112,   115,   118,
-     121,   124,   127,   130,   133,   136,   142,   142,   147,   147,
-     155,   161,   164,   171,   182,   195,   198,   201,   213,   224,
-     235,   248,   251,   254,   260,   263,   270,   273,   279,   285,
-     288,   294,   300,   306,   306,   312,   319,   326,   332,   338,
-     341,   344,   347,   353,   361,   369,   375,   378,   382,   386,
-     390,   409,   443,   446,   450,   454,   461,   464,   468,   475,
-     478,   482,   486,   490,   497,   500,   504,   511,   514,   521,
-     524,   531,   534,   541,   544,   551,   554,   567,   575,   582,
-     588
+       0,    85,    85,    89,    94,   102,   105,   108,   111,   114,
+     117,   120,   123,   126,   129,   132,   138,   138,   143,   143,
+     151,   157,   160,   167,   178,   191,   194,   213,   225,   251,
+     254,   261,   264,   267,   273,   276,   283,   286,   292,   298,
+     301,   307,   313,   319,   319,   325,   332,   339,   345,   351,
+     354,   357,   360,   366,   374,   382,   388,   391,   394,   397,
+     400,   419,   453,   456,   460,   464,   471,   474,   478,   485,
+     488,   492,   496,   500,   507,   510,   514,   521,   524,   531,
+     534,   541,   544,   551,   554,   561,   564,   583,   607,   614,
+     620
   };
 
   void
-  parser::yy_stack_print_ () const
+   Parser ::yy_stack_print_ () const
   {
     *yycdebug_ << "Stack now";
     for (stack_type::const_iterator
@@ -2281,7 +2317,7 @@ namespace yy {
   }
 
   void
-  parser::yy_reduce_print_ (int yyrule) const
+   Parser ::yy_reduce_print_ (int yyrule) const
   {
     int yylno = yyrline_[yyrule];
     int yynrhs = yyr2_[yyrule];
@@ -2296,12 +2332,19 @@ namespace yy {
 #endif // YYDEBUG
 
 
-} // yy
-#line 2301 "frontend/generated/parser.cpp"
+#line 20 "frontend/parser.y"
+} } //  syc::frontend 
+#line 2338 "frontend/generated/parser.cpp"
 
-#line 596 "frontend/parser.y"
+#line 628 "frontend/parser.y"
 
 
-void yy::parser::error (const location_type& loc, const std::string& msg) {
+namespace syc {
+namespace frontend {
+
+void Parser::error (const location_type& loc, const std::string& msg) {
   std::cerr << loc << ": " << msg << std::endl;
 }
+
+} // namespace frontend
+} // namespace syc

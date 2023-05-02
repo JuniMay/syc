@@ -24,7 +24,7 @@ struct Float {};
 
 struct Array {
   TypePtr element_type;
-  std::optional<size_t> maybe_size;
+  std::optional<size_t> maybe_length;
 };
 
 struct Void {};
@@ -67,6 +67,8 @@ struct Type {
   /// If the type is not a pointer, return `std::nullopt`.
   std::optional<TypePtr> get_value_type() const;
 
+  std::optional<TypePtr> get_ret_type() const;
+
   /// Convert the type to string.
   std::string to_string() const;
 };
@@ -76,7 +78,7 @@ TypePtr create_bool_type();
 TypePtr create_float_type();
 TypePtr create_void_type();
 TypePtr
-create_array_type(TypePtr element_type, std::optional<size_t> maybe_size);
+create_array_type(TypePtr element_type, std::optional<size_t> maybe_length);
 TypePtr create_pointer_type(TypePtr value_type);
 TypePtr
 create_function_type(TypePtr ret_type, std::vector<TypePtr> param_types);

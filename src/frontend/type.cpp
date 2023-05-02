@@ -86,7 +86,7 @@ std::string Type::to_string() const {
     std::string length = array.maybe_length.has_value()
                           ? std::to_string(array.maybe_length.value())
                           : "";
-    return array.element_type->to_string() + "[" + length + "]";
+    return  "[" + length + " x " + array.element_type->to_string() + "]";
   }
   if (is_void()) {
     return "void";

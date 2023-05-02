@@ -9,8 +9,8 @@
 
 using namespace syc;
 
-#define YY_DECL yy::parser::symbol_type yylex( \
-  yyscan_t yyscanner, yy::location&loc, frontend::Driver& driver)
+#define YY_DECL frontend::Parser::symbol_type yylex( \
+  yyscan_t yyscanner, frontend::location&loc, frontend::Driver& driver)
 
 #define YY_USER_ACTION                      \
   loc.begin.line = loc.end.line = yylineno; \
@@ -18,14 +18,15 @@ using namespace syc;
   loc.end.column = yycolumn + yyleng - 1;   \
   yycolumn += yyleng;
 
-#define yyterminate() return yy::parser::make_END(loc)
+#define yyterminate() return frontend::Parser::make_END(loc)
 
 #include "frontend/generated/parser.h"
 
-using namespace yy;
+// using namespace yy;
 
-using token = yy::parser::token;
-using token_type = yy::parser::token_type;
+using frontend::Parser;
+using token = frontend::Parser::token;
+using token_type = frontend::Parser::token_type;
 
 %}
 
@@ -58,173 +59,173 @@ HEX_FP (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][
 
 "+" {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('+'), loc);
+  return Parser::symbol_type(token_type('+'), loc);
 }
 
 "-" {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('-'), loc);
+  return Parser::symbol_type(token_type('-'), loc);
 }
 
 "*" {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('*'), loc);
+  return Parser::symbol_type(token_type('*'), loc);
 }
 
 "/" {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('/'), loc);
+  return Parser::symbol_type(token_type('/'), loc);
 }
 
 "%" {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('%'), loc);
+  return Parser::symbol_type(token_type('%'), loc);
 }
 
 "=" {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('='), loc);
+  return Parser::symbol_type(token_type('='), loc);
 }
 
 "[" {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('['), loc);
+  return Parser::symbol_type(token_type('['), loc);
 }
 
 "]" {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type(']'), loc);
+  return Parser::symbol_type(token_type(']'), loc);
 }
 
 "{" {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('{'), loc);
+  return Parser::symbol_type(token_type('{'), loc);
 }
 
 "}" {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('}'), loc);
+  return Parser::symbol_type(token_type('}'), loc);
 }
 
 "(" {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('('), loc);
+  return Parser::symbol_type(token_type('('), loc);
 }
 
 ")" {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type(')'), loc);
+  return Parser::symbol_type(token_type(')'), loc);
 }
 
 "!" {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('!'), loc);
+  return Parser::symbol_type(token_type('!'), loc);
 }
 
 "," {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type(','), loc);
+  return Parser::symbol_type(token_type(','), loc);
 }
 
 ";" {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type(';'), loc);
+  return Parser::symbol_type(token_type(';'), loc);
 }
 
 ">" {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('>'), loc);
+  return Parser::symbol_type(token_type('>'), loc);
 }
 
 "<" {
   driver.add_token(yytext);
-  return parser::symbol_type(token_type('<'), loc);
+  return Parser::symbol_type(token_type('<'), loc);
 }
 
 "<=" {
   driver.add_token("LE");
-  return parser::make_LE(loc);
+  return Parser::make_LE(loc);
 }
 
 ">=" {
   driver.add_token("GE");
-  return parser::make_GE(loc);
+  return Parser::make_GE(loc);
 }
 
 "==" {
   driver.add_token("EQ");
-  return parser::make_EQ(loc);
+  return Parser::make_EQ(loc);
 }
 
 "!=" {
   driver.add_token("NE");
-  return parser::make_NE(loc);
+  return Parser::make_NE(loc);
 }
 
 "||" {
   driver.add_token("LOR");
-  return parser::make_LOR(loc);
+  return Parser::make_LOR(loc);
 }
 
 "&&" {
   driver.add_token("LAND");
-  return parser::make_LAND(loc);
+  return Parser::make_LAND(loc);
 }
 
 "int" {
   driver.add_token("INT");
-  return parser::make_INT(loc);
+  return Parser::make_INT(loc);
 }
 
 "float" {
   driver.add_token("FLOAT");
-  return parser::make_FLOAT(loc);
+  return Parser::make_FLOAT(loc);
 }
 
 "void" {
   driver.add_token("VOID");
-  return parser::make_VOID(loc);
+  return Parser::make_VOID(loc);
 }
 
 "const" {
   driver.add_token("CONST");
   driver.is_curr_decl_const = true;
-  return parser::make_CONST(loc);
+  return Parser::make_CONST(loc);
 }
 
 "if" {
   driver.add_token("IF");
-  return parser::make_IF(loc);
+  return Parser::make_IF(loc);
 }
 
 "else" {
   driver.add_token("ELSE");
-  return parser::make_ELSE(loc);
+  return Parser::make_ELSE(loc);
 }
 
 "return" {
   driver.add_token("RETURN");
-  return parser::make_RETURN(loc);
+  return Parser::make_RETURN(loc);
 }
 
 "break" {
   driver.add_token("BREAK");
-  return parser::make_BREAK(loc);
+  return Parser::make_BREAK(loc);
 }
 
 "continue" {
   driver.add_token("CONTINUE");
-  return parser::make_CONTINUE(loc);
+  return Parser::make_CONTINUE(loc);
 }
 
 "while" {
   driver.add_token("WHILE");
-  return parser::make_WHILE(loc);
+  return Parser::make_WHILE(loc);
 }
 
 {IDENTIFIER} {
   driver.add_token(std::string("IDENTIFIER ") + yytext);
-  return parser::make_IDENTIFIER(yytext, loc);
+  return Parser::make_IDENTIFIER(yytext, loc);
 }
 
 {DEC} {
@@ -233,7 +234,7 @@ HEX_FP (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][
 
   driver.add_token(value.to_string());
 
-  return parser::make_INTEGER(value, loc);
+  return Parser::make_INTEGER(value, loc);
 }
 
 {OCT} {
@@ -242,7 +243,7 @@ HEX_FP (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][
 
   driver.add_token(value.to_string());
   
-  return parser::make_INTEGER(value, loc);
+  return Parser::make_INTEGER(value, loc);
 }
 
 {HEX} {
@@ -251,7 +252,7 @@ HEX_FP (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][
 
   driver.add_token(value.to_string());
 
-  return parser::make_INTEGER(value, loc);
+  return Parser::make_INTEGER(value, loc);
 }
 
 {DEC_FP} {
@@ -260,7 +261,7 @@ HEX_FP (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][
 
   driver.add_token(value.to_string());
 
-  return parser::make_FLOATING(value, loc);
+  return Parser::make_FLOATING(value, loc);
 }
 
 {HEX_FP} {
@@ -269,7 +270,7 @@ HEX_FP (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][
 
   driver.add_token(value.to_string());
 
-  return parser::make_FLOATING(value, loc);
+  return Parser::make_FLOATING(value, loc);
 }
 
 {EOL} { yycolumn = 1; }

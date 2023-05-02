@@ -37,7 +37,7 @@ struct SymbolEntry {
 
   /// (Optional) IR operand ID of the symbol.
   /// This is set during the IR generation phase.
-  std::optional<ir::OperandID> ir_operand_id = std::nullopt;
+  std::optional<ir::OperandID> maybe_ir_operand_id = std::nullopt;
 
   /// Constructor
   SymbolEntry(
@@ -68,7 +68,9 @@ struct SymbolTable {
   /// Lookup a symbol in the table by its name.
   /// If the symbol is not found in the current table, the parent table will be
   /// searched. Return nullopt if no symbol is found.
-  std::optional<SymbolEntryPtr> lookup(const std::string& name);
+  std::optional<SymbolEntryPtr> lookup(
+    const std::string& name, bool lookup_parent = true
+  );
 
   /// Add a symbol entry into the symbol table.
   void add_symbol_entry(SymbolEntryPtr symbol_entry);

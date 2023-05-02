@@ -23,11 +23,14 @@ struct Function {
   /// List of id of instructions that use this function
   std::vector<InstructionID> caller_id_list;
 
+  bool is_declare;
+
   /// Constructor
   Function(
     std::string name,
     TypePtr return_type,
-    std::vector<OperandID> parameter_id_list
+    std::vector<OperandID> parameter_id_list,
+    bool is_declare = false
   );
 
   /// Append basic block to the end of the function.

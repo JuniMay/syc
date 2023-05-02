@@ -3,7 +3,7 @@
 #include "ir/function.h"
 #include "ir/instruction.h"
 #include "ir/operand.h"
-#include "type.h"
+#include "ir/type.h"
 
 namespace syc {
 namespace ir {

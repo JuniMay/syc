@@ -1,4 +1,4 @@
-// A Bison parser, made by GNU Bison 3.8.
+// A Bison parser, made by GNU Bison 3.8.2.
 
 // Skeleton interface for Bison LALR(1) parsers in C++
 
@@ -33,7 +33,7 @@
 
 /**
  ** \file frontend/generated/parser.h
- ** Define the yy::parser class.
+ ** Define the  syc::frontend ::parser class.
  */
 
 // C++ LALR(1) parser skeleton written by Akim Demaille.
@@ -45,7 +45,7 @@
 #ifndef YY_YY_FRONTEND_GENERATED_PARSER_H_INCLUDED
 # define YY_YY_FRONTEND_GENERATED_PARSER_H_INCLUDED
 // "%code requires" blocks.
-#line 19 "frontend/parser.y"
+#line 22 "frontend/parser.y"
 
   typedef void* yyscan_t;
 
@@ -58,15 +58,8 @@
 
   using namespace syc;
 
-  using AstStmtPtr = frontend::ast::StmtPtr;
-  using AstExprPtr = frontend::ast::ExprPtr;
-  using AstTypePtr = frontend::TypePtr;
-  using AstBinaryOp = frontend::BinaryOp;
-  using AstUnaryOp = frontend::UnaryOp;
-  using AstComptimeValue = frontend::ComptimeValue;
 
-
-#line 70 "frontend/generated/parser.h"
+#line 63 "frontend/generated/parser.h"
 
 
 #include <cstdlib>
@@ -200,14 +193,15 @@
 # define YYDEBUG 1
 #endif
 
-namespace yy {
-#line 205 "frontend/generated/parser.h"
+#line 20 "frontend/parser.y"
+namespace  syc { namespace frontend  {
+#line 199 "frontend/generated/parser.h"
 
 
 
 
   /// A Bison parser.
-  class parser
+  class  Parser 
   {
   public:
 #ifdef YYSTYPE
@@ -399,7 +393,10 @@ namespace yy {
     {
       // INTEGER
       // FLOATING
-      char dummy1[sizeof (AstComptimeValue)];
+      char dummy1[sizeof (ComptimeValue)];
+
+      // Type
+      char dummy2[sizeof (TypePtr)];
 
       // InitVal
       // Expr
@@ -413,7 +410,7 @@ namespace yy {
       // EqExpr
       // LAndExpr
       // LOrExpr
-      char dummy2[sizeof (AstExprPtr)];
+      char dummy3[sizeof (ast::ExprPtr)];
 
       // Stmt
       // ExprStmt
@@ -426,30 +423,27 @@ namespace yy {
       // BlockStmt
       // BlankStmt
       // AssignStmt
-      char dummy3[sizeof (AstStmtPtr)];
-
-      // ArrayIndices
-      // Type
-      char dummy4[sizeof (AstTypePtr)];
+      char dummy4[sizeof (ast::StmtPtr)];
 
       // IDENTIFIER
       char dummy5[sizeof (std::string)];
 
       // Def
-      char dummy6[sizeof (std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>)];
+      char dummy6[sizeof (std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>)];
 
       // FuncParam
-      char dummy7[sizeof (std::tuple<AstTypePtr, std::string>)];
+      char dummy7[sizeof (std::tuple<TypePtr, std::string>)];
 
+      // ArrayIndices
       // InitValList
       // FuncArgList
-      char dummy8[sizeof (std::vector<AstExprPtr>)];
+      char dummy8[sizeof (std::vector<ast::ExprPtr>)];
 
       // DefList
-      char dummy9[sizeof (std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>>)];
+      char dummy9[sizeof (std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>>)];
 
       // FuncParamList
-      char dummy10[sizeof (std::vector<std::tuple<AstTypePtr, std::string>>)];
+      char dummy10[sizeof (std::vector<std::tuple<TypePtr, std::string>>)];
     };
 
     /// The size of the largest semantic type.
@@ -468,6 +462,7 @@ namespace yy {
 #endif
     /// Backward compatibility (Bison 3.8).
     typedef value_type semantic_type;
+
     /// Symbol locations.
     typedef location location_type;
 
@@ -524,7 +519,7 @@ namespace yy {
     };
 
     /// Token kind, as returned by yylex.
-    typedef token::yytokentype token_kind_type;
+    typedef token::token_kind_type token_kind_type;
 
     /// Backward compatibility alias (Bison 3.6).
     typedef token_kind_type token_type;
@@ -636,7 +631,7 @@ namespace yy {
       typedef Base super_type;
 
       /// Default constructor.
-      basic_symbol ()
+      basic_symbol () YY_NOEXCEPT
         : value ()
         , location ()
       {}
@@ -652,7 +647,11 @@ namespace yy {
     {
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_FLOATING: // FLOATING
-        value.move< AstComptimeValue > (std::move (that.value));
+        value.move< ComptimeValue > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_Type: // Type
+        value.move< TypePtr > (std::move (that.value));
         break;
 
       case symbol_kind::S_InitVal: // InitVal
@@ -667,7 +666,7 @@ namespace yy {
       case symbol_kind::S_EqExpr: // EqExpr
       case symbol_kind::S_LAndExpr: // LAndExpr
       case symbol_kind::S_LOrExpr: // LOrExpr
-        value.move< AstExprPtr > (std::move (that.value));
+        value.move< ast::ExprPtr > (std::move (that.value));
         break;
 
       case symbol_kind::S_Stmt: // Stmt
@@ -681,12 +680,7 @@ namespace yy {
       case symbol_kind::S_BlockStmt: // BlockStmt
       case symbol_kind::S_BlankStmt: // BlankStmt
       case symbol_kind::S_AssignStmt: // AssignStmt
-        value.move< AstStmtPtr > (std::move (that.value));
-        break;
-
-      case symbol_kind::S_ArrayIndices: // ArrayIndices
-      case symbol_kind::S_Type: // Type
-        value.move< AstTypePtr > (std::move (that.value));
+        value.move< ast::StmtPtr > (std::move (that.value));
         break;
 
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
@@ -694,24 +688,25 @@ namespace yy {
         break;
 
       case symbol_kind::S_Def: // Def
-        value.move< std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > (std::move (that.value));
+        value.move< std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > (std::move (that.value));
         break;
 
       case symbol_kind::S_FuncParam: // FuncParam
-        value.move< std::tuple<AstTypePtr, std::string> > (std::move (that.value));
+        value.move< std::tuple<TypePtr, std::string> > (std::move (that.value));
         break;
 
+      case symbol_kind::S_ArrayIndices: // ArrayIndices
       case symbol_kind::S_InitValList: // InitValList
       case symbol_kind::S_FuncArgList: // FuncArgList
-        value.move< std::vector<AstExprPtr> > (std::move (that.value));
+        value.move< std::vector<ast::ExprPtr> > (std::move (that.value));
         break;
 
       case symbol_kind::S_DefList: // DefList
-        value.move< std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> > (std::move (that.value));
+        value.move< std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>> > (std::move (that.value));
         break;
 
       case symbol_kind::S_FuncParamList: // FuncParamList
-        value.move< std::vector<std::tuple<AstTypePtr, std::string>> > (std::move (that.value));
+        value.move< std::vector<std::tuple<TypePtr, std::string>> > (std::move (that.value));
         break;
 
       default:
@@ -738,13 +733,13 @@ namespace yy {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, AstComptimeValue&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, ComptimeValue&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const AstComptimeValue& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const ComptimeValue& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -752,13 +747,13 @@ namespace yy {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, AstExprPtr&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, TypePtr&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const AstExprPtr& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const TypePtr& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -766,13 +761,13 @@ namespace yy {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, AstStmtPtr&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, ast::ExprPtr&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const AstStmtPtr& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const ast::ExprPtr& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -780,13 +775,13 @@ namespace yy {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, AstTypePtr&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, ast::StmtPtr&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const AstTypePtr& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const ast::StmtPtr& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -808,13 +803,13 @@ namespace yy {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -822,13 +817,13 @@ namespace yy {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::tuple<AstTypePtr, std::string>&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, std::tuple<TypePtr, std::string>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::tuple<AstTypePtr, std::string>& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const std::tuple<TypePtr, std::string>& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -836,13 +831,13 @@ namespace yy {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::vector<AstExprPtr>&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, std::vector<ast::ExprPtr>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::vector<AstExprPtr>& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const std::vector<ast::ExprPtr>& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -850,13 +845,13 @@ namespace yy {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>>&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>>& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>>& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -864,13 +859,13 @@ namespace yy {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::vector<std::tuple<AstTypePtr, std::string>>&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, std::vector<std::tuple<TypePtr, std::string>>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::vector<std::tuple<AstTypePtr, std::string>>& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const std::vector<std::tuple<TypePtr, std::string>>& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -882,6 +877,8 @@ namespace yy {
       {
         clear ();
       }
+
+
 
       /// Destroy contents, and record that is empty.
       void clear () YY_NOEXCEPT
@@ -901,7 +898,11 @@ switch (yykind)
     {
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_FLOATING: // FLOATING
-        value.template destroy< AstComptimeValue > ();
+        value.template destroy< ComptimeValue > ();
+        break;
+
+      case symbol_kind::S_Type: // Type
+        value.template destroy< TypePtr > ();
         break;
 
       case symbol_kind::S_InitVal: // InitVal
@@ -916,7 +917,7 @@ switch (yykind)
       case symbol_kind::S_EqExpr: // EqExpr
       case symbol_kind::S_LAndExpr: // LAndExpr
       case symbol_kind::S_LOrExpr: // LOrExpr
-        value.template destroy< AstExprPtr > ();
+        value.template destroy< ast::ExprPtr > ();
         break;
 
       case symbol_kind::S_Stmt: // Stmt
@@ -930,12 +931,7 @@ switch (yykind)
       case symbol_kind::S_BlockStmt: // BlockStmt
       case symbol_kind::S_BlankStmt: // BlankStmt
       case symbol_kind::S_AssignStmt: // AssignStmt
-        value.template destroy< AstStmtPtr > ();
-        break;
-
-      case symbol_kind::S_ArrayIndices: // ArrayIndices
-      case symbol_kind::S_Type: // Type
-        value.template destroy< AstTypePtr > ();
+        value.template destroy< ast::StmtPtr > ();
         break;
 
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
@@ -943,24 +939,25 @@ switch (yykind)
         break;
 
       case symbol_kind::S_Def: // Def
-        value.template destroy< std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > ();
+        value.template destroy< std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > ();
         break;
 
       case symbol_kind::S_FuncParam: // FuncParam
-        value.template destroy< std::tuple<AstTypePtr, std::string> > ();
+        value.template destroy< std::tuple<TypePtr, std::string> > ();
         break;
 
+      case symbol_kind::S_ArrayIndices: // ArrayIndices
       case symbol_kind::S_InitValList: // InitValList
       case symbol_kind::S_FuncArgList: // FuncArgList
-        value.template destroy< std::vector<AstExprPtr> > ();
+        value.template destroy< std::vector<ast::ExprPtr> > ();
         break;
 
       case symbol_kind::S_DefList: // DefList
-        value.template destroy< std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> > ();
+        value.template destroy< std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>> > ();
         break;
 
       case symbol_kind::S_FuncParamList: // FuncParamList
-        value.template destroy< std::vector<std::tuple<AstTypePtr, std::string>> > ();
+        value.template destroy< std::vector<std::tuple<TypePtr, std::string>> > ();
         break;
 
       default:
@@ -973,7 +970,7 @@ switch (yykind)
       /// The user-facing name of this symbol.
       std::string name () const YY_NOEXCEPT
       {
-        return parser::symbol_name (this->kind ());
+        return  Parser ::symbol_name (this->kind ());
       }
 
       /// Backward compatibility (Bison 3.6).
@@ -1001,22 +998,24 @@ switch (yykind)
     /// Type access provider for token (enum) based symbols.
     struct by_kind
     {
-      /// Default constructor.
-      by_kind ();
-
-#if 201103L <= YY_CPLUSPLUS
-      /// Move constructor.
-      by_kind (by_kind&& that);
-#endif
-
-      /// Copy constructor.
-      by_kind (const by_kind& that);
-
       /// The symbol kind as needed by the constructor.
       typedef token_kind_type kind_type;
 
+      /// Default constructor.
+      by_kind () YY_NOEXCEPT;
+
+#if 201103L <= YY_CPLUSPLUS
+      /// Move constructor.
+      by_kind (by_kind&& that) YY_NOEXCEPT;
+#endif
+
+      /// Copy constructor.
+      by_kind (const by_kind& that) YY_NOEXCEPT;
+
       /// Constructor from (external) token numbers.
-      by_kind (kind_type t);
+      by_kind (kind_type t) YY_NOEXCEPT;
+
+
 
       /// Record that this symbol is empty.
       void clear () YY_NOEXCEPT;
@@ -1046,44 +1045,44 @@ switch (yykind)
       typedef basic_symbol<by_kind> super_type;
 
       /// Empty symbol.
-      symbol_type () {}
+      symbol_type () YY_NOEXCEPT {}
 
       /// Constructor for valueless symbols, and symbols from each type.
 #if 201103L <= YY_CPLUSPLUS
       symbol_type (int tok, location_type l)
-        : super_type (token_type (tok), std::move (l))
+        : super_type (token_kind_type (tok), std::move (l))
 #else
       symbol_type (int tok, const location_type& l)
-        : super_type (token_type (tok), l)
+        : super_type (token_kind_type (tok), l)
 #endif
       {}
 #if 201103L <= YY_CPLUSPLUS
-      symbol_type (int tok, AstComptimeValue v, location_type l)
-        : super_type (token_type (tok), std::move (v), std::move (l))
+      symbol_type (int tok, ComptimeValue v, location_type l)
+        : super_type (token_kind_type (tok), std::move (v), std::move (l))
 #else
-      symbol_type (int tok, const AstComptimeValue& v, const location_type& l)
-        : super_type (token_type (tok), v, l)
+      symbol_type (int tok, const ComptimeValue& v, const location_type& l)
+        : super_type (token_kind_type (tok), v, l)
 #endif
       {}
 #if 201103L <= YY_CPLUSPLUS
       symbol_type (int tok, std::string v, location_type l)
-        : super_type (token_type (tok), std::move (v), std::move (l))
+        : super_type (token_kind_type (tok), std::move (v), std::move (l))
 #else
       symbol_type (int tok, const std::string& v, const location_type& l)
-        : super_type (token_type (tok), v, l)
+        : super_type (token_kind_type (tok), v, l)
 #endif
       {}
     };
 
     /// Build a parser object.
-    parser (yyscan_t yyscanner_yyarg, yy::location& loc_yyarg, frontend::Driver& driver_yyarg);
-    virtual ~parser ();
+     Parser  (yyscan_t yyscanner_yyarg, location& loc_yyarg, Driver& driver_yyarg);
+    virtual ~ Parser  ();
 
 #if 201103L <= YY_CPLUSPLUS
     /// Non copyable.
-    parser (const parser&) = delete;
+     Parser  (const  Parser &) = delete;
     /// Non copyable.
-    parser& operator= (const parser&) = delete;
+     Parser & operator= (const  Parser &) = delete;
 #endif
 
     /// Parse.  An alias for parse ().
@@ -1274,14 +1273,14 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_INTEGER (AstComptimeValue v, location_type l)
+      make_INTEGER (ComptimeValue v, location_type l)
       {
         return symbol_type (token::INTEGER, std::move (v), std::move (l));
       }
 #else
       static
       symbol_type
-      make_INTEGER (const AstComptimeValue& v, const location_type& l)
+      make_INTEGER (const ComptimeValue& v, const location_type& l)
       {
         return symbol_type (token::INTEGER, v, l);
       }
@@ -1289,14 +1288,14 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_FLOATING (AstComptimeValue v, location_type l)
+      make_FLOATING (ComptimeValue v, location_type l)
       {
         return symbol_type (token::FLOATING, std::move (v), std::move (l));
       }
 #else
       static
       symbol_type
-      make_FLOATING (const AstComptimeValue& v, const location_type& l)
+      make_FLOATING (const ComptimeValue& v, const location_type& l)
       {
         return symbol_type (token::FLOATING, v, l);
       }
@@ -1471,7 +1470,7 @@ switch (yykind)
     class context
     {
     public:
-      context (const parser& yyparser, const symbol_type& yyla);
+      context (const  Parser & yyparser, const symbol_type& yyla);
       const symbol_type& lookahead () const YY_NOEXCEPT { return yyla_; }
       symbol_kind_type token () const YY_NOEXCEPT { return yyla_.kind (); }
       const location_type& location () const YY_NOEXCEPT { return yyla_.location; }
@@ -1482,16 +1481,16 @@ switch (yykind)
       int expected_tokens (symbol_kind_type yyarg[], int yyargn) const;
 
     private:
-      const parser& yyparser_;
+      const  Parser & yyparser_;
       const symbol_type& yyla_;
     };
 
   private:
 #if YY_CPLUSPLUS < 201103L
     /// Non copyable.
-    parser (const parser&);
+     Parser  (const  Parser &);
     /// Non copyable.
-    parser& operator= (const parser&);
+     Parser & operator= (const  Parser &);
 #endif
 
 
@@ -1512,19 +1511,19 @@ switch (yykind)
 
     /// Whether the given \c yypact_ value indicates a defaulted state.
     /// \param yyvalue   the value to check
-    static bool yy_pact_value_is_default_ (int yyvalue);
+    static bool yy_pact_value_is_default_ (int yyvalue) YY_NOEXCEPT;
 
     /// Whether the given \c yytable_ value indicates a syntax error.
     /// \param yyvalue   the value to check
-    static bool yy_table_value_is_error_ (int yyvalue);
+    static bool yy_table_value_is_error_ (int yyvalue) YY_NOEXCEPT;
 
-    static const short yypact_ninf_;
+    static const signed char yypact_ninf_;
     static const signed char yytable_ninf_;
 
     /// Convert a scanner token kind \a t to a symbol kind.
     /// In theory \a t should be a token_kind_type, but character literals
-    /// are valid, yet not members of the token_type enum.
-    static symbol_kind_type yytranslate_ (int t);
+    /// are valid, yet not members of the token_kind_type enum.
+    static symbol_kind_type yytranslate_ (int t) YY_NOEXCEPT;
 
     /// Convert the symbol name \a n to a form suitable for a diagnostic.
     static std::string yytnamerr_ (const char *yystr);
@@ -1662,7 +1661,7 @@ switch (yykind)
       typedef typename S::size_type size_type;
       typedef typename std::ptrdiff_t index_type;
 
-      stack (size_type n = 200)
+      stack (size_type n = 200) YY_NOEXCEPT
         : seq_ (n)
       {}
 
@@ -1741,7 +1740,7 @@ switch (yykind)
       class slice
       {
       public:
-        slice (const stack& stack, index_type range)
+        slice (const stack& stack, index_type range) YY_NOEXCEPT
           : stack_ (stack)
           , range_ (range)
         {}
@@ -1791,12 +1790,12 @@ switch (yykind)
     void yypush_ (const char* m, state_type s, YY_MOVE_REF (symbol_type) sym);
 
     /// Pop \a n symbols from the stack.
-    void yypop_ (int n = 1);
+    void yypop_ (int n = 1) YY_NOEXCEPT;
 
     /// Constants.
     enum
     {
-      yylast_ = 232,     ///< Last index in yytable_.
+      yylast_ = 231,     ///< Last index in yytable_.
       yynnts_ = 38,  ///< Number of nonterminal symbols.
       yyfinal_ = 55 ///< Termination state number.
     };
@@ -1804,14 +1803,14 @@ switch (yykind)
 
     // User arguments.
     yyscan_t yyscanner;
-    yy::location& loc;
-    frontend::Driver& driver;
+    location& loc;
+    Driver& driver;
 
   };
 
   inline
-  parser::symbol_kind_type
-  parser::yytranslate_ (int t)
+   Parser ::symbol_kind_type
+   Parser ::yytranslate_ (int t) YY_NOEXCEPT
   {
     // YYTRANSLATE[TOKEN-NUM] -- Symbol number corresponding to
     // TOKEN-NUM as returned by yylex.
@@ -1861,7 +1860,7 @@ switch (yykind)
 
   // basic_symbol.
   template <typename Base>
-  parser::basic_symbol<Base>::basic_symbol (const basic_symbol& that)
+   Parser ::basic_symbol<Base>::basic_symbol (const basic_symbol& that)
     : Base (that)
     , value ()
     , location (that.location)
@@ -1870,7 +1869,11 @@ switch (yykind)
     {
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_FLOATING: // FLOATING
-        value.copy< AstComptimeValue > (YY_MOVE (that.value));
+        value.copy< ComptimeValue > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_Type: // Type
+        value.copy< TypePtr > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_InitVal: // InitVal
@@ -1885,7 +1888,7 @@ switch (yykind)
       case symbol_kind::S_EqExpr: // EqExpr
       case symbol_kind::S_LAndExpr: // LAndExpr
       case symbol_kind::S_LOrExpr: // LOrExpr
-        value.copy< AstExprPtr > (YY_MOVE (that.value));
+        value.copy< ast::ExprPtr > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_Stmt: // Stmt
@@ -1899,12 +1902,7 @@ switch (yykind)
       case symbol_kind::S_BlockStmt: // BlockStmt
       case symbol_kind::S_BlankStmt: // BlankStmt
       case symbol_kind::S_AssignStmt: // AssignStmt
-        value.copy< AstStmtPtr > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_ArrayIndices: // ArrayIndices
-      case symbol_kind::S_Type: // Type
-        value.copy< AstTypePtr > (YY_MOVE (that.value));
+        value.copy< ast::StmtPtr > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
@@ -1912,24 +1910,25 @@ switch (yykind)
         break;
 
       case symbol_kind::S_Def: // Def
-        value.copy< std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > (YY_MOVE (that.value));
+        value.copy< std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_FuncParam: // FuncParam
-        value.copy< std::tuple<AstTypePtr, std::string> > (YY_MOVE (that.value));
+        value.copy< std::tuple<TypePtr, std::string> > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_ArrayIndices: // ArrayIndices
       case symbol_kind::S_InitValList: // InitValList
       case symbol_kind::S_FuncArgList: // FuncArgList
-        value.copy< std::vector<AstExprPtr> > (YY_MOVE (that.value));
+        value.copy< std::vector<ast::ExprPtr> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_DefList: // DefList
-        value.copy< std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> > (YY_MOVE (that.value));
+        value.copy< std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_FuncParamList: // FuncParamList
-        value.copy< std::vector<std::tuple<AstTypePtr, std::string>> > (YY_MOVE (that.value));
+        value.copy< std::vector<std::tuple<TypePtr, std::string>> > (YY_MOVE (that.value));
         break;
 
       default:
@@ -1940,30 +1939,36 @@ switch (yykind)
 
 
 
+
   template <typename Base>
-  parser::symbol_kind_type
-  parser::basic_symbol<Base>::type_get () const YY_NOEXCEPT
+   Parser ::symbol_kind_type
+   Parser ::basic_symbol<Base>::type_get () const YY_NOEXCEPT
   {
     return this->kind ();
   }
 
+
   template <typename Base>
   bool
-  parser::basic_symbol<Base>::empty () const YY_NOEXCEPT
+   Parser ::basic_symbol<Base>::empty () const YY_NOEXCEPT
   {
     return this->kind () == symbol_kind::S_YYEMPTY;
   }
 
   template <typename Base>
   void
-  parser::basic_symbol<Base>::move (basic_symbol& s)
+   Parser ::basic_symbol<Base>::move (basic_symbol& s)
   {
     super_type::move (s);
     switch (this->kind ())
     {
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_FLOATING: // FLOATING
-        value.move< AstComptimeValue > (YY_MOVE (s.value));
+        value.move< ComptimeValue > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_Type: // Type
+        value.move< TypePtr > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_InitVal: // InitVal
@@ -1978,7 +1983,7 @@ switch (yykind)
       case symbol_kind::S_EqExpr: // EqExpr
       case symbol_kind::S_LAndExpr: // LAndExpr
       case symbol_kind::S_LOrExpr: // LOrExpr
-        value.move< AstExprPtr > (YY_MOVE (s.value));
+        value.move< ast::ExprPtr > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_Stmt: // Stmt
@@ -1992,12 +1997,7 @@ switch (yykind)
       case symbol_kind::S_BlockStmt: // BlockStmt
       case symbol_kind::S_BlankStmt: // BlankStmt
       case symbol_kind::S_AssignStmt: // AssignStmt
-        value.move< AstStmtPtr > (YY_MOVE (s.value));
-        break;
-
-      case symbol_kind::S_ArrayIndices: // ArrayIndices
-      case symbol_kind::S_Type: // Type
-        value.move< AstTypePtr > (YY_MOVE (s.value));
+        value.move< ast::StmtPtr > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
@@ -2005,24 +2005,25 @@ switch (yykind)
         break;
 
       case symbol_kind::S_Def: // Def
-        value.move< std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>> > (YY_MOVE (s.value));
+        value.move< std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>> > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_FuncParam: // FuncParam
-        value.move< std::tuple<AstTypePtr, std::string> > (YY_MOVE (s.value));
+        value.move< std::tuple<TypePtr, std::string> > (YY_MOVE (s.value));
         break;
 
+      case symbol_kind::S_ArrayIndices: // ArrayIndices
       case symbol_kind::S_InitValList: // InitValList
       case symbol_kind::S_FuncArgList: // FuncArgList
-        value.move< std::vector<AstExprPtr> > (YY_MOVE (s.value));
+        value.move< std::vector<ast::ExprPtr> > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_DefList: // DefList
-        value.move< std::vector<std::tuple<AstTypePtr, std::string, std::optional<AstExprPtr>>> > (YY_MOVE (s.value));
+        value.move< std::vector<std::tuple<TypePtr, std::string, std::optional<ast::ExprPtr>>> > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_FuncParamList: // FuncParamList
-        value.move< std::vector<std::tuple<AstTypePtr, std::string>> > (YY_MOVE (s.value));
+        value.move< std::vector<std::tuple<TypePtr, std::string>> > (YY_MOVE (s.value));
         break;
 
       default:
@@ -2034,13 +2035,13 @@ switch (yykind)
 
   // by_kind.
   inline
-  parser::by_kind::by_kind ()
+   Parser ::by_kind::by_kind () YY_NOEXCEPT
     : kind_ (symbol_kind::S_YYEMPTY)
   {}
 
 #if 201103L <= YY_CPLUSPLUS
   inline
-  parser::by_kind::by_kind (by_kind&& that)
+   Parser ::by_kind::by_kind (by_kind&& that) YY_NOEXCEPT
     : kind_ (that.kind_)
   {
     that.clear ();
@@ -2048,46 +2049,51 @@ switch (yykind)
 #endif
 
   inline
-  parser::by_kind::by_kind (const by_kind& that)
+   Parser ::by_kind::by_kind (const by_kind& that) YY_NOEXCEPT
     : kind_ (that.kind_)
   {}
 
   inline
-  parser::by_kind::by_kind (token_kind_type t)
+   Parser ::by_kind::by_kind (token_kind_type t) YY_NOEXCEPT
     : kind_ (yytranslate_ (t))
   {}
 
+
+
   inline
   void
-  parser::by_kind::clear () YY_NOEXCEPT
+   Parser ::by_kind::clear () YY_NOEXCEPT
   {
     kind_ = symbol_kind::S_YYEMPTY;
   }
 
   inline
   void
-  parser::by_kind::move (by_kind& that)
+   Parser ::by_kind::move (by_kind& that)
   {
     kind_ = that.kind_;
     that.clear ();
   }
 
   inline
-  parser::symbol_kind_type
-  parser::by_kind::kind () const YY_NOEXCEPT
+   Parser ::symbol_kind_type
+   Parser ::by_kind::kind () const YY_NOEXCEPT
   {
     return kind_;
   }
 
+
   inline
-  parser::symbol_kind_type
-  parser::by_kind::type_get () const YY_NOEXCEPT
+   Parser ::symbol_kind_type
+   Parser ::by_kind::type_get () const YY_NOEXCEPT
   {
     return this->kind ();
   }
 
-} // yy
-#line 2091 "frontend/generated/parser.h"
+
+#line 20 "frontend/parser.y"
+} } //  syc::frontend 
+#line 2097 "frontend/generated/parser.h"
 
 
 

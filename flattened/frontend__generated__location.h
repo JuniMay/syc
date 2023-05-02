@@ -1,4 +1,4 @@
-// A Bison parser, made by GNU Bison 3.8.
+// A Bison parser, made by GNU Bison 3.8.2.
 
 // Locations for Bison parsers in C++
 
@@ -32,7 +32,7 @@
 
 /**
  ** \file "frontend/generated/location.h"
- ** Define the yy::location class.
+ ** Define the  syc::frontend ::location class.
  */
 
 #ifndef YY_YY_FRONTEND_GENERATED_LOCATION_H__INCLUDED
@@ -53,8 +53,9 @@
 #  endif
 # endif
 
-namespace yy {
-#line 58 "frontend/generated/location.h"
+#line 20 "frontend/parser.y"
+namespace  syc { namespace frontend  {
+#line 59 "frontend/generated/location.h"
 
   /// A point in a source file.
   class position
@@ -298,7 +299,8 @@ namespace yy {
     return ostr;
   }
 
-} // yy
-#line 303 "frontend/generated/location.h"
+#line 20 "frontend/parser.y"
+} } //  syc::frontend 
+#line 305 "frontend/generated/location.h"
 
 #endif // !YY_YY_FRONTEND_GENERATED_LOCATION_H__INCLUDED

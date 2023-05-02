@@ -14,11 +14,12 @@ Driver::Driver(std::string filename) {
   next_temp_id = 0;
   tokens = "";
   curr_decl_type = nullptr;
+  is_curr_decl_const = false;
 
   yylex_init(&lexer);
   yyset_in(fopen(filename.c_str(), "r"), lexer);
-  loc = new yy::location();
-  parser = new yy::parser(lexer, *loc, *this);
+  loc = new location();
+  parser = new Parser(lexer, *loc, *this);
 
   // now add functions of the runtime library.
   this->add_function_decl(create_int_type(), "getint", {});
