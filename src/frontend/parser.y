@@ -580,6 +580,9 @@ FuncParam
 
     $$ = std::make_tuple(type, $2);
   }
+  | Type IDENTIFIER '[' ']' {
+    $$ = std::make_tuple(create_array_type($1, std::nullopt), $2);
+  }
   | Type IDENTIFIER '[' ']' ArrayIndices {
     TypePtr type = $1;
 

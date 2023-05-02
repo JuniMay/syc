@@ -59,7 +59,7 @@ comptime_compute_binary(BinaryOp op, ComptimeValue lhs, ComptimeValue rhs) {
       }
       default: {
         throw std::runtime_error(
-          "Unsupported compile-time operation for type `bool`."
+          "Unsupported compile-time binary operation for type `bool`."
         );
       }
     }
@@ -75,6 +75,10 @@ comptime_compute_binary(BinaryOp op, ComptimeValue lhs, ComptimeValue rhs) {
       }
       case BinaryOp::Mul: {
         int value = std::get<int>(lhs.value) * std::get<int>(rhs.value);
+        return create_comptime_value(value, create_int_type());
+      }
+      case BinaryOp::Div: {
+        int value = std::get<int>(lhs.value) / std::get<int>(rhs.value);
         return create_comptime_value(value, create_int_type());
       }
       case BinaryOp::Mod: {
@@ -107,7 +111,7 @@ comptime_compute_binary(BinaryOp op, ComptimeValue lhs, ComptimeValue rhs) {
       }
       default: {
         throw std::runtime_error(
-          "Unsupported compile-time operation for type `int`."
+          "Unsupported compile-time binary operation for type `int`."
         );
       }
     }
@@ -151,12 +155,12 @@ comptime_compute_binary(BinaryOp op, ComptimeValue lhs, ComptimeValue rhs) {
       }
       default: {
         throw std::runtime_error(
-          "Unsupported compile-time operation for type `int`."
+          "Unsupported compile-time binary operation for type `int`."
         );
       }
     }
   } else {
-    throw std::runtime_error("Unsupported type for compile-time computation.");
+    throw std::runtime_error("Unsupported type for compile-time bianry operation.");
   }
 }
 
@@ -175,7 +179,7 @@ ComptimeValue comptime_compute_unary(UnaryOp op, ComptimeValue val) {
       }
       default: {
         throw std::runtime_error(
-          "Unsupported compile-time operation for type `bool`."
+          "Unsupported compile-time unary operation for type `bool`."
         );
       }
     }
@@ -187,7 +191,7 @@ ComptimeValue comptime_compute_unary(UnaryOp op, ComptimeValue val) {
       }
       default: {
         throw std::runtime_error(
-          "Unsupported compile-time operation for type `int`."
+          "Unsupported compile-time unary operation for type `int`."
         );
       }
     }
@@ -199,12 +203,14 @@ ComptimeValue comptime_compute_unary(UnaryOp op, ComptimeValue val) {
       }
       default: {
         throw std::runtime_error(
-          "Unsupported compile-time operation for type `float`."
+          "Unsupported compile-time unary operation for type `float`."
         );
       }
     }
   } else {
-    throw std::runtime_error("Unsupported type for compile-time computation.");
+    throw std::runtime_error(
+      "Unsupported type for compile-time unary operation."
+    );
   }
 }
 

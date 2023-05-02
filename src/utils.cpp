@@ -39,9 +39,9 @@ Options parse_args(int argc, char** argv) {
       }
       options.output_file = argv[i + 1];
       i++;
-    } else if (arg == "--emit-token") {
+    } else if (arg == "--emit-tokens") {
       if (i + 1 >= argc) {
-        std::cerr << "error: no token file specified" << std::endl;
+        std::cerr << "error: no tokens file specified" << std::endl;
         exit(1);
       }
       options.token_file = argv[i + 1];
@@ -68,6 +68,8 @@ Options parse_args(int argc, char** argv) {
       options.optimization_level = 2;
     } else if (arg == "-O3") {
       options.optimization_level = 3;
+    }else if (arg == "-S") {
+      // do nothing.
     } else {
       options.input_filename = arg;
     }
