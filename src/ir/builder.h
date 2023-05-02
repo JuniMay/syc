@@ -177,7 +177,8 @@ struct Builder {
   void add_function(
     std::string function_name,
     std::vector<OperandID> parameter_id_list,
-    TypePtr return_type
+    TypePtr return_type,
+    bool is_declare = false
   );
 };
 

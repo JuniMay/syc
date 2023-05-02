@@ -28,7 +28,33 @@ void irgen_stmt(frontend::ast::StmtPtr ast_stmt, ir::Builder& ir_builder) {
           irgen_stmt(ast_stmt, ir_builder);
         }
       },
-      [&](frontend::ast::stmt::FuncDef& kind) {},
+      [&](frontend::ast::stmt::FuncDef& kind) {
+        auto function_name = kind.symbol_entry->name;
+        std::vector<ir::OperandID> parameter_id_list = {};
+
+        for (const auto& param_name : kind.param_names) {
+          auto param_symbol_entry =
+            kind.symtable->lookup(param_name, false).value();
+          auto ir_operand_id =
+            irgen_symbol_entry(param_symbol_entry, ir_builder);
+          parameter_id_list.push_back(ir_operand_id);
+        }
+
+        auto ir_return_type = irgen_type(
+          kind.symbol_entry->type->get_ret_type().value(), ir_builder
+        );
+
+        if (kind.maybe_body.has_value()) {
+          ir_builder.add_function(
+            function_name, parameter_id_list, ir_return_type, false
+          );
+          irgen_stmt(kind.maybe_body.value(), ir_builder);
+        } else {
+          ir_builder.add_function(
+            function_name, parameter_id_list, ir_return_type, true
+          );
+        }
+      },
       [&](auto& kind) {},
     },
     ast_stmt->kind
@@ -54,6 +80,11 @@ ir::TypePtr irgen_type(frontend::TypePtr ast_type, ir::Builder& ir_builder) {
       },
       [&](const frontend::type::Void&) { return ir_builder.fetch_void_type(); },
       [&](const frontend::type::Array& kind) {
+        if (!kind.maybe_size.has_value()) {
+          return ir_builder.fetch_pointer_type(
+            irgen_type(kind.element_type, ir_builder)
+          );
+        }
         return ir_builder.fetch_array_type(
           kind.maybe_size, irgen_type(kind.element_type, ir_builder)
         );
@@ -72,6 +103,10 @@ ir::OperandID irgen_symbol_entry(
   frontend::SymbolEntryPtr ast_symbol_entry,
   ir::Builder& ir_builder
 ) {
+  if (ast_symbol_entry->has_ir_operand()) {
+    return ast_symbol_entry->maybe_ir_operand_id.value();
+  }
+
   ir::OperandID ir_operand_id;
   switch (ast_symbol_entry->scope) {
     case frontend::Scope::Global: {

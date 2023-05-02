@@ -64,6 +64,13 @@ std::optional<TypePtr> Type::get_value_type() const {
   return std::get<type::Pointer>(kind).value_type;
 }
 
+std::optional<TypePtr> Type::get_ret_type() const {
+  if (!is_function()) {
+    return std::nullopt;
+  }
+  return std::get<type::Function>(kind).ret_type;
+}
+
 std::string Type::to_string() const {
   if (is_bool()) {
     return "bool";

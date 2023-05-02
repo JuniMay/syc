@@ -67,6 +67,8 @@ struct Type {
   /// If the type is not a pointer, return `std::nullopt`.
   std::optional<TypePtr> get_value_type() const;
 
+  std::optional<TypePtr> get_ret_type() const;
+
   /// Convert the type to string.
   std::string to_string() const;
 };

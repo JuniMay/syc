@@ -372,10 +372,12 @@ void Builder::switch_function(std::string function_name) {
 void Builder::add_function(
   std::string function_name,
   std::vector<OperandID> parameter_id_list,
-  TypePtr return_type
+  TypePtr return_type,
+  bool is_declare
 ) {
-  auto function =
-    std::make_shared<Function>(function_name, return_type, parameter_id_list);
+  auto function = std::make_shared<Function>(
+    function_name, return_type, parameter_id_list, is_declare
+  );
   context.register_function(function);
   curr_function = function;
 }

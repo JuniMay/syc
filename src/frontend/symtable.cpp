@@ -67,12 +67,13 @@ SymbolTablePtr create_symbol_table(std::optional<SymbolTablePtr> maybe_parent) {
   return table;
 }
 
-std::optional<SymbolEntryPtr> SymbolTable::lookup(const std::string& name) {
+std::optional<SymbolEntryPtr>
+SymbolTable::lookup(const std::string& name, bool lookup_parent) {
   auto it = table.find(name);
   if (it != table.end()) {
     return it->second;
   }
-  if (this->maybe_parent.has_value()) {
+  if (lookup_parent && this->maybe_parent.has_value()) {
     return this->maybe_parent.value()->lookup(name);
   }
   return std::nullopt;
