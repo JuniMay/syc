@@ -73,23 +73,23 @@ std::optional<TypePtr> Type::get_ret_type() const {
 
 std::string Type::to_string() const {
   if (is_bool()) {
-    return "bool";
+    return "BOOL";
   }
   if (is_int()) {
-    return "int";
+    return "INT";
   }
   if (is_float()) {
-    return "float";
+    return "FLOAT";
   }
   if (is_array()) {
     auto array = std::get<type::Array>(kind);
     std::string length = array.maybe_length.has_value()
-                          ? std::to_string(array.maybe_length.value())
+                          ? std::to_string(array.maybe_length.value()) + " "
                           : "";
-    return  "[" + length + " x " + array.element_type->to_string() + "]";
+    return  "[" + length + "x " + array.element_type->to_string() + "]";
   }
   if (is_void()) {
-    return "void";
+    return "VOID";
   }
   if (is_pointer()) {
     return get_value_type().value()->to_string() + "*";
