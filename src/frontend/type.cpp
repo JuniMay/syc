@@ -83,10 +83,10 @@ std::string Type::to_string() const {
   }
   if (is_array()) {
     auto array = std::get<type::Array>(kind);
-    std::string size = array.maybe_size.has_value()
-                         ? std::to_string(array.maybe_size.value())
-                         : "";
-    return array.element_type->to_string() + "[" + size + "]";
+    std::string length = array.maybe_length.has_value()
+                          ? std::to_string(array.maybe_length.value())
+                          : "";
+    return array.element_type->to_string() + "[" + length + "]";
   }
   if (is_void()) {
     return "void";
@@ -127,8 +127,8 @@ TypePtr create_void_type() {
 }
 
 TypePtr
-create_array_type(TypePtr element_type, std::optional<size_t> maybe_size) {
-  return std::make_shared<Type>(TypeKind(type::Array{element_type, maybe_size})
+create_array_type(TypePtr element_type, std::optional<size_t> maybe_length) {
+  return std::make_shared<Type>(TypeKind(type::Array{element_type, maybe_length})
   );
 }
 
@@ -154,16 +154,17 @@ std::optional<TypePtr> create_array_type_from_expr(
   if (!expr->is_comptime()) {
     return std::nullopt;
   }
-  auto comptime_size = expr->get_comptime_value();
-  if (!comptime_size.has_value()) {
+  auto comptime_count = expr->get_comptime_value();
+  if (!comptime_count.has_value()) {
     return std::nullopt;
   }
 
-  auto comptime_size_int =
-    comptime_compute_cast(comptime_size.value(), create_int_type());
+  auto comptime_count_int =
+    comptime_compute_cast(comptime_count.value(), create_int_type());
 
-  int size = std::get<int>(comptime_size_int.value);
-  auto type = create_array_type(element_type, std::make_optional((size_t)size));
+  int count = std::get<int>(comptime_count_int.value);
+  auto type =
+    create_array_type(element_type, std::make_optional((size_t)count));
 
   return std::make_optional(type);
 }
@@ -180,11 +181,11 @@ bool operator==(TypePtr lhs, TypePtr rhs) {
       },
       [](type::Float& lhs, type::Float& rhs) { return true; },
       [](type::Array& lhs, type::Array& rhs) {
-        if (lhs.maybe_size.has_value() != rhs.maybe_size.has_value()) {
+        if (lhs.maybe_length.has_value() != rhs.maybe_length.has_value()) {
           return false;
         }
-        if (lhs.maybe_size.has_value()) {
-          if (lhs.maybe_size.value() != rhs.maybe_size.value()) {
+        if (lhs.maybe_length.has_value()) {
+          if (lhs.maybe_length.value() != rhs.maybe_length.value()) {
             return false;
           }
         }

@@ -80,13 +80,13 @@ ir::TypePtr irgen_type(frontend::TypePtr ast_type, ir::Builder& ir_builder) {
       },
       [&](const frontend::type::Void&) { return ir_builder.fetch_void_type(); },
       [&](const frontend::type::Array& kind) {
-        if (!kind.maybe_size.has_value()) {
+        if (!kind.maybe_length.has_value()) {
           return ir_builder.fetch_pointer_type(
             irgen_type(kind.element_type, ir_builder)
           );
         }
         return ir_builder.fetch_array_type(
-          kind.maybe_size, irgen_type(kind.element_type, ir_builder)
+          kind.maybe_length.value(), irgen_type(kind.element_type, ir_builder)
         );
       },
       [&](const frontend::type::Pointer& kind) {

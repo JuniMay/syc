@@ -227,7 +227,7 @@ ArrayIndices
       driver.curr_decl_type, std::make_optional($2));
     if (!maybe_type.has_value()) {
       std::cerr << @2 << ":" 
-                << "Array size must be const expression." << std::endl;
+                << "Array length must be const expression." << std::endl;
       YYABORT;
     }
     $$ = maybe_type.value();
@@ -237,7 +237,7 @@ ArrayIndices
       $1, std::make_optional($3));
     if (!maybe_type.has_value()) {
       std::cerr << @3 << ":" 
-                << "Array size must be const expression." << std::endl;
+                << "Array length must be const expression." << std::endl;
       YYABORT;
     }
     $$ = maybe_type.value();
@@ -556,7 +556,8 @@ FuncParam
       std::get<0>($1), std::make_optional($3));
 
     if (!maybe_type.has_value()) {
-      std::cerr << @3 << ":" << "Array size must be const expression." << std::endl;
+      std::cerr << @3 << ":" 
+                << "Array length must be const expression." << std::endl;
       YYABORT;
     }
 

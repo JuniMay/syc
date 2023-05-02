@@ -374,10 +374,6 @@ void Compunit::add_stmt(StmtPtr stmt) {
   this->stmts.push_back(stmt);
 }
 
-size_t stmt::Decl::get_def_cnt() const {
-  return this->defs.size();
-}
-
 Expr::Expr(ExprKind kind, std::optional<SymbolEntryPtr> maybe_symbol_entry)
   : kind(kind), maybe_symbol_entry(maybe_symbol_entry) {}
 

@@ -24,7 +24,7 @@ struct Float {};
 
 struct Array {
   TypePtr element_type;
-  std::optional<size_t> maybe_size;
+  std::optional<size_t> maybe_length;
 };
 
 struct Void {};
@@ -78,7 +78,7 @@ TypePtr create_bool_type();
 TypePtr create_float_type();
 TypePtr create_void_type();
 TypePtr
-create_array_type(TypePtr element_type, std::optional<size_t> maybe_size);
+create_array_type(TypePtr element_type, std::optional<size_t> maybe_length);
 TypePtr create_pointer_type(TypePtr value_type);
 TypePtr
 create_function_type(TypePtr ret_type, std::vector<TypePtr> param_types);

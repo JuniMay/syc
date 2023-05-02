@@ -31,7 +31,7 @@ struct Builder {
     return std::make_shared<Type>(type::Pointer{value_type});
   }
 
-  TypePtr fetch_array_type(std::optional<size_t> length, TypePtr value_type) {
+  TypePtr fetch_array_type(size_t length, TypePtr value_type) {
     return std::make_shared<Type>(type::Array{length, value_type});
   }
 

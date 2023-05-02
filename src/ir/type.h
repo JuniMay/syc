@@ -16,7 +16,7 @@ struct Integer {
 struct Float {};
 
 struct Array {
-  std::optional<size_t> length;
+  size_t length;
   TypePtr element_type;
 };
 
