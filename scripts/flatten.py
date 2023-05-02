@@ -45,6 +45,21 @@ def dfs(current_path, output_path):
             if not args.test:
                 with open(out_path, 'w') as f:
                     f.write(content)
+        
+        # duplicate generated parser.h to avoid header problem.
+        if os.path.isfile(full_path) and full_path.endswith('parser.h'):
+            out_path = os.path.join(output_path, 'parser.h')
+            content = ""
+            
+            with open(full_path, 'r') as f:
+                for line in f:
+                    content += process(line)
+                    
+            print("{:40} -> {:40}".format(full_path, out_path))
+            if not args.test:
+                with open(out_path, 'w') as f:
+                    f.write(content)
+        
         if os.path.isdir(full_path):
             dfs(full_path, output_path)
 
@@ -60,17 +75,3 @@ def run_with(args):
 if __name__ == '__main__':
     args = parse_args()
     run_with(args)
-    # if os.path.exists("./backend"):
-    #     shutil.rmtree("./src")
-    # if os.path.exists("./testcases"):
-    #     shutil.rmtree("./testcases")
-    # if os.path.exists("./build"):
-    #     shutil.rmtree("./build")
-    # if os.path.exists("./third_party"):
-    #     shutil.rmtree("./third_party")
-    # if os.path.exists("./scripts"):
-    #     shutil.rmtree("./scripts")
-    # if os.path.exists("./cache"):
-    #     shutil.rmtree('./cache')
-    # if os.path.exists(".gitignore"):
-    #     os.remove(".gitignore")

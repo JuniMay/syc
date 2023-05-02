@@ -2,12 +2,25 @@
 
 ## Getting Started
 
+### Development
+
 1. Generate the parser and lexer using `yacc_gen.sh` under scripts directory.
 2. Build using cmake.
 
+### Submission
+
+The machanism of the contest is compile everything altogether. So we need to flatten the source code.
+
+```shell
+python3 scripts/flatten.py --input_dir ./src --output_dir ./flattened
+python3 scripts/test_flattened.py
+```
+
+This will generate the `syc` executable in the current directory.
+
 ## Todo List
 
-- [ ] Flatten source code for submit
+- [x] Flatten source code for submit
 - [x] Command-line arguments
 - [ ] Parser & Lexer
   - [x] Solve shift/reduce conflict of function and declaration.
