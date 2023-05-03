@@ -1,0 +1,20 @@
+name: run-tests
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Flatten
+        run: python scripts/flatten.py --input_dir src --output_dir ${{github.workspace}}/flattened
+
+      - name: Run tests
+        run: python scripts/run.py
