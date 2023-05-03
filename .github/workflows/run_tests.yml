@@ -13,8 +13,14 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: Install Bison and Flex
+        run: sudo apt-get install bison flex
+
+      - name: Generate Parser
+        run: bash scripts/yacc_gen.sh
+
       - name: Flatten
-        run: python scripts/flatten.py --input_dir src --output_dir ${{github.workspace}}/flattened
+        run: python scripts/flatten.py --input_dir src --output_dir flattened
 
       - name: Run tests
         run: python scripts/run.py
