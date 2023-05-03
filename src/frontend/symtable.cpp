@@ -39,21 +39,21 @@ std::string SymbolEntry::to_string() const {
   std::stringstream ss;
   switch (scope) {
     case Scope::Global:
-      ss << "global";
+      ss << "GLOBAL";
       break;
     case Scope::Param:
-      ss << "param";
+      ss << "PARAM";
       break;
     case Scope::Local:
-      ss << "local";
+      ss << "LOCAL";
       break;
     case Scope::Temp:
-      ss << "temp";
+      ss << "TEMP";
       break;
   }
   ss << " " << name << " " << type->to_string();
   if (is_const) {
-    ss << " (const)";
+    ss << " (CONST)";
   }
   if (maybe_value.has_value()) {
     ss << " = " << maybe_value.value().to_string();
@@ -85,9 +85,9 @@ void SymbolTable::add_symbol_entry(SymbolEntryPtr symbol_entry) {
 
 std::string SymbolTable::to_string() const {
   std::stringstream ss;
-  ss << "SymbolTable: " << std::endl;
+  ss << "$SymbolTable$: " << std::endl;
   for (auto& [name, symbol_entry] : table) {
-    ss << "  " << symbol_entry->to_string() << std::endl;
+    ss << "- " << symbol_entry->to_string() << std::endl;
   }
   return ss.str();
 }
