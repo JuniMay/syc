@@ -85,7 +85,7 @@ void SymbolTable::add_symbol_entry(SymbolEntryPtr symbol_entry) {
 
 std::string SymbolTable::to_string() const {
   std::stringstream ss;
-  ss << "$SymbolTable$: " << std::endl;
+  ss << "SymbolTable: " << std::endl;
   for (auto& [name, symbol_entry] : table) {
     ss << "- " << symbol_entry->to_string() << std::endl;
   }

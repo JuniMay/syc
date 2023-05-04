@@ -34,11 +34,11 @@ This will generate the `syc` executable in the current directory.
     - nullptr in the driver still remains.
   - [ ] Suppot string.
   - [ ] Replace YYABORT with better error handling.
-- [ ] AST display
+- [x] AST display
   - [x] Compunit
   - [x] Statement
   - [x] Expression
-  - [ ] Prettify
+  - [x] Prettify
 - [ ] IR Generation
   - [ ] Compunit
   - [ ] Stmt
