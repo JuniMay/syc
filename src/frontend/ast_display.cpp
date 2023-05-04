@@ -16,8 +16,7 @@ std::string Expr::to_string() const {
     overloaded{
       [&buf, this](const expr::Identifier& kind) {
         buf << "Identifier " << kind.name << std::endl;
-        buf << indent_str(this->maybe_symbol_entry.value()->to_string(), "\t")
-            << std::endl;
+        buf << indent_str(kind.symbol->to_string(), "\t") << std::endl;
       },
       [&buf, this](const expr::Binary& kind) {
         buf << "Binary ";
@@ -65,7 +64,7 @@ std::string Expr::to_string() const {
             buf << "Index";
             break;
         }
-        buf << " " << this->maybe_symbol_entry.value()->name << std::endl;
+        buf << " " << kind.symbol->name << std::endl;
         buf << indent_str(kind.lhs->to_string(), "\t") << std::endl;
         buf << indent_str(kind.rhs->to_string(), "\t") << std::endl;
       },
@@ -82,18 +81,18 @@ std::string Expr::to_string() const {
             buf << "LogicalNot";
             break;
         }
-        buf << " " << this->maybe_symbol_entry.value()->name << std::endl;
+        buf << " " << kind.symbol->name << std::endl;
         buf << indent_str(kind.expr->to_string(), "\t") << std::endl;
       },
       [&buf, this](const expr::Call& kind) {
-        buf << "Call " << this->maybe_symbol_entry.value()->name << std::endl;
+        buf << "Call " << kind.symbol->name << std::endl;
         buf << "  FUNCTION: " << kind.name << std::endl;
         for (auto expr : kind.args) {
           buf << indent_str(expr->to_string(), "\t") << std::endl;
         }
       },
       [&buf, this](const expr::Cast& kind) {
-        buf << "Cast " << this->maybe_symbol_entry.value()->name << std::endl;
+        buf << "Cast " << kind.symbol->name << std::endl;
         buf << indent_str(kind.expr->to_string(), "\t") << std::endl;
         buf << indent_str(kind.type->to_string(), "\t") << std::endl;
       },
@@ -182,7 +181,6 @@ std::string Stmt::to_string() const {
         }
         buf << std::endl;
         for (const auto& [type, name, maybe_init] : kind.defs) {
-          buf << "  DEF ";
           buf << indent_str(type->to_string(), "\t") << " " << name
               << std::endl;
           if (maybe_init.has_value()) {

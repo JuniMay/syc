@@ -9,7 +9,7 @@ namespace frontend {
 namespace ast {
 
 void expr::InitializerList::set_type(TypePtr type) {
-  this->maybe_type = std::make_optional(type);
+  this->type = type;
 }
 
 bool Expr::is_comptime() const {
@@ -22,8 +22,7 @@ bool Expr::is_comptime() const {
       [](const expr::Cast& kind) { return kind.expr->is_comptime(); },
       [](const expr::Constant& kind) { return true; },
       [this](const expr::Identifier& kind) {
-        auto symbol_entry = this->maybe_symbol_entry.value();
-        if (symbol_entry->is_const) {
+        if (kind.symbol->is_const) {
           return true;
         } else {
           return false;
@@ -72,8 +71,7 @@ std::optional<ComptimeValue> Expr::get_comptime_value() const {
         return std::make_optional(kind.value);
       },
       [this](const expr::Identifier& kind) -> std::optional<ComptimeValue> {
-        auto symbol_entry = this->maybe_symbol_entry.value();
-        return symbol_entry->maybe_value;
+        return kind.symbol->maybe_value;
       },
       [](const auto&) -> std::optional<ComptimeValue> { return std::nullopt; },
     },
@@ -82,17 +80,18 @@ std::optional<ComptimeValue> Expr::get_comptime_value() const {
 }
 
 TypePtr Expr::get_type() const {
-  if (this->maybe_symbol_entry.has_value()) {
-    return this->maybe_symbol_entry.value()->type;
-  } else {
-    if (std::holds_alternative<expr::Constant>(this->kind)) {
-      return std::get<expr::Constant>(this->kind).value.type;
-    } else if (std::holds_alternative<expr::InitializerList>(this->kind)) {
-      return std::get<expr::InitializerList>(this->kind).maybe_type.value();
-    } else {
-      throw std::runtime_error("Error: unknown type for expression.");
-    }
-  }
+  return std::visit(
+    overloaded{
+      [](const expr::Identifier& kind) { return kind.symbol->type; },
+      [](const expr::Binary& kind) { return kind.symbol->type; },
+      [](const expr::Unary& kind) { return kind.symbol->type; },
+      [](const expr::Cast& kind) { return kind.symbol->type; },
+      [](const expr::Constant& kind) { return kind.value.type; },
+      [](const expr::InitializerList& kind) { return kind.type; },
+      [](const expr::Call& kind) { return kind.symbol->type; },
+    },
+    this->kind
+  );
 }
 
 bool Expr::is_initializer_list() const {
@@ -102,19 +101,17 @@ bool Expr::is_initializer_list() const {
 Compunit::Compunit() : symtable(create_symbol_table(std::nullopt)), stmts({}) {}
 
 ExprPtr create_initializer_list_expr(std::vector<ExprPtr> init_list) {
-  return std::make_shared<Expr>(
-    ExprKind(expr::InitializerList{init_list, std::nullopt}), std::nullopt
-  );
+  return std::make_shared<Expr>(ExprKind(expr::InitializerList{
+    init_list, nullptr}));
 }
 
 ExprPtr create_identifier_expr(SymbolEntryPtr symbol_entry) {
-  return std::make_shared<Expr>(
-    ExprKind(expr::Identifier{symbol_entry->name}), symbol_entry
-  );
+  return std::make_shared<Expr>(ExprKind(expr::Identifier{
+    symbol_entry->name, symbol_entry}));
 }
 
 ExprPtr create_constant_expr(ComptimeValue value) {
-  return std::make_shared<Expr>(ExprKind(expr::Constant{value}), std::nullopt);
+  return std::make_shared<Expr>(ExprKind(expr::Constant{value}));
 }
 
 ExprPtr
@@ -124,7 +121,6 @@ create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver) {
 
   std::optional<TypePtr> type = std::nullopt;
 
-  // TODO: unify type checking
   switch (op) {
     case BinaryOp::Add:
     case BinaryOp::Sub:
@@ -189,9 +185,8 @@ create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver) {
 
   symtable->add_symbol_entry(symbol_entry);
 
-  return std::make_shared<Expr>(
-    ExprKind(expr::Binary{op, lhs, rhs}), symbol_entry
-  );
+  return std::make_shared<Expr>(ExprKind(expr::Binary{
+    op, lhs, rhs, symbol_entry}));
 }
 
 ExprPtr create_unary_expr(UnaryOp op, ExprPtr expr, Driver& driver) {
@@ -205,8 +200,7 @@ ExprPtr create_unary_expr(UnaryOp op, ExprPtr expr, Driver& driver) {
     auto symbol_entry =
       create_symbol_entry(Scope::Temp, symbol_name, type, false, std::nullopt);
     symtable->add_symbol_entry(symbol_entry);
-    return std::make_shared<Expr>(
-      ExprKind(expr::Unary{op, expr}), symbol_entry
+    return std::make_shared<Expr>(ExprKind(expr::Unary{op, expr, symbol_entry})
     );
   } else {
     // expr is int/float: !expr -> expr == 0
@@ -234,9 +228,8 @@ ExprPtr create_call_expr(
 
   symtable->add_symbol_entry(symbol_entry);
 
-  return std::make_shared<Expr>(
-    ExprKind(expr::Call{func_name, args}), symbol_entry
-  );
+  return std::make_shared<Expr>(ExprKind(expr::Call{
+    func_name, args, symbol_entry}));
 }
 
 ExprPtr create_cast_expr(ExprPtr expr, TypePtr type, Driver& driver) {
@@ -248,7 +241,7 @@ ExprPtr create_cast_expr(ExprPtr expr, TypePtr type, Driver& driver) {
 
   symtable->add_symbol_entry(symbol_entry);
 
-  return std::make_shared<Expr>(ExprKind(expr::Cast{expr, type}), symbol_entry);
+  return std::make_shared<Expr>(ExprKind(expr::Cast{expr, type, symbol_entry}));
 }
 
 StmtPtr create_blank_stmt() {
@@ -374,8 +367,7 @@ void Compunit::add_stmt(StmtPtr stmt) {
   this->stmts.push_back(stmt);
 }
 
-Expr::Expr(ExprKind kind, std::optional<SymbolEntryPtr> maybe_symbol_entry)
-  : kind(kind), maybe_symbol_entry(maybe_symbol_entry) {}
+Expr::Expr(ExprKind kind) : kind(kind) {}
 
 Stmt::Stmt(StmtKind kind) : kind(kind) {}
 

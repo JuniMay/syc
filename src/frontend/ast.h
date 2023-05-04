@@ -60,6 +60,8 @@ namespace expr {
 struct Identifier {
   /// Name of the identifier
   std::string name;
+  /// Symbol entry
+  SymbolEntryPtr symbol;
 };
 
 /// Binary expression.
@@ -70,6 +72,8 @@ struct Binary {
   ExprPtr lhs;
   /// Right-hand side expression.
   ExprPtr rhs;
+  /// Symbol entry of the destination.
+  SymbolEntryPtr symbol;
 };
 
 /// Unary expression.
@@ -78,6 +82,8 @@ struct Unary {
   UnaryOp op;
   /// Expression.
   ExprPtr expr;
+  /// Symbol entry of the destination.
+  SymbolEntryPtr symbol;
 };
 
 /// Initializer list for variable/constant definition.
@@ -85,7 +91,7 @@ struct InitializerList {
   /// values, represented as expressions.
   std::vector<ExprPtr> init_list;
   /// Type of the initializer list.
-  std::optional<TypePtr> maybe_type;
+  TypePtr type;
 
   void set_type(TypePtr);
 };
@@ -96,6 +102,8 @@ struct Call {
   std::string name;
   /// Arguments.
   std::vector<ExprPtr> args;
+  /// Symbol entry for the destination.
+  SymbolEntryPtr symbol;
 };
 
 /// Cast expression.
@@ -104,6 +112,8 @@ struct Cast {
   ExprPtr expr;
   /// Target type.
   TypePtr type;
+  /// Symbol entry of the destination.
+  SymbolEntryPtr symbol;
 };
 
 /// Literal number (or a constant)
@@ -121,14 +131,11 @@ struct Expr {
   /// Symbol entry
   /// If the expression is a identifier, the symbol entry is corresponding to
   /// the name. Otherwise the symbol entry is temporary.
-  /// If the expression is a literal value, the symbol entry is
-  /// nullopt.
-  /// TODO: type for initializer list. The expression in init list is not always
-  /// the same type.
-  std::optional<SymbolEntryPtr> maybe_symbol_entry;
+  /// If the expression is a literal value or a initializer list, the symbol
+  /// entry is nullopt.
 
   /// Constructor
-  Expr(ExprKind kind, std::optional<SymbolEntryPtr> maybe_symbol_entry);
+  Expr(ExprKind kind);
 
   /// If the expression is compile-time computable.
   bool is_comptime() const;
