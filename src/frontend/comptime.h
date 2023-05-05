@@ -14,8 +14,8 @@ struct Zeroinitializer {};
 /// This is the representation of literal, constant, and compile time computed
 /// result.
 struct ComptimeValue {
-  /// The value is bool, int or float.
-  ComptimeValueKind value;
+  /// The kind of the compile-time value.
+  ComptimeValueKind kind;
   /// Type of the value.
   TypePtr type;
 
@@ -25,7 +25,7 @@ struct ComptimeValue {
   bool is_zeroinitializer() const;
 };
 
-ComptimeValuePtr create_comptime_value(ComptimeValueKind value, TypePtr type);
+ComptimeValuePtr create_comptime_value(ComptimeValueKind kind, TypePtr type);
 
 ComptimeValuePtr create_zero_comptime_value(TypePtr type);
 

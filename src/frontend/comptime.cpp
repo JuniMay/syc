@@ -13,14 +13,14 @@ std::string ComptimeValue::to_string() const {
   std::stringstream buf;
 
   if (this->type->is_bool()) {
-    buf << "COMPTIME BOOL " << std::get<bool>(this->value);
+    buf << "COMPTIME BOOL " << std::get<bool>(this->kind);
   } else if (this->type->is_int()) {
-    buf << "COMPTIME INT " << std::get<int>(this->value);
+    buf << "COMPTIME INT " << std::get<int>(this->kind);
   } else if (this->type->is_float()) {
-    buf << "COMPTIME FLOAT " << std::get<float>(this->value);
+    buf << "COMPTIME FLOAT " << std::get<float>(this->kind);
   } else if (this->type->is_array()) {
     buf << "COMPTIME ARRAY {" << std::endl;
-    for (auto& item : std::get<std::vector<ComptimeValuePtr>>(this->value)) {
+    for (auto& item : std::get<std::vector<ComptimeValuePtr>>(this->kind)) {
       buf << indent_str(item->to_string(), "\t") << std::endl;
     }
     buf << "}";
@@ -34,11 +34,11 @@ std::string ComptimeValue::to_string() const {
 }
 
 bool ComptimeValue::is_zeroinitializer() const {
-  return std::holds_alternative<Zeroinitializer>(this->value);
+  return std::holds_alternative<Zeroinitializer>(this->kind);
 }
 
-ComptimeValuePtr create_comptime_value(ComptimeValueKind value, TypePtr type) {
-  return std::make_shared<ComptimeValue>(ComptimeValue{value, type});
+ComptimeValuePtr create_comptime_value(ComptimeValueKind kind, TypePtr type) {
+  return std::make_shared<ComptimeValue>(ComptimeValue{kind, type});
 }
 
 ComptimeValuePtr create_zero_comptime_value(TypePtr type) {
@@ -64,11 +64,11 @@ ComptimeValuePtr comptime_compute_binary(
   if (lhs->type->is_bool()) {
     switch (op) {
       case BinaryOp::LogicalAnd: {
-        bool value = std::get<bool>(lhs->value) && std::get<bool>(rhs->value);
+        bool value = std::get<bool>(lhs->kind) && std::get<bool>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       case BinaryOp::LogicalOr: {
-        bool value = std::get<bool>(lhs->value) || std::get<bool>(rhs->value);
+        bool value = std::get<bool>(lhs->kind) || std::get<bool>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       default: {
@@ -80,47 +80,47 @@ ComptimeValuePtr comptime_compute_binary(
   } else if (lhs->type->is_int()) {
     switch (op) {
       case BinaryOp::Add: {
-        int value = std::get<int>(lhs->value) + std::get<int>(rhs->value);
+        int value = std::get<int>(lhs->kind) + std::get<int>(rhs->kind);
         return create_comptime_value(value, create_int_type());
       }
       case BinaryOp::Sub: {
-        int value = std::get<int>(lhs->value) - std::get<int>(rhs->value);
+        int value = std::get<int>(lhs->kind) - std::get<int>(rhs->kind);
         return create_comptime_value(value, create_int_type());
       }
       case BinaryOp::Mul: {
-        int value = std::get<int>(lhs->value) * std::get<int>(rhs->value);
+        int value = std::get<int>(lhs->kind) * std::get<int>(rhs->kind);
         return create_comptime_value(value, create_int_type());
       }
       case BinaryOp::Div: {
-        int value = std::get<int>(lhs->value) / std::get<int>(rhs->value);
+        int value = std::get<int>(lhs->kind) / std::get<int>(rhs->kind);
         return create_comptime_value(value, create_int_type());
       }
       case BinaryOp::Mod: {
-        int value = std::get<int>(lhs->value) % std::get<int>(rhs->value);
+        int value = std::get<int>(lhs->kind) % std::get<int>(rhs->kind);
         return create_comptime_value(value, create_int_type());
       }
       case BinaryOp::Lt: {
-        bool value = std::get<int>(lhs->value) < std::get<int>(rhs->value);
+        bool value = std::get<int>(lhs->kind) < std::get<int>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       case BinaryOp::Gt: {
-        bool value = std::get<int>(lhs->value) > std::get<int>(rhs->value);
+        bool value = std::get<int>(lhs->kind) > std::get<int>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       case BinaryOp::Le: {
-        bool value = std::get<int>(lhs->value) <= std::get<int>(rhs->value);
+        bool value = std::get<int>(lhs->kind) <= std::get<int>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       case BinaryOp::Ge: {
-        bool value = std::get<int>(lhs->value) >= std::get<int>(rhs->value);
+        bool value = std::get<int>(lhs->kind) >= std::get<int>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       case BinaryOp::Eq: {
-        bool value = std::get<int>(lhs->value) == std::get<int>(rhs->value);
+        bool value = std::get<int>(lhs->kind) == std::get<int>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       case BinaryOp::Ne: {
-        bool value = std::get<int>(lhs->value) != std::get<int>(rhs->value);
+        bool value = std::get<int>(lhs->kind) != std::get<int>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       default: {
@@ -132,39 +132,39 @@ ComptimeValuePtr comptime_compute_binary(
   } else if (lhs->type->is_float()) {
     switch (op) {
       case BinaryOp::Add: {
-        float value = std::get<float>(lhs->value) + std::get<float>(rhs->value);
+        float value = std::get<float>(lhs->kind) + std::get<float>(rhs->kind);
         return create_comptime_value(value, create_float_type());
       }
       case BinaryOp::Sub: {
-        float value = std::get<float>(lhs->value) - std::get<float>(rhs->value);
+        float value = std::get<float>(lhs->kind) - std::get<float>(rhs->kind);
         return create_comptime_value(value, create_float_type());
       }
       case BinaryOp::Mul: {
-        float value = std::get<float>(lhs->value) * std::get<float>(rhs->value);
+        float value = std::get<float>(lhs->kind) * std::get<float>(rhs->kind);
         return create_comptime_value(value, create_float_type());
       }
       case BinaryOp::Lt: {
-        bool value = std::get<int>(lhs->value) < std::get<int>(rhs->value);
+        bool value = std::get<int>(lhs->kind) < std::get<int>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       case BinaryOp::Gt: {
-        bool value = std::get<int>(lhs->value) > std::get<int>(rhs->value);
+        bool value = std::get<int>(lhs->kind) > std::get<int>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       case BinaryOp::Le: {
-        bool value = std::get<int>(lhs->value) <= std::get<int>(rhs->value);
+        bool value = std::get<int>(lhs->kind) <= std::get<int>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       case BinaryOp::Ge: {
-        bool value = std::get<int>(lhs->value) >= std::get<int>(rhs->value);
+        bool value = std::get<int>(lhs->kind) >= std::get<int>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       case BinaryOp::Eq: {
-        bool value = std::get<int>(lhs->value) == std::get<int>(rhs->value);
+        bool value = std::get<int>(lhs->kind) == std::get<int>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       case BinaryOp::Ne: {
-        bool value = std::get<int>(lhs->value) != std::get<int>(rhs->value);
+        bool value = std::get<int>(lhs->kind) != std::get<int>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       default: {
@@ -178,8 +178,8 @@ ComptimeValuePtr comptime_compute_binary(
     if (lhs->is_zeroinitializer()) {
       return create_zero_comptime_value(element_type);
     } else {
-      auto array = std::get<std::vector<ComptimeValuePtr>>(lhs->value);
-      auto index = std::get<int>(rhs->value);
+      auto array = std::get<std::vector<ComptimeValuePtr>>(lhs->kind);
+      auto index = std::get<int>(rhs->kind);
       return array[index];
     }
   } else {
@@ -199,7 +199,7 @@ ComptimeValuePtr comptime_compute_unary(UnaryOp op, ComptimeValuePtr val) {
   if (val->type->is_bool()) {
     switch (op) {
       case UnaryOp::Neg: {
-        bool value = !std::get<bool>(val->value);
+        bool value = !std::get<bool>(val->kind);
         return create_comptime_value(value, create_bool_type());
       }
       default: {
@@ -211,7 +211,7 @@ ComptimeValuePtr comptime_compute_unary(UnaryOp op, ComptimeValuePtr val) {
   } else if (val->type->is_int()) {
     switch (op) {
       case UnaryOp::Neg: {
-        int value = -std::get<int>(val->value);
+        int value = -std::get<int>(val->kind);
         return create_comptime_value(value, create_int_type());
       }
       default: {
@@ -223,7 +223,7 @@ ComptimeValuePtr comptime_compute_unary(UnaryOp op, ComptimeValuePtr val) {
   } else if (val->type->is_float()) {
     switch (op) {
       case UnaryOp::Neg: {
-        float value = -std::get<float>(val->value);
+        float value = -std::get<float>(val->kind);
         return create_comptime_value(value, create_float_type());
       }
       default: {
@@ -245,22 +245,22 @@ ComptimeValuePtr comptime_compute_cast(ComptimeValuePtr val, TypePtr type) {
   }
 
   if (val->type->is_bool() && type->is_int()) {
-    int value = static_cast<int>(std::get<bool>(val->value));
+    int value = static_cast<int>(std::get<bool>(val->kind));
     return create_comptime_value(value, type);
   } else if (val->type->is_bool() && type->is_float()) {
-    float value = static_cast<float>(std::get<bool>(val->value));
+    float value = static_cast<float>(std::get<bool>(val->kind));
     return create_comptime_value(value, type);
   } else if (val->type->is_int() && type->is_bool()) {
-    bool value = static_cast<bool>(std::get<int>(val->value));
+    bool value = static_cast<bool>(std::get<int>(val->kind));
     return create_comptime_value(value, type);
   } else if (val->type->is_int() && type->is_float()) {
-    float value = static_cast<float>(std::get<int>(val->value));
+    float value = static_cast<float>(std::get<int>(val->kind));
     return create_comptime_value(value, type);
   } else if (val->type->is_float() && type->is_bool()) {
-    bool value = static_cast<bool>(std::get<float>(val->value));
+    bool value = static_cast<bool>(std::get<float>(val->kind));
     return create_comptime_value(value, type);
   } else if (val->type->is_float() && type->is_int()) {
-    int value = static_cast<int>(std::get<float>(val->value));
+    int value = static_cast<int>(std::get<float>(val->kind));
     return create_comptime_value(value, type);
   } else {
     throw std::runtime_error("Unsupported type for compile-time computation.");

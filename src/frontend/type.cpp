@@ -182,7 +182,7 @@ std::optional<TypePtr> create_array_type_from_expr(
   auto comptime_count_int =
     comptime_compute_cast(comptime_count.value(), create_int_type());
 
-  int count = std::get<int>(comptime_count_int->value);
+  int count = std::get<int>(comptime_count_int->kind);
   auto type =
     create_array_type(element_type, std::make_optional((size_t)count));
 
