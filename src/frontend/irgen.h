@@ -24,7 +24,7 @@ ir::OperandID irgen_symbol_entry(
 );
 
 ir::OperandID irgen_comtime_value(
-  frontend::ComptimeValue ast_comptime_value,
+  frontend::ComptimeValuePtr ast_comptime_value,
   ir::Builder& ir_builder
 );
 

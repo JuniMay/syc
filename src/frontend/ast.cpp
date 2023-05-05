@@ -34,14 +34,14 @@ bool Expr::is_comptime() const {
   );
 }
 
-std::optional<ComptimeValue> Expr::get_comptime_value() const {
+std::optional<ComptimeValuePtr> Expr::get_comptime_value() const {
   if (!this->is_comptime()) {
     return std::nullopt;
   }
 
   return std::visit(
     overloaded{
-      [](const expr::Binary& kind) -> std::optional<ComptimeValue> {
+      [](const expr::Binary& kind) -> std::optional<ComptimeValuePtr> {
         auto lhs = kind.lhs->get_comptime_value();
         auto rhs = kind.rhs->get_comptime_value();
         if (!lhs.has_value() || !rhs.has_value()) {
@@ -51,7 +51,7 @@ std::optional<ComptimeValue> Expr::get_comptime_value() const {
           comptime_compute_binary(kind.op, lhs.value(), rhs.value())
         );
       },
-      [](const expr::Unary& kind) -> std::optional<ComptimeValue> {
+      [](const expr::Unary& kind) -> std::optional<ComptimeValuePtr> {
         auto expr = kind.expr->get_comptime_value();
         if (!expr.has_value()) {
           return std::nullopt;
@@ -59,7 +59,7 @@ std::optional<ComptimeValue> Expr::get_comptime_value() const {
         return std::make_optional(comptime_compute_unary(kind.op, expr.value())
         );
       },
-      [](const expr::Cast& kind) -> std::optional<ComptimeValue> {
+      [](const expr::Cast& kind) -> std::optional<ComptimeValuePtr> {
         auto expr = kind.expr->get_comptime_value();
         if (!expr.has_value()) {
           return std::nullopt;
@@ -67,13 +67,13 @@ std::optional<ComptimeValue> Expr::get_comptime_value() const {
         return std::make_optional(comptime_compute_cast(expr.value(), kind.type)
         );
       },
-      [](const expr::Constant& kind) -> std::optional<ComptimeValue> {
+      [](const expr::Constant& kind) -> std::optional<ComptimeValuePtr> {
         return std::make_optional(kind.value);
       },
-      [this](const expr::Identifier& kind) -> std::optional<ComptimeValue> {
+      [this](const expr::Identifier& kind) -> std::optional<ComptimeValuePtr> {
         return kind.symbol->maybe_value;
       },
-      [](const auto&) -> std::optional<ComptimeValue> { return std::nullopt; },
+      [](const auto&) -> std::optional<ComptimeValuePtr> { return std::nullopt; },
     },
     this->kind
   );
@@ -86,7 +86,7 @@ TypePtr Expr::get_type() const {
       [](const expr::Binary& kind) { return kind.symbol->type; },
       [](const expr::Unary& kind) { return kind.symbol->type; },
       [](const expr::Cast& kind) { return kind.symbol->type; },
-      [](const expr::Constant& kind) { return kind.value.type; },
+      [](const expr::Constant& kind) { return kind.value->type; },
       [](const expr::InitializerList& kind) { return kind.type; },
       [](const expr::Call& kind) { return kind.symbol->type; },
     },
@@ -110,7 +110,7 @@ ExprPtr create_identifier_expr(SymbolEntryPtr symbol_entry) {
     symbol_entry->name, symbol_entry}));
 }
 
-ExprPtr create_constant_expr(ComptimeValue value) {
+ExprPtr create_constant_expr(ComptimeValuePtr value) {
   return std::make_shared<Expr>(ExprKind(expr::Constant{value}));
 }
 
@@ -400,7 +400,7 @@ SymbolEntryPtr create_symbol_entry_from_decl_def(
   std::tuple<TypePtr, std::string, std::optional<ExprPtr>> def
 ) {
   auto [type, name, maybe_init] = def;
-  std::optional<ComptimeValue> maybe_value = std::nullopt;
+  std::optional<ComptimeValuePtr> maybe_value = std::nullopt;
 
   if (is_const) {
     if (maybe_init.has_value()) {

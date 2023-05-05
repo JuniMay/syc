@@ -97,7 +97,7 @@ std::string Expr::to_string() const {
       },
       [&buf, this](const expr::Constant& kind) {
         buf << "Constant" << std::endl;
-        buf << indent_str(kind.value.to_string(), "\t") << std::endl;
+        buf << indent_str(kind.value->to_string(), "\t") << std::endl;
       },
       [&buf, this](const expr::InitializerList& kind) {
         buf << "InitializerList" << std::endl;

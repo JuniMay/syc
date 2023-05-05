@@ -148,10 +148,10 @@ ir::OperandID irgen_symbol_entry(
 }
 
 ir::OperandID irgen_comtime_value(
-  frontend::ComptimeValue ast_comptime_value,
+  frontend::ComptimeValuePtr ast_comptime_value,
   ir::Builder& ir_builder
 ) {
-  auto ir_type = irgen_type(ast_comptime_value.type, ir_builder);
+  auto ir_type = irgen_type(ast_comptime_value->type, ir_builder);
   return std::visit(
     overloaded{
       [&](bool value) {
@@ -164,7 +164,7 @@ ir::OperandID irgen_comtime_value(
         return ir_builder.fetch_immediate_operand(ir_type, value);
       },
     },
-    ast_comptime_value.value
+    ast_comptime_value->value
   );
 }
 

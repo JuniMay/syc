@@ -50,7 +50,7 @@
 %token LE GE EQ NE LOR LAND
 
 %token <std::string> IDENTIFIER 
-%token <ComptimeValue> INTEGER FLOATING
+%token <ComptimeValuePtr> INTEGER FLOATING
 
 %token IF ELSE WHILE RETURN BREAK CONTINUE 
 %token CONST INT FLOAT VOID

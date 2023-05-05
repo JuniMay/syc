@@ -232,7 +232,7 @@ HEX_FP (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][
   auto value = frontend::create_comptime_value(
     std::stoi(yytext, nullptr, 10), frontend::create_int_type());
 
-  driver.add_token(value.to_string());
+  driver.add_token(value->to_string());
 
   return Parser::make_INTEGER(value, loc);
 }
@@ -241,7 +241,7 @@ HEX_FP (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][
   auto value = frontend::create_comptime_value(
     std::stoi(yytext, nullptr, 8), frontend::create_int_type());
 
-  driver.add_token(value.to_string());
+  driver.add_token(value->to_string());
   
   return Parser::make_INTEGER(value, loc);
 }
@@ -250,7 +250,7 @@ HEX_FP (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][
   auto value = frontend::create_comptime_value(
     std::stoi(yytext, nullptr, 16), frontend::create_int_type());
 
-  driver.add_token(value.to_string());
+  driver.add_token(value->to_string());
 
   return Parser::make_INTEGER(value, loc);
 }
@@ -259,7 +259,7 @@ HEX_FP (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][
   auto value = frontend::create_comptime_value(
     std::stof(yytext, nullptr), frontend::create_float_type());
 
-  driver.add_token(value.to_string());
+  driver.add_token(value->to_string());
 
   return Parser::make_FLOATING(value, loc);
 }
@@ -268,7 +268,7 @@ HEX_FP (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][
   auto value = frontend::create_comptime_value(
     std::stof(yytext, nullptr), frontend::create_float_type());
 
-  driver.add_token(value.to_string());
+  driver.add_token(value->to_string());
 
   return Parser::make_FLOATING(value, loc);
 }
