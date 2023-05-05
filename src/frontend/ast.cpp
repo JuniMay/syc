@@ -20,6 +20,9 @@ void expr::InitializerList::set_type(TypePtr type, Driver& driver) {
     this->type = type;
     this->is_zeroinitializer = true;
   } else {
+    this->type = type;
+    this->is_zeroinitializer = false;
+
     auto length = std::get<type::Array>(type->kind).maybe_length.value_or(0);
 
     auto root_element_type = type->get_root_element_type().value();
@@ -213,15 +216,28 @@ create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver) {
     case BinaryOp::Sub:
     case BinaryOp::Mul:
     case BinaryOp::Div: {
-      // (int int) -> int
-      // (float float) -> float
-      // (bool bool) -> Undefined
-      // (float int=>float) -> float
-      // (int bool) -> Undefined
-      // (float bool) -> Undefined
-      if (lhs->get_type()->is_bool() || rhs->get_type()->is_bool()) {
-        std::string error_message = "Error: cannot perform arithmetic on bool.";
-        throw std::runtime_error(error_message);
+      // int          int        ->  int
+      // float        float      ->  float
+      // int=>float   float      ->  float
+      // bool=>float  float      ->  float
+      // bool=>int    int        ->  int
+      // bool=>int    bool=>int  ->  int
+      if (lhs->get_type()->is_bool() && rhs->get_type()->is_bool()) {
+        type = create_int_type();
+        lhs = create_cast_expr(lhs, type.value(), driver);
+        rhs = create_cast_expr(rhs, type.value(), driver);
+      } else if (lhs->get_type()->is_bool() && rhs->get_type()->is_int()) {
+        type = create_int_type();
+        lhs = create_cast_expr(lhs, type.value(), driver);
+      } else if (lhs->get_type()->is_int() && rhs->get_type()->is_bool()) {
+        type = create_int_type();
+        rhs = create_cast_expr(rhs, type.value(), driver);
+      } else if (lhs->get_type()->is_bool() && rhs->get_type()->is_float()) {
+        type = create_float_type();
+        lhs = create_cast_expr(rhs, type.value(), driver);
+      } else if (lhs->get_type()->is_float() && rhs->get_type()->is_bool()) {
+        type = create_float_type();
+        rhs = create_cast_expr(rhs, type.value(), driver);
       } else if (lhs->get_type() == rhs->get_type()) {
         type = lhs->get_type();
       } else if (lhs->get_type()->is_float() && rhs->get_type()->is_int()) {
@@ -231,8 +247,10 @@ create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver) {
         type = create_float_type();
         lhs = create_cast_expr(lhs, type.value(), driver);
       } else {
-        std::string error_message = "Error: type mismatch for binary expression between " +
-          lhs->get_type()->to_string() + " and " + rhs->get_type()->to_string() + ".";
+        std::string error_message =
+          "Error: type mismatch for binary expression between " +
+          lhs->get_type()->to_string() + " and " +
+          rhs->get_type()->to_string() + ".";
         throw std::runtime_error(error_message);
       }
       break;
@@ -243,12 +261,12 @@ create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver) {
     case BinaryOp::Ge:
     case BinaryOp::Eq:
     case BinaryOp::Ne: {
-      // (bool bool) -> bool
-      // (int int) -> bool
-      // (float float) -> bool
-      // (int=>float float) -> bool
-      // (int=>bool bool) -> bool
-      // (float=>bool bool) -> bool
+      // bool         bool   ->  bool
+      // int          int    ->  bool
+      // float        float  ->  bool
+      // int=>float   float  ->  bool
+      // int=>bool    bool   ->  bool
+      // float=>bool  bool   ->  bool
       if (lhs->get_type() == rhs->get_type()) {
         type = create_bool_type();
       } else if (lhs->get_type()->is_float() && rhs->get_type()->is_int()) {
@@ -264,16 +282,20 @@ create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver) {
         type = create_bool_type();
         lhs = create_cast_expr(lhs, create_bool_type(), driver);
       } else {
-        std::string error_message = "Error: type mismatch for logical binary expression between " +
-          lhs->get_type()->to_string() + " and " + rhs->get_type()->to_string() + ".";
+        std::string error_message =
+          "Error: type mismatch for logical binary expression between " +
+          lhs->get_type()->to_string() + " and " +
+          rhs->get_type()->to_string() + ".";
         throw std::runtime_error(error_message);
       }
       break;
     }
     case BinaryOp::Mod: {
       if (!(lhs->get_type()->is_int() && rhs->get_type()->is_int())) {
-        std::string error_message = "Error: modulo expression only permitted on integers, not " +
-          lhs->get_type()->to_string() + " and " + rhs->get_type()->to_string() + ".";
+        std::string error_message =
+          "Error: modulo expression only permitted on integers, not " +
+          lhs->get_type()->to_string() + " and " +
+          rhs->get_type()->to_string() + ".";
         throw std::runtime_error(error_message);
       }
       type = create_int_type();
@@ -365,8 +387,9 @@ ExprPtr create_call_expr(
 ExprPtr create_cast_expr(ExprPtr expr, TypePtr type, Driver& driver) {
   // int/float -> bool cast
   if (type->is_bool()) {
-    if (expr->get_type()->is_float() || expr->get_type()->is_int()){
-      auto zero = create_constant_expr(create_zero_comptime_value(expr->get_type()));
+    if (expr->get_type()->is_float() || expr->get_type()->is_int()) {
+      auto zero =
+        create_constant_expr(create_zero_comptime_value(expr->get_type()));
       return create_binary_expr(BinaryOp::Ne, expr, zero, driver);
     } else {
       throw std::runtime_error("Error: cannot cast non-numeric type to bool.");
