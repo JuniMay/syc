@@ -105,6 +105,9 @@ std::string Expr::to_string() const {
         for (auto expr : kind.init_list) {
           buf << indent_str(expr->to_string(), "\t") << std::endl;
         }
+        if (kind.is_zeroinitializer) {
+          buf << "\tZEROINITIALIZER" << std::endl;
+        }
       },
       [&buf](const auto& kind) { buf << "UNKNWON_STMT"; },
     },

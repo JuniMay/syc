@@ -84,9 +84,9 @@ std::string Type::to_string() const {
   if (is_array()) {
     auto array = std::get<type::Array>(kind);
     std::string length = array.maybe_length.has_value()
-                          ? std::to_string(array.maybe_length.value()) + " "
-                          : "";
-    return  "[" + length + "x " + array.element_type->to_string() + "]";
+                           ? std::to_string(array.maybe_length.value()) + " "
+                           : "";
+    return "[" + length + "x " + array.element_type->to_string() + "]";
   }
   if (is_void()) {
     return "VOID";
@@ -110,6 +110,26 @@ std::string Type::to_string() const {
   return "UNREACHABLE_TYPE";
 }
 
+size_t Type::get_size() const {
+  return std::visit(
+    overloaded{
+      [](const type::Integer& kind) -> size_t { return kind.size; },
+      [](const type::Float& kind) -> size_t { return 32; },
+      [](const type::Void& kind) -> size_t { return 0; },
+      [](const type::Pointer& kind) -> size_t { return 64; },
+      [](const type::Array& kind) -> size_t {
+        if (!kind.maybe_length.has_value()) {
+          return 64;
+        } else {
+          return kind.element_type->get_size() * kind.maybe_length.value();
+        }
+      },
+      [](const auto&) -> size_t { return 0; },
+    },
+    this->kind
+  );
+}
+
 TypePtr create_int_type() {
   return std::make_shared<Type>(TypeKind(type::Integer{32}));
 }
@@ -128,8 +148,8 @@ TypePtr create_void_type() {
 
 TypePtr
 create_array_type(TypePtr element_type, std::optional<size_t> maybe_length) {
-  return std::make_shared<Type>(TypeKind(type::Array{element_type, maybe_length})
-  );
+  return std::make_shared<Type>(TypeKind(type::Array{element_type, maybe_length}
+  ));
 }
 
 TypePtr create_pointer_type(TypePtr value_type) {

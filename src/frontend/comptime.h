@@ -8,22 +8,25 @@
 namespace syc {
 namespace frontend {
 
+struct Zeroinitializer {};
+
 /// Compile-time value.
 /// This is the representation of literal, constant, and compile time computed
 /// result.
 /// TODO: array?
 struct ComptimeValue {
   /// The value is bool, int or float.
-  std::variant<bool, int, float> value;
+  ComptimeValueKind value;
   /// Type of the value.
   TypePtr type;
 
   /// Convert to string.
   std::string to_string() const;
+
+  bool is_zeroinitializer() const;
 };
 
-ComptimeValuePtr
-create_comptime_value(std::variant<bool, int, float> value, TypePtr type);
+ComptimeValuePtr create_comptime_value(ComptimeValueKind value, TypePtr type);
 
 ComptimeValuePtr create_zero_comptime_value(TypePtr type);
 

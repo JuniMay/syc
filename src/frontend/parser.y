@@ -214,7 +214,7 @@ Def
     auto init_val = $3;
     if (init_val->is_initializer_list()) {
       std::get<ast::expr::InitializerList>(init_val->kind)
-        .set_type(driver.curr_decl_type);
+        .set_type(driver.curr_decl_type, driver);
     }
     $$ = std::make_tuple(
       driver.curr_decl_type, 
@@ -241,7 +241,8 @@ Def
 
     auto init_val = $4;
     if (init_val->is_initializer_list()) {
-      std::get<ast::expr::InitializerList>(init_val->kind).set_type(decl_type);
+      std::get<ast::expr::InitializerList>(init_val->kind)
+        .set_type(decl_type, driver);
     }
     $$ = std::make_tuple(decl_type, $1, std::make_optional(init_val));
   }

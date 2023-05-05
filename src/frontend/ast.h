@@ -93,7 +93,11 @@ struct InitializerList {
   /// Type of the initializer list.
   TypePtr type;
 
-  void set_type(TypePtr);
+  bool is_zeroinitializer = false;
+
+  void set_type(TypePtr type, Driver& driver);
+
+  void add_expr(ExprPtr expr);
 };
 
 /// Call expression.

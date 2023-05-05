@@ -8,8 +8,93 @@ namespace frontend {
 
 namespace ast {
 
-void expr::InitializerList::set_type(TypePtr type) {
-  this->type = type;
+void expr::InitializerList::add_expr(ExprPtr expr) {
+  this->init_list.push_back(expr);
+}
+
+void expr::InitializerList::set_type(TypePtr type, Driver& driver) {
+  if (!type->is_array()) {
+    throw std::runtime_error("Error: non-array type for initializer list.");
+  }
+  if (this->init_list.size() == 0) {
+    this->type = type;
+    this->is_zeroinitializer = true;
+  } else {
+    auto length = std::get<type::Array>(type->kind).maybe_length.value_or(0);
+
+    auto root_element_type = type->get_root_element_type().value();
+    auto element_type = type->get_element_type().value();
+
+    if (root_element_type == element_type) {
+      // check the element type
+      for (size_t i = 0; i < this->init_list.size(); i++) {
+        if (this->init_list[i]->get_type() != element_type) {
+          this->init_list[i] =
+            create_cast_expr(this->init_list[i], element_type, driver);
+        }
+      }
+      if (this->init_list.size() < length) {
+        for (size_t i = this->init_list.size(); i < length; i++) {
+          this->init_list.push_back(
+            create_constant_expr(create_zero_comptime_value(element_type))
+          );
+        }
+      }
+    } else {
+      // element number of the sub-array element.
+      size_t element_total_length =
+        element_type->get_size() / root_element_type->get_size();
+
+      size_t idx = 0;
+
+      // normalized init_list according to the shape of the type.
+      std::vector<ExprPtr> new_init_list;
+      // for creating the sub-array initializer list
+      std::vector<ExprPtr> element_init_list;
+
+      while (idx < this->init_list.size()) {
+        auto expr = this->init_list[idx];
+
+        if (expr->is_initializer_list()) {
+          // If the expression is a initializer list, just set the type.
+          std::get<expr::InitializerList>(expr->kind)
+            .set_type(element_type, driver);
+          new_init_list.push_back(expr);
+        } else if (expr->get_type() == root_element_type) {
+          // If the expression is a root element, add to the sub-array
+          // initializer list.
+          element_init_list.push_back(expr);
+          // If the sub-array initializer list is full, create a element
+          // initializer list expression from it.
+          if (element_init_list.size() == element_total_length) {
+            auto init_expr = create_initializer_list_expr(element_init_list);
+            std::get<expr::InitializerList>(init_expr->kind)
+              .set_type(element_type, driver);
+            new_init_list.push_back(init_expr);
+            element_init_list.clear();
+          }
+        }
+        idx++;
+      }
+      // the element_init_list is not full.
+      if (element_init_list.size() > 0) {
+        auto init_expr = create_initializer_list_expr(element_init_list);
+        std::get<expr::InitializerList>(init_expr->kind)
+          .set_type(element_type, driver);
+        new_init_list.push_back(init_expr);
+        element_init_list.clear();
+      }
+      if (new_init_list.size() < length) {
+        for (size_t i = new_init_list.size(); i < length; i++) {
+          auto init_expr = create_initializer_list_expr({});
+          std::get<expr::InitializerList>(init_expr->kind)
+            .set_type(element_type, driver);
+          new_init_list.push_back(init_expr);
+        }
+      }
+      this->init_list = new_init_list;
+    }
+  }
 }
 
 bool Expr::is_comptime() const {
@@ -73,7 +158,9 @@ std::optional<ComptimeValuePtr> Expr::get_comptime_value() const {
       [this](const expr::Identifier& kind) -> std::optional<ComptimeValuePtr> {
         return kind.symbol->maybe_value;
       },
-      [](const auto&) -> std::optional<ComptimeValuePtr> { return std::nullopt; },
+      [](const auto&) -> std::optional<ComptimeValuePtr> {
+        return std::nullopt;
+      },
     },
     this->kind
   );

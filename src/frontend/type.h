@@ -71,6 +71,8 @@ struct Type {
 
   /// Convert the type to string.
   std::string to_string() const;
+
+  size_t get_size() const;
 };
 
 TypePtr create_int_type();

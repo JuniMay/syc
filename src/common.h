@@ -52,8 +52,11 @@ using TypePtr = std::shared_ptr<Type>;
 enum class BinaryOp;
 enum class UnaryOp;
 
+struct Zeroinitializer;
 struct ComptimeValue;
 using ComptimeValuePtr = std::shared_ptr<ComptimeValue>;
+using ComptimeValueKind = std::
+  variant<bool, int, float, std::vector<ComptimeValuePtr>, Zeroinitializer>;
 
 enum class Scope;
 

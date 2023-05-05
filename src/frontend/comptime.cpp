@@ -22,8 +22,11 @@ std::string ComptimeValue::to_string() const {
   return buf.str();
 }
 
-ComptimeValuePtr
-create_comptime_value(std::variant<bool, int, float> value, TypePtr type) {
+bool ComptimeValue::is_zeroinitializer() const {
+  return std::holds_alternative<Zeroinitializer>(this->value);
+}
+
+ComptimeValuePtr create_comptime_value(ComptimeValueKind value, TypePtr type) {
   return std::make_shared<ComptimeValue>(ComptimeValue{value, type});
 }
 
@@ -34,6 +37,8 @@ ComptimeValuePtr create_zero_comptime_value(TypePtr type) {
     return create_comptime_value((float)0., type);
   } else if (type->is_bool()) {
     return create_comptime_value(false, type);
+  } else if (type->is_array()) {
+    return create_comptime_value(Zeroinitializer{}, type);
   } else {
     // Not knowing which type to store.
     // TODO: array type for comptime.
@@ -46,12 +51,6 @@ ComptimeValuePtr comptime_compute_binary(
   ComptimeValuePtr lhs,
   ComptimeValuePtr rhs
 ) {
-  if (lhs->type != rhs->type) {
-    throw std::runtime_error(
-      "Inconsist type of compile-time values, consider implicit type cast."
-    );
-  }
-
   if (lhs->type->is_bool()) {
     switch (op) {
       case BinaryOp::LogicalAnd: {
@@ -163,6 +162,15 @@ ComptimeValuePtr comptime_compute_binary(
           "Unsupported compile-time binary operation for type `int`."
         );
       }
+    }
+  } else if (lhs->type->is_array() && rhs->type->is_array()) {
+    auto element_type = lhs->type->get_element_type().value();
+    if (lhs->is_zeroinitializer()) {
+      return create_zero_comptime_value(element_type);
+    } else {
+      auto array = std::get<std::vector<ComptimeValuePtr>>(lhs->value);
+      auto index = std::get<int>(rhs->value);
+      return array[index];
     }
   } else {
     throw std::runtime_error(
