@@ -9,9 +9,9 @@ namespace ir {
 struct Context {
   std::map<OperandID, OperandPtr> operand_table;
   std::map<InstructionID, InstructionPtr> instruction_table;
-  std::map<BasicBlockID, std::shared_ptr<BasicBlock>> basic_block_table;
+  std::map<BasicBlockID, BasicBlockPtr> basic_block_table;
 
-  std::map<std::string, std::shared_ptr<Function>> function_table;
+  std::map<std::string, FunctionPtr> function_table;
   std::vector<OperandID> global_list;
 
   OperandID next_operand_id = 0;

@@ -53,6 +53,7 @@ enum class BinaryOp;
 enum class UnaryOp;
 
 struct ComptimeValue;
+using ComptimeValuePtr = std::shared_ptr<ComptimeValue>;
 
 enum class Scope;
 

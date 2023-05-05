@@ -9,7 +9,7 @@ SymbolEntry::SymbolEntry(
   std::string name,
   TypePtr type,
   bool is_const,
-  std::optional<ComptimeValue> maybe_value
+  std::optional<ComptimeValuePtr> maybe_value
 )
   : scope(scope),
     name(name),
@@ -22,7 +22,7 @@ SymbolEntryPtr create_symbol_entry(
   std::string name,
   TypePtr type,
   bool is_const,
-  std::optional<ComptimeValue> value
+  std::optional<ComptimeValuePtr> value
 ) {
   return std::make_shared<SymbolEntry>(scope, name, type, is_const, value);
 }
@@ -56,7 +56,7 @@ std::string SymbolEntry::to_string() const {
     ss << " (CONST)";
   }
   if (maybe_value.has_value()) {
-    ss << " = " << maybe_value.value().to_string();
+    ss << " = " << maybe_value.value()->to_string();
   }
   return ss.str();
 }

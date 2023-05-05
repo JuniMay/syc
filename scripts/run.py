@@ -107,7 +107,7 @@ def run(exec_path: str, test_dir: str, output_dir: str, runtime_header: str):
 
 
 if __name__ == '__main__':
-    # compile('./flattened')
+    compile('./flattened')
 
     if os.path.exists('./tests_output'):
         shutil.rmtree('./tests_output')

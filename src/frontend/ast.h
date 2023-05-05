@@ -119,7 +119,7 @@ struct Cast {
 /// Literal number (or a constant)
 struct Constant {
   /// Value of the literal.
-  ComptimeValue value;
+  ComptimeValuePtr value;
 };
 
 }  // namespace expr
@@ -141,7 +141,7 @@ struct Expr {
   bool is_comptime() const;
 
   /// Get the value.
-  std::optional<ComptimeValue> get_comptime_value() const;
+  std::optional<ComptimeValuePtr> get_comptime_value() const;
 
   /// Get the type.
   TypePtr get_type() const;
@@ -273,7 +273,7 @@ struct Compunit {
 ExprPtr create_identifier_expr(SymbolEntryPtr symbol_entry);
 
 /// Create a constant expression.
-ExprPtr create_constant_expr(ComptimeValue value);
+ExprPtr create_constant_expr(ComptimeValuePtr value);
 
 /// Create a binary expression.
 /// `symbol_name` is the temporary name fetched from the driver.

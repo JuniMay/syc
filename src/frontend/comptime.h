@@ -22,20 +22,23 @@ struct ComptimeValue {
   std::string to_string() const;
 };
 
-ComptimeValue
+ComptimeValuePtr
 create_comptime_value(std::variant<bool, int, float> value, TypePtr type);
 
-ComptimeValue create_zero_comptime_value(TypePtr type);
+ComptimeValuePtr create_zero_comptime_value(TypePtr type);
 
 /// Compute binary operation between two compile-time values.
-ComptimeValue
-comptime_compute_binary(BinaryOp op, ComptimeValue lhs, ComptimeValue rhs);
+ComptimeValuePtr comptime_compute_binary(
+  BinaryOp op,
+  ComptimeValuePtr lhs,
+  ComptimeValuePtr rhs
+);
 
 /// Compute unary operation on a compile-time value.
-ComptimeValue comptime_compute_unary(UnaryOp op, ComptimeValue val);
+ComptimeValuePtr comptime_compute_unary(UnaryOp op, ComptimeValuePtr val);
 
 /// Compute cast operation on a compile-time value.
-ComptimeValue comptime_compute_cast(ComptimeValue val, TypePtr type);
+ComptimeValuePtr comptime_compute_cast(ComptimeValuePtr val, TypePtr type);
 
 }  // namespace frontend
 }  // namespace syc
