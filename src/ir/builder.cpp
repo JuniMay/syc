@@ -347,6 +347,17 @@ void Builder::append_instruction(InstructionPtr instruction) {
   curr_basic_block->append_instruction(instruction);
 }
 
+/// Prepend an instruction to the current block.
+void Builder::prepend_instruction_to_curr_basic_block(InstructionPtr instruction
+) {
+  curr_basic_block->prepend_instruction(instruction);
+}
+
+/// Prepend an instruction to the current function.
+void Builder::prepend_instruction_to_curr_function(InstructionPtr instruction) {
+  curr_function->head_basic_block->next->prepend_instruction(instruction);
+}
+
 BasicBlockPtr Builder::fetch_basic_block() {
   auto id = context.get_next_basic_block_id();
   auto basic_block = create_basic_block(id, curr_function->name);

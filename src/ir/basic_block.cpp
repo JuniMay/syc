@@ -74,6 +74,10 @@ void BasicBlock::append_instruction(InstructionPtr instruction) {
   this->tail_instruction->insert_prev(instruction);
 }
 
+void BasicBlock::prepend_instruction(InstructionPtr instruction) {
+  this->head_instruction->insert_next(instruction);
+}
+
 void BasicBlock::add_use(InstructionID use_id) {
   this->use_id_list.push_back(use_id);
 }

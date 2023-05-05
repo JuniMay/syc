@@ -6,6 +6,9 @@
 
 namespace syc {
 
+using AstBinaryOp = frontend::BinaryOp;
+using AstUnaryOp = frontend::UnaryOp;
+
 using AstCompunit = frontend::ast::Compunit;
 using AstStmtPtr = frontend::ast::StmtPtr;
 using AstExprPtr = frontend::ast::ExprPtr;
@@ -19,6 +22,8 @@ using IrBuilder = ir::Builder;
 using IrTypePtr = ir::TypePtr;
 using IrConstantPtr = ir::operand::ConstantPtr;
 using IrOperandID = ir::OperandID;
+using IrInstructionPtr = ir::InstructionPtr;
+using IrBasicBlockPtr = ir::BasicBlockPtr;
 
 void irgen(const AstCompunit& compunit, IrBuilder& builder);
 
@@ -28,11 +33,8 @@ void irgen_stmt(
   IrBuilder& builder
 );
 
-void irgen_expr(
-  AstExprPtr expr,
-  AstSymbolTablePtr symtable,
-  IrBuilder& builder
-);
+IrOperandID
+irgen_expr(AstExprPtr expr, AstSymbolTablePtr symtable, IrBuilder& builder);
 
 std::optional<IrTypePtr> irgen_type(AstTypePtr type, IrBuilder& builder);
 

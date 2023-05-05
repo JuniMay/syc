@@ -64,28 +64,181 @@ void irgen_stmt(
                 throw std::runtime_error(error_message);
               }
             }
+            break;
           }
           case frontend::Scope::Local: {
-            // TODO
+            for (auto [ast_type, name, maybe_ast_expr] : kind.defs) {
+              auto ir_type = irgen_type(ast_type, builder).value();
+
+              auto ir_dst_operand_id = builder.fetch_arbitrary_operand(
+                builder.fetch_pointer_type(ir_type)
+              );
+
+              auto alloca_instruction = builder.fetch_alloca_instruction(
+                ir_dst_operand_id, ir_type, std::nullopt, std::nullopt,
+                std::nullopt
+              );
+
+              // alloca instructions are prepended to the current function.
+              builder.prepend_instruction_to_curr_function(alloca_instruction);
+
+              auto maybe_symbol = symtable->lookup(name);
+              if (maybe_symbol.has_value()) {
+                auto symbol = maybe_symbol.value();
+                symbol->set_ir_operand_id(ir_dst_operand_id);
+              } else {
+                std::string error_message =
+                  "Error: local symbol `" + name +
+                  "` is not found when generating IR.";
+                throw std::runtime_error(error_message);
+              }
+
+              if (maybe_ast_expr.has_value()) {
+                auto ast_expr = maybe_ast_expr.value();
+                auto ir_init_operand_id =
+                  irgen_expr(ast_expr, symtable, builder);
+                auto store_instruction = builder.fetch_store_instruction(
+                  ir_init_operand_id, ir_dst_operand_id, std::nullopt
+                );
+                builder.append_instruction(store_instruction);
+              }
+
+              break;
+            }
           }
           default: {
             // TODO
+
+            break;
           }
         }
       },
-      [&builder](const auto&) {
+      [&builder](const frontend::ast::stmt::FuncDef& kind) {
+        auto symbol = kind.symbol_entry;
 
+        std::string function_name = symbol->name;
+        std::vector<IrOperandID> parameter_id_list;
+
+        auto ast_func_type = symbol->type;
+
+        if (!ast_func_type->is_function()) {
+          std::string error_message =
+            "Error: symbol `" + symbol->name + "` is not a  function.";
+          throw std::runtime_error(error_message);
+        }
+
+        auto ast_func_ret_type = ast_func_type->get_ret_type().value();
+        auto ir_func_ret_type = irgen_type(ast_func_ret_type, builder).value();
+
+        for (auto param_name : kind.param_names) {
+          auto maybe_ast_param_symbol = kind.symtable->lookup(param_name);
+
+          if (!maybe_ast_param_symbol.has_value()) {
+            std::string error_messgae =
+              "Error: parameter `" + param_name + "` is not defined.";
+            throw std::runtime_error(error_messgae);
+          }
+
+          auto ast_param_symbol = maybe_ast_param_symbol.value();
+          auto ast_param_type = ast_param_symbol->type;
+          auto ir_param_type = irgen_type(ast_param_type, builder).value();
+          auto ir_param_operand_id =
+            builder.fetch_parameter_operand(ir_param_type, param_name);
+          ast_param_symbol->set_ir_operand_id(ir_param_operand_id);
+          parameter_id_list.push_back(ir_param_operand_id);
+        }
+
+        bool is_declare = !kind.maybe_body.has_value();
+
+        builder.add_function(
+          function_name, parameter_id_list, ir_func_ret_type, is_declare
+        );
+
+        if (!is_declare) {
+          irgen_stmt(kind.maybe_body.value(), kind.symtable, builder);
+        }
+      },
+      [&builder](const frontend::ast::stmt::Block& kind) {
+        auto ir_basic_block = builder.fetch_basic_block();
+        builder.append_basic_block(ir_basic_block);
+        builder.set_curr_basic_block(ir_basic_block);
+
+        for (auto stmt : kind.stmts) {
+          irgen_stmt(stmt, kind.symtable, builder);
+        }
+      },
+      [&builder](const auto&) {
+        // TODO
       },
     },
     stmt->kind
   );
 }
 
-void irgen_expr(
-  AstExprPtr expr,
-  AstSymbolTablePtr symtable,
-  IrBuilder& builder
-) {}
+IrOperandID
+irgen_expr(AstExprPtr expr, AstSymbolTablePtr symtable, IrBuilder& builder) {
+  return std::visit(
+    overloaded{
+      [&builder](const frontend::ast::expr::Constant& kind) {
+        auto ir_constant = irgen_comptime_value(kind.value, builder);
+        auto ir_constant_operand_id =
+          builder.fetch_operand(ir_constant->type, ir_constant);
+        return ir_constant_operand_id;
+      },
+      [symtable,
+       &builder](const frontend::ast::expr::Binary& kind) -> IrOperandID {
+        auto lhs_operand_id = irgen_expr(kind.lhs, symtable, builder);
+        auto rhs_operand_id = irgen_expr(kind.rhs, symtable, builder);
+
+        auto symbol = kind.symbol;
+
+        auto ir_dst_operand_id = builder.fetch_arbitrary_operand(
+          irgen_type(symbol->type, builder).value()
+        );
+
+        symbol->set_ir_operand_id(ir_dst_operand_id);
+
+        // TODO
+        switch (kind.op) {
+          case AstBinaryOp::Add:
+            break;
+          case AstBinaryOp::Sub:
+            break;
+          case AstBinaryOp::Div:
+            break;
+          case AstBinaryOp::Mul:
+            break;
+          case AstBinaryOp::Mod:
+            break;
+          case AstBinaryOp::Lt:
+            break;
+          case AstBinaryOp::Le:
+            break;
+          case AstBinaryOp::Gt:
+            break;
+          case AstBinaryOp::Ge:
+            break;
+          case AstBinaryOp::Eq:
+            break;
+          case AstBinaryOp::Ne:
+            break;
+          case AstBinaryOp::LogicalAnd:
+            break;
+          case AstBinaryOp::LogicalOr:
+            break;
+          case AstBinaryOp::Index:
+            break;
+          default:
+            // unreachable.
+            break;
+        }
+        return 0;
+      },
+      [](const auto& kind) -> IrOperandID { return 0; },
+    },
+    expr->kind
+  );
+}
 
 IrConstantPtr
 irgen_comptime_value(AstComptimeValuePtr value, IrBuilder& builder) {
@@ -147,6 +300,8 @@ std::optional<IrTypePtr> irgen_type(AstTypePtr type, IrBuilder& builder) {
       );
     }
   } else {
+    std::string error_message = "Erro: cannot generate a function type in ir.";
+    std::cerr << error_message << std::endl;
     return std::nullopt;
   }
 }
