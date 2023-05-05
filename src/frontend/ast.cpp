@@ -116,6 +116,14 @@ bool Expr::is_comptime() const {
           return false;
         }
       },
+      [](const expr::InitializerList& kind) {
+        for (auto expr : kind.init_list) {
+          if (!expr->is_comptime()) {
+            return false;
+          }
+        }
+        return true;
+      },
       [](const auto&) { return false; },
     },
     this->kind
@@ -160,6 +168,16 @@ std::optional<ComptimeValuePtr> Expr::get_comptime_value() const {
       },
       [this](const expr::Identifier& kind) -> std::optional<ComptimeValuePtr> {
         return kind.symbol->maybe_value;
+      },
+      [](const expr::InitializerList& kind) -> std::optional<ComptimeValuePtr> {
+        if (kind.is_zeroinitializer) {
+          return create_comptime_value(Zeroinitializer{}, kind.type);
+        }
+        std::vector<ComptimeValuePtr> init_value_list;
+        for (auto expr : kind.init_list) {
+          init_value_list.push_back(expr->get_comptime_value().value());
+        }
+        return create_comptime_value(init_value_list, kind.type);
       },
       [](const auto&) -> std::optional<ComptimeValuePtr> {
         return std::nullopt;

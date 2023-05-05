@@ -1,10 +1,15 @@
 #include "frontend/comptime.h"
 #include "frontend/ast.h"
+#include "utils.h"
 
 namespace syc {
 namespace frontend {
 
 std::string ComptimeValue::to_string() const {
+  if (this->is_zeroinitializer()) {
+    return "COMPTIME ZEROINITIALIZER";
+  }
+
   std::stringstream buf;
 
   if (this->type->is_bool()) {
@@ -13,6 +18,12 @@ std::string ComptimeValue::to_string() const {
     buf << "COMPTIME INT " << std::get<int>(this->value);
   } else if (this->type->is_float()) {
     buf << "COMPTIME FLOAT " << std::get<float>(this->value);
+  } else if (this->type->is_array()) {
+    buf << "COMPTIME ARRAY {" << std::endl;
+    for (auto& item : std::get<std::vector<ComptimeValuePtr>>(this->value)) {
+      buf << indent_str(item->to_string(), "\t") << std::endl;
+    }
+    buf << "}";
   } else {
     throw std::runtime_error(
       "Unsupported type for compile-time value to be converted to string."
@@ -41,7 +52,6 @@ ComptimeValuePtr create_zero_comptime_value(TypePtr type) {
     return create_comptime_value(Zeroinitializer{}, type);
   } else {
     // Not knowing which type to store.
-    // TODO: array type for comptime.
     return create_comptime_value(0, type);
   }
 }
@@ -163,7 +173,7 @@ ComptimeValuePtr comptime_compute_binary(
         );
       }
     }
-  } else if (lhs->type->is_array() && rhs->type->is_array()) {
+  } else if (lhs->type->is_array() && rhs->type->is_int()) {
     auto element_type = lhs->type->get_element_type().value();
     if (lhs->is_zeroinitializer()) {
       return create_zero_comptime_value(element_type);

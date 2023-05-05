@@ -13,7 +13,6 @@ struct Zeroinitializer {};
 /// Compile-time value.
 /// This is the representation of literal, constant, and compile time computed
 /// result.
-/// TODO: array?
 struct ComptimeValue {
   /// The value is bool, int or float.
   ComptimeValueKind value;

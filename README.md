@@ -48,7 +48,7 @@ This will generate the `syc` executable in the current directory.
 - [ ] Code generation
 - [ ] Code print
 - [ ] AST simplification
-  - [ ] Compile-time value for initializer list
+  - [x] Compile-time value for initializer list
 - [ ] IR Optimization
 - [ ] Code Optimization
 
@@ -56,3 +56,4 @@ This will generate the `syc` executable in the current directory.
 
 - [x] Temporary symbol duplication in the symbol table.
   - Fixed. The actual problem is that if there is a while/if/else, the block will be added twice: once by the driver and another time by the while/if/else statement.
+- [ ] Optimize `86_long_code2.sy`.
