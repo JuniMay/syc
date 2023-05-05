@@ -40,8 +40,9 @@ struct Builder {
   /// This will return the ID of the operand.
   OperandID fetch_operand(TypePtr type, OperandKind kind);
 
-  OperandID
-  fetch_immediate_operand(TypePtr type, std::variant<int, float> value);
+  operand::ConstantPtr fetch_constant(TypePtr type, operand::ConstantKind kind);
+
+  OperandID fetch_constant_operand(TypePtr type, operand::ConstantKind kind);
 
   OperandID fetch_parameter_operand(TypePtr type, std::string name);
 
@@ -49,8 +50,7 @@ struct Builder {
     TypePtr type,
     std::string name,
     bool is_constant,
-    bool is_zero_initialized,
-    std::vector<OperandID> initializer
+    OperandID init
   );
 
   OperandID fetch_arbitrary_operand(TypePtr type);

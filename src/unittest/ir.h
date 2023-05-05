@@ -22,9 +22,9 @@ TEST_CASE("IR Instruction", "[ir][instruction]") {
     builder.set_curr_basic_block(bb_0);
 
     auto operand_0_id =
-      builder.fetch_immediate_operand(builder.fetch_i32_type(), 0);
+      builder.fetch_constant_operand(builder.fetch_i32_type(), 0);
     auto operand_1_id =
-      builder.fetch_immediate_operand(builder.fetch_i32_type(), 1);
+      builder.fetch_constant_operand(builder.fetch_i32_type(), 1);
 
     auto dst_operand_id =
       builder.fetch_arbitrary_operand(builder.fetch_i32_type());
@@ -33,7 +33,7 @@ TEST_CASE("IR Instruction", "[ir][instruction]") {
     );
 
     auto ret_instruction = builder.fetch_ret_instruction(
-      builder.fetch_immediate_operand(builder.fetch_i32_type(), 0)
+      builder.fetch_constant_operand(builder.fetch_i32_type(), 0)
     );
     builder.append_instruction(ret_instruction);
 
@@ -44,7 +44,7 @@ TEST_CASE("IR Instruction", "[ir][instruction]") {
 
     auto add_instruction_1 = builder.fetch_binary_instruction(
       BinaryOp::Add, dst_operand_2_id, dst_operand_id,
-      builder.fetch_immediate_operand(builder.fetch_i32_type(), 2)
+      builder.fetch_constant_operand(builder.fetch_i32_type(), 2)
     );
 
     add_instruction->insert_next(add_instruction_1);
@@ -62,9 +62,9 @@ TEST_CASE("IR Instruction", "[ir][instruction]") {
     builder.set_curr_basic_block(bb_0);
 
     auto operand_0_id =
-      builder.fetch_immediate_operand(builder.fetch_i32_type(), 0);
+      builder.fetch_constant_operand(builder.fetch_i32_type(), 0);
     auto operand_1_id =
-      builder.fetch_immediate_operand(builder.fetch_i32_type(), 1);
+      builder.fetch_constant_operand(builder.fetch_i32_type(), 1);
 
     auto dst_operand_id =
       builder.fetch_arbitrary_operand(builder.fetch_i32_type());
@@ -73,7 +73,7 @@ TEST_CASE("IR Instruction", "[ir][instruction]") {
     );
 
     auto ret_instruction = builder.fetch_ret_instruction(
-      builder.fetch_immediate_operand(builder.fetch_i32_type(), 0)
+      builder.fetch_constant_operand(builder.fetch_i32_type(), 0)
     );
     builder.append_instruction(ret_instruction);
 
@@ -84,7 +84,7 @@ TEST_CASE("IR Instruction", "[ir][instruction]") {
 
     auto add_instruction_1 = builder.fetch_binary_instruction(
       BinaryOp::Add, dst_operand_2_id, dst_operand_id,
-      builder.fetch_immediate_operand(builder.fetch_i32_type(), 2)
+      builder.fetch_constant_operand(builder.fetch_i32_type(), 2)
     );
 
     add_instruction->insert_next(add_instruction_1);
@@ -118,7 +118,7 @@ TEST_CASE("IR Basic Block", "[ir][basic_block]") {
       builder.fetch_arbitrary_operand(builder.fetch_i1_type());
     auto cond_instruction = builder.fetch_icmp_instruction(
       instruction::ICmpCond::Slt, cond_operand_id, param_a_id,
-      builder.fetch_immediate_operand(builder.fetch_i32_type(), 0)
+      builder.fetch_constant_operand(builder.fetch_i32_type(), 0)
     );
     builder.append_instruction(cond_instruction);
     auto condbr_instruction = builder.fetch_condbr_instruction(
@@ -147,7 +147,7 @@ TEST_CASE("IR Basic Block", "[ir][basic_block]") {
       builder.fetch_arbitrary_operand(builder.fetch_float_type());
     auto fmul_instruction = builder.fetch_binary_instruction(
       instruction::BinaryOp::FMul, fmul_operand_id, else_operand_id,
-      builder.fetch_immediate_operand(builder.fetch_float_type(), (float)2.0)
+      builder.fetch_constant_operand(builder.fetch_float_type(), (float)2.0)
     );
     builder.append_instruction(fmul_instruction);
 
@@ -193,7 +193,7 @@ TEST_CASE("IR Basic Block", "[ir][basic_block]") {
       builder.fetch_arbitrary_operand(builder.fetch_i1_type());
     auto cond_instruction = builder.fetch_icmp_instruction(
       instruction::ICmpCond::Slt, cond_operand_id, param_a_id,
-      builder.fetch_immediate_operand(builder.fetch_i32_type(), 0)
+      builder.fetch_constant_operand(builder.fetch_i32_type(), 0)
     );
     builder.append_instruction(cond_instruction);
     auto condbr_instruction = builder.fetch_condbr_instruction(
@@ -222,7 +222,7 @@ TEST_CASE("IR Basic Block", "[ir][basic_block]") {
       builder.fetch_arbitrary_operand(builder.fetch_float_type());
     auto fmul_instruction = builder.fetch_binary_instruction(
       instruction::BinaryOp::FMul, fmul_operand_id, else_operand_id,
-      builder.fetch_immediate_operand(builder.fetch_float_type(), (float)2.0)
+      builder.fetch_constant_operand(builder.fetch_float_type(), (float)2.0)
     );
     builder.append_instruction(fmul_instruction);
 
@@ -261,75 +261,113 @@ TEST_CASE("IR Builder", "[ir]") {
     auto builder = Builder();
 
     auto global_i32_0 = builder.fetch_global_operand(
-      builder.fetch_i32_type(), "g_0", false, true, {}
+      builder.fetch_i32_type(), "g_0", false,
+      builder.fetch_constant_operand(builder.fetch_i32_type(), 0)
     );
 
     auto global_i32_1 = builder.fetch_global_operand(
-      builder.fetch_i32_type(), "g_1", false, false,
-      {
-        builder.fetch_immediate_operand(builder.fetch_i32_type(), 114514),
-      }
+      builder.fetch_i32_type(), "g_1", false,
+      builder.fetch_constant_operand(builder.fetch_i32_type(), 114514)
     );
 
-    auto global_arr_0 = builder.fetch_global_operand(
-      builder.fetch_array_type(3, builder.fetch_i32_type()), "g_arr_0", false,
-      false,
-      {
-        builder.fetch_immediate_operand(builder.fetch_i32_type(), 1),
-        builder.fetch_immediate_operand(builder.fetch_i32_type(), 2),
-        builder.fetch_immediate_operand(builder.fetch_i32_type(), 3),
-      }
+    auto global_arr_multi_0 = builder.fetch_global_operand(
+      builder.fetch_array_type(
+        3, builder.fetch_array_type(5, builder.fetch_i32_type())
+      ),
+      "g_arr_multi_0", false,
+      builder.fetch_constant_operand(
+        builder.fetch_array_type(
+          3, builder.fetch_array_type(5, builder.fetch_i32_type())
+        ),
+        std::vector<operand::ConstantPtr>({
+          builder.fetch_constant(
+            builder.fetch_array_type(5, builder.fetch_i32_type()),
+            std::vector<operand::ConstantPtr>({
+              builder.fetch_constant(builder.fetch_i32_type(), 1),
+              builder.fetch_constant(builder.fetch_i32_type(), 2),
+              builder.fetch_constant(builder.fetch_i32_type(), 3),
+              builder.fetch_constant(builder.fetch_i32_type(), 4),
+              builder.fetch_constant(builder.fetch_i32_type(), 5),
+            })
+          ),
+          builder.fetch_constant(
+            builder.fetch_array_type(5, builder.fetch_i32_type()),
+            std::vector<operand::ConstantPtr>({
+              builder.fetch_constant(builder.fetch_i32_type(), 6),
+              builder.fetch_constant(builder.fetch_i32_type(), 7),
+              builder.fetch_constant(builder.fetch_i32_type(), 8),
+              builder.fetch_constant(builder.fetch_i32_type(), 9),
+              builder.fetch_constant(builder.fetch_i32_type(), 10),
+            })
+          ),
+          builder.fetch_constant(
+            builder.fetch_array_type(5, builder.fetch_i32_type()),
+            std::vector<operand::ConstantPtr>({
+              builder.fetch_constant(builder.fetch_i32_type(), 11),
+              builder.fetch_constant(builder.fetch_i32_type(), 12),
+              builder.fetch_constant(builder.fetch_i32_type(), 13),
+              builder.fetch_constant(builder.fetch_i32_type(), 14),
+              builder.fetch_constant(builder.fetch_i32_type(), 15),
+            })
+          ),
+        })
+      )
     );
 
     auto global_arr_1 = builder.fetch_global_operand(
       builder.fetch_array_type(3, builder.fetch_i32_type()), "g_arr_1", false,
-      true, {}
+      builder.fetch_constant_operand(
+        builder.fetch_array_type(3, builder.fetch_i32_type()),
+        operand::Zeroinitializer{}
+      )
     );
 
     auto global_float_0 = builder.fetch_global_operand(
-      builder.fetch_float_type(), "g_float_0", false, true, {}
+      builder.fetch_float_type(), "g_float_0", false,
+      builder.fetch_constant_operand(builder.fetch_float_type(), (float)0.0)
     );
 
     auto global_float_1 = builder.fetch_global_operand(
-      builder.fetch_float_type(), "g_float_1", false, false,
-      {
-        builder.fetch_immediate_operand(
-          builder.fetch_float_type(), (float)3.14
-        ),
-      }
+      builder.fetch_float_type(), "g_float_1", false,
+
+      builder.fetch_constant_operand(builder.fetch_float_type(), (float)3.14)
+
     );
     auto global_float_2 = builder.fetch_global_operand(
-      builder.fetch_float_type(), "g_float_2", false, false,
-      {
-        builder.fetch_immediate_operand(
-          builder.fetch_float_type(), (float)1067869798
-        ),
-      }
+      builder.fetch_float_type(), "g_float_2", false,
+
+      builder.fetch_constant_operand(
+        builder.fetch_float_type(), (float)1067869798
+      )
     );
 
     auto constant_i32_0 = builder.fetch_global_operand(
-      builder.fetch_i32_type(), "c_0", true, true, {}
+      builder.fetch_i32_type(), "c_0", true,
+      builder.fetch_constant_operand(builder.fetch_i32_type(), 0)
     );
     auto constant_i32_1 = builder.fetch_global_operand(
-      builder.fetch_i32_type(), "c_1", true, false,
-      {
-        builder.fetch_immediate_operand(builder.fetch_i32_type(), 1919810),
-      }
+      builder.fetch_i32_type(), "c_1", true,
+      builder.fetch_constant_operand(builder.fetch_i32_type(), 1919810)
     );
 
     auto constant_arr_0 = builder.fetch_global_operand(
       builder.fetch_array_type(3, builder.fetch_i32_type()), "c_arr_0", true,
-      false,
-      {
-        builder.fetch_immediate_operand(builder.fetch_i32_type(), 4),
-        builder.fetch_immediate_operand(builder.fetch_i32_type(), 5),
-        builder.fetch_immediate_operand(builder.fetch_i32_type(), 6),
-      }
+      builder.fetch_constant_operand(
+        builder.fetch_array_type(3, builder.fetch_i32_type()),
+        std::vector<operand::ConstantPtr>({
+          builder.fetch_constant(builder.fetch_i32_type(), 4),
+          builder.fetch_constant(builder.fetch_i32_type(), 5),
+          builder.fetch_constant(builder.fetch_i32_type(), 6),
+        })
+      )
     );
 
     auto constant_arr_1 = builder.fetch_global_operand(
       builder.fetch_array_type(3, builder.fetch_i32_type()), "c_arr_1", true,
-      true, {}
+      builder.fetch_constant_operand(
+        builder.fetch_array_type(3, builder.fetch_i32_type()),
+        operand::Zeroinitializer{}
+      )
     );
 
     builder.add_function("dummy", {}, builder.fetch_void_type());
@@ -462,7 +500,7 @@ TEST_CASE("IR Builder", "[ir]") {
 
     auto cond_instruction = builder.fetch_icmp_instruction(
       instruction::ICmpCond::Slt, cond_operand_id, param_a_id,
-      builder.fetch_immediate_operand(builder.fetch_i32_type(), 0)
+      builder.fetch_constant_operand(builder.fetch_i32_type(), 0)
     );
     builder.append_instruction(cond_instruction);
 
@@ -496,7 +534,7 @@ TEST_CASE("IR Builder", "[ir]") {
       builder.fetch_arbitrary_operand(builder.fetch_float_type());
     auto fmul_instruction = builder.fetch_binary_instruction(
       instruction::BinaryOp::FMul, fmul_operand_id, else_operand_id,
-      builder.fetch_immediate_operand(builder.fetch_float_type(), (float)2.0)
+      builder.fetch_constant_operand(builder.fetch_float_type(), (float)2.0)
     );
     builder.append_instruction(fmul_instruction);
 

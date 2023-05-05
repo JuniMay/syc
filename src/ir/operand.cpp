@@ -6,32 +6,51 @@ namespace syc {
 
 namespace ir {
 
+std::string operand::Constant::to_string(bool with_type) const {
+  std::stringstream buf;
+
+  if (with_type) {
+    buf << type::to_string(this->type) << " ";
+  }
+
+  std::visit(
+    overloaded{
+      [&](int v) { buf << v; },
+      [&](float v) {
+        double v_double = static_cast<double>(v);
+        uint64_t v_hexadecimal = *reinterpret_cast<uint64_t*>(&v_double);
+        buf << "0x" << std::hex << std::uppercase << v_hexadecimal;
+      },
+      [&](Zeroinitializer v) { buf << "zeroinitializer"; },
+      [&](const std::vector<ConstantPtr>& v) {
+        buf << "[";
+        for (size_t i = 0; i < v.size(); i++) {
+          buf << v[i]->to_string(true);
+          if (i != v.size() - 1) {
+            buf << ", ";
+          }
+        }
+        buf << "]";
+      },
+    },
+    this->kind
+  );
+
+  return buf.str();
+}
+
 Operand::Operand(OperandID id, TypePtr type, OperandKind kind)
   : id(id), type(type), kind(kind), def_id(std::nullopt) {}
 
-std::string Operand::to_string() const {
+std::string Operand::to_string(bool with_type) const {
   using namespace operand;
   return std::visit(
     overloaded{
       [](const Global& k) { return "@" + k.name; },
-      [](const Immediate& k) {
-        return std::visit(
-          overloaded{
-            [](int v) { return std::to_string(v); },
-            [](float v) {
-              // convert float to double and hexadecimal integer
-              // form to meet the requirement of llvm
-              double v_double = static_cast<double>(v);
-              uint64_t v_hexadecimal = *reinterpret_cast<uint64_t*>(&v_double);
-              std::stringstream ss;
-              ss << "0x" << std::hex << std::uppercase << v_hexadecimal;
-              return ss.str();
-            }},
-          k.value
-        );
-      },
+      [=](ConstantPtr k) { return k->to_string(with_type); },
       [](const Parameter& k) { return "%" + k.name; },
-      [this](const Arbitrary& k) { return "%t" + std::to_string(id); }},
+      [this](const Arbitrary& k) { return "%t" + std::to_string(id); },
+    },
     kind
   );
 }

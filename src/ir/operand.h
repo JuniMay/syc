@@ -13,19 +13,21 @@ struct Global {
   /// Name of the global variable.
   std::string name;
   /// If the global variable is constant.
-  bool is_constant;
-  /// If the variable is initialized by zero.
-  bool is_zero_initialized;
+  bool is_constant_value;
   /// Initial value/initializer of the global variable.
-  /// If the variable is an array, this is a list of initial values.
-  /// Otherwise, the first element of the list is the initial value.
-  std::vector<OperandID> initializer;
+  OperandID init;
 };
 
+struct Zeroinitializer {};
+
 /// Immediate
-struct Immediate {
+struct Constant {
   /// Value of the immediate.
-  std::variant<int, float> value;
+  ConstantKind kind;
+  /// Type of the constant.
+  TypePtr type;
+
+  std::string to_string(bool with_type = false) const;
 };
 
 /// Parameter
@@ -58,7 +60,7 @@ struct Operand {
   Operand(OperandID id, TypePtr type, OperandKind kind);
 
   /// Get the stringified representation of the operand (in llvm ir).
-  std::string to_string() const;
+  std::string to_string(bool with_type = false) const;
 
   /// Get the type of the operand.
   /// Note that global variables/constants have a pointer of the type.

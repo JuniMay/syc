@@ -68,41 +68,18 @@ std::string Context::to_string() {
     // So here just get the type instead of using `get_type`.
     // Note that if global variable is used as an operand, it must be used as a
     // pointer/address.
-    auto type = operand_table[operand_id]->type;
 
     result += "@" + global.name + " = ";
 
-    if (global.is_constant) {
+    if (global.is_constant_value) {
       result += "constant ";
     } else {
       result += "global ";
     }
 
-    result += type::to_string(type) + " ";
+    auto operand = operand_table[global.init];
 
-    if (global.is_zero_initialized) {
-      result += "zeroinitializer";
-    } else {
-      if (std::holds_alternative<type::Array>(*type)) {
-        result += "[ ";
-        for (auto operand_id : global.initializer) {
-          auto operand = operand_table[operand_id];
-          auto operand_type_str = type::to_string(operand->get_type());
-          auto operand_str = operand->to_string();
-
-          result += operand_type_str + " " + operand_str + ", ";
-        }
-
-        if (global.initializer.size() > 0) {
-          result.pop_back();
-          result.pop_back();
-        }
-
-        result += " ]";
-      } else {
-        result += operand_table[global.initializer.at(0)]->to_string();
-      }
-    }
+    result += operand->to_string(true);
 
     result += "\n";
   }

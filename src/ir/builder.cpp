@@ -17,8 +17,15 @@ OperandID Builder::fetch_operand(TypePtr type, OperandKind kind) {
 }
 
 OperandID
-Builder::fetch_immediate_operand(TypePtr type, std::variant<int, float> value) {
-  return fetch_operand(type, operand::Immediate{value});
+Builder::fetch_constant_operand(TypePtr type, operand::ConstantKind kind) {
+  return fetch_operand(
+    type, std::make_shared<operand::Constant>(operand::Constant{kind, type})
+  );
+}
+
+operand::ConstantPtr
+Builder::fetch_constant(TypePtr type, operand::ConstantKind kind) {
+  return std::make_shared<operand::Constant>(operand::Constant{kind, type});
 }
 
 OperandID Builder::fetch_parameter_operand(TypePtr type, std::string name) {
@@ -29,18 +36,9 @@ OperandID Builder::fetch_global_operand(
   TypePtr type,
   std::string name,
   bool is_constant,
-  bool is_zero_initialized,
-  std::vector<OperandID> initializer
+  OperandID init
 ) {
-  return fetch_operand(
-    type,
-    operand::Global{
-      name,
-      is_constant,
-      is_zero_initialized,
-      initializer,
-    }
-  );
+  return fetch_operand(type, operand::Global{name, is_constant, init});
 }
 
 OperandID Builder::fetch_arbitrary_operand(TypePtr type) {

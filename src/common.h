@@ -211,7 +211,13 @@ using InstructionPrevPtr = std::weak_ptr<Instruction>;
 namespace operand {
 
 struct Global;
-struct Immediate;
+
+struct Zeroinitializer;
+struct Constant;
+using ConstantPtr = std::shared_ptr<Constant>;
+using ConstantKind =
+  std::variant<int, float, std::vector<ConstantPtr>, Zeroinitializer>;
+
 struct Parameter;
 struct Arbitrary;
 
@@ -219,7 +225,7 @@ struct Arbitrary;
 
 using OperandKind = std::variant<
   operand::Arbitrary,
-  operand::Immediate,
+  operand::ConstantPtr,
   operand::Parameter,
   operand::Global>;
 
