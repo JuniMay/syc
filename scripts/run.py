@@ -16,7 +16,7 @@ def execute(command) -> Dict[str, Any]:
                          stderr=subprocess.PIPE)
 
     try:
-        stdout, stderr = p.communicate(timeout=800)
+        stdout, stderr = p.communicate(timeout=100)
         returncode = p.returncode
 
         p.terminate()

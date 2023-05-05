@@ -61,6 +61,10 @@ std::string SymbolEntry::to_string() const {
   return ss.str();
 }
 
+void SymbolEntry::set_ir_operand_id(ir::OperandID ir_operand_id) {
+  this->maybe_ir_operand_id = ir_operand_id;
+}
+
 SymbolTablePtr create_symbol_table(std::optional<SymbolTablePtr> maybe_parent) {
   auto table = std::make_shared<SymbolTable>();
   table->maybe_parent = maybe_parent;

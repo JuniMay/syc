@@ -35,10 +35,10 @@ OperandID Builder::fetch_parameter_operand(TypePtr type, std::string name) {
 OperandID Builder::fetch_global_operand(
   TypePtr type,
   std::string name,
-  bool is_constant,
+  bool is_constant_value,
   OperandID init
 ) {
-  return fetch_operand(type, operand::Global{name, is_constant, init});
+  return fetch_operand(type, operand::Global{name, is_constant_value, init});
 }
 
 OperandID Builder::fetch_arbitrary_operand(TypePtr type) {

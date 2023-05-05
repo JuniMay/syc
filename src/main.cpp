@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include "frontend/driver.h"
+#include "frontend/irgen.h"
 #include "ir/builder.h"
 #include "ir/instruction.h"
 #include "utils.h"
@@ -40,6 +41,8 @@ int main(int argc, char* argv[]) {
   }
 
   auto ir_builder = ir::Builder();
+
+  irgen(compunit, ir_builder);
 
   if (options.ir_file.has_value()) {
     std::ofstream ir_file(options.ir_file.value());

@@ -49,7 +49,7 @@ struct Builder {
   OperandID fetch_global_operand(
     TypePtr type,
     std::string name,
-    bool is_constant,
+    bool is_constant_value,
     OperandID init
   );
 

@@ -53,6 +53,8 @@ struct SymbolEntry {
   bool is_comptime() const;
 
   std::string to_string() const;
+
+  void set_ir_operand_id(ir::OperandID ir_operand_id);
 };
 
 /// Symbol Table
@@ -68,9 +70,8 @@ struct SymbolTable {
   /// Lookup a symbol in the table by its name.
   /// If the symbol is not found in the current table, the parent table will be
   /// searched. Return nullopt if no symbol is found.
-  std::optional<SymbolEntryPtr> lookup(
-    const std::string& name, bool lookup_parent = true
-  );
+  std::optional<SymbolEntryPtr>
+  lookup(const std::string& name, bool lookup_parent = true);
 
   /// Add a symbol entry into the symbol table.
   void add_symbol_entry(SymbolEntryPtr symbol_entry);
