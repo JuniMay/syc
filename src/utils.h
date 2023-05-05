@@ -2,6 +2,7 @@
 #define SYC_UTILS_H_
 
 #include "common.h"
+#include <filesystem>
 
 namespace syc {
 
