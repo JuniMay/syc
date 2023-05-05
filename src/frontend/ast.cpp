@@ -212,14 +212,17 @@ create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver) {
     case BinaryOp::Add:
     case BinaryOp::Sub:
     case BinaryOp::Mul:
-    case BinaryOp::Div:
-    case BinaryOp::Lt:
-    case BinaryOp::Gt:
-    case BinaryOp::Le:
-    case BinaryOp::Ge:
-    case BinaryOp::Eq:
-    case BinaryOp::Ne: {
-      if (lhs->get_type() == rhs->get_type()) {
+    case BinaryOp::Div: {
+      // (int int) -> int
+      // (float float) -> float
+      // (bool bool) -> Undefined
+      // (float int=>float) -> float
+      // (int bool) -> Undefined
+      // (float bool) -> Undefined
+      if (lhs->get_type()->is_bool() || rhs->get_type()->is_bool()) {
+        std::string error_message = "Error: cannot perform arithmetic on bool.";
+        throw std::runtime_error(error_message);
+      } else if (lhs->get_type() == rhs->get_type()) {
         type = lhs->get_type();
       } else if (lhs->get_type()->is_float() && rhs->get_type()->is_int()) {
         type = create_float_type();
@@ -228,11 +231,51 @@ create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver) {
         type = create_float_type();
         lhs = create_cast_expr(lhs, type.value(), driver);
       } else {
-        throw std::runtime_error("Error: type mismatch for binary expression.");
+        std::string error_message = "Error: type mismatch for binary expression between " +
+          lhs->get_type()->to_string() + " and " + rhs->get_type()->to_string() + ".";
+        throw std::runtime_error(error_message);
+      }
+      break;
+    }
+    case BinaryOp::Lt:
+    case BinaryOp::Gt:
+    case BinaryOp::Le:
+    case BinaryOp::Ge:
+    case BinaryOp::Eq:
+    case BinaryOp::Ne: {
+      // (bool bool) -> bool
+      // (int int) -> bool
+      // (float float) -> bool
+      // (int=>float float) -> bool
+      // (int=>bool bool) -> bool
+      // (float=>bool bool) -> bool
+      if (lhs->get_type() == rhs->get_type()) {
+        type = create_bool_type();
+      } else if (lhs->get_type()->is_float() && rhs->get_type()->is_int()) {
+        type = create_bool_type();
+        rhs = create_cast_expr(rhs, create_float_type(), driver);
+      } else if (lhs->get_type()->is_int() && rhs->get_type()->is_float()) {
+        type = create_bool_type();
+        lhs = create_cast_expr(lhs, create_float_type(), driver);
+      } else if (lhs->get_type()->is_bool() && (rhs->get_type()->is_int() || rhs->get_type()->is_float())) {
+        type = create_bool_type();
+        rhs = create_cast_expr(rhs, create_bool_type(), driver);
+      } else if (rhs->get_type()->is_bool() && (lhs->get_type()->is_int() || lhs->get_type()->is_float())) {
+        type = create_bool_type();
+        lhs = create_cast_expr(lhs, create_bool_type(), driver);
+      } else {
+        std::string error_message = "Error: type mismatch for logical binary expression between " +
+          lhs->get_type()->to_string() + " and " + rhs->get_type()->to_string() + ".";
+        throw std::runtime_error(error_message);
       }
       break;
     }
     case BinaryOp::Mod: {
+      if (!(lhs->get_type()->is_int() && rhs->get_type()->is_int())) {
+        std::string error_message = "Error: modulo expression only permitted on integers, not " +
+          lhs->get_type()->to_string() + " and " + rhs->get_type()->to_string() + ".";
+        throw std::runtime_error(error_message);
+      }
       type = create_int_type();
       break;
     }
@@ -320,6 +363,17 @@ ExprPtr create_call_expr(
 }
 
 ExprPtr create_cast_expr(ExprPtr expr, TypePtr type, Driver& driver) {
+  // int/float -> bool cast
+  if (type->is_bool()) {
+    if (expr->get_type()->is_float() || expr->get_type()->is_int()){
+      auto zero = create_constant_expr(create_zero_comptime_value(expr->get_type()));
+      return create_binary_expr(BinaryOp::Ne, expr, zero, driver);
+    } else {
+      throw std::runtime_error("Error: cannot cast non-numeric type to bool.");
+    }
+  }
+
+  // int/float -> int/float cast
   auto symbol_name = driver.get_next_temp_name();
   auto symtable = driver.curr_symtable;
 
@@ -350,13 +404,22 @@ StmtPtr create_continue_stmt() {
 StmtPtr create_if_stmt(
   ExprPtr cond,
   StmtPtr then_stmt,
+  Driver& driver,
   std::optional<StmtPtr> maybe_else_stmt
 ) {
+  // cast to bool
+  if (!cond->get_type()->is_bool()) {
+    cond = create_cast_expr(cond, create_bool_type(), driver);
+  }
   return std::make_shared<Stmt>(StmtKind(stmt::If{
     cond, then_stmt, maybe_else_stmt}));
 }
 
-StmtPtr create_while_stmt(ExprPtr cond, StmtPtr body) {
+StmtPtr create_while_stmt(ExprPtr cond, StmtPtr body, Driver& driver) {
+  // cast to bool
+  if (!cond->get_type()->is_bool()) {
+    cond = create_cast_expr(cond, create_bool_type(), driver);
+  }
   return std::make_shared<Stmt>(StmtKind(stmt::While{cond, body}));
 }
 
