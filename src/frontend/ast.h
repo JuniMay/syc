@@ -315,11 +315,12 @@ StmtPtr create_continue_stmt();
 StmtPtr create_if_stmt(
   ExprPtr cond,
   StmtPtr then_stmt,
+  Driver& driver,
   std::optional<StmtPtr> maybe_else_stmt = std::nullopt
 );
 
 /// Create a while statement.
-StmtPtr create_while_stmt(ExprPtr cond, StmtPtr body);
+StmtPtr create_while_stmt(ExprPtr cond, StmtPtr body, Driver& driver);
 
 /// Create a new block with no statements.
 StmtPtr create_block_stmt(SymbolTablePtr parent_symtable);

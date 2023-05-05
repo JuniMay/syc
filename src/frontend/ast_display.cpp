@@ -10,7 +10,7 @@ namespace ast {
 std::string Expr::to_string() const {
   std::stringstream buf;
   buf << "Expr ";
-
+  buf << this->get_type()->to_string() << " ";
   std::visit(
 
     overloaded{
@@ -94,7 +94,6 @@ std::string Expr::to_string() const {
       [&buf, this](const expr::Cast& kind) {
         buf << "Cast " << kind.symbol->name << std::endl;
         buf << indent_str(kind.expr->to_string(), "\t") << std::endl;
-        buf << indent_str(kind.type->to_string(), "\t") << std::endl;
       },
       [&buf, this](const expr::Constant& kind) {
         buf << "Constant" << std::endl;
@@ -110,7 +109,6 @@ std::string Expr::to_string() const {
     },
     this->kind
   );
-
   return buf.str();
 }
 

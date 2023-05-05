@@ -281,16 +281,16 @@ InitValList
 
 IfStmt 
   : IF '(' Cond ')' Stmt %prec THEN {
-    $$ = ast::create_if_stmt($3, $5, std::nullopt);
+    $$ = ast::create_if_stmt($3, $5, driver, std::nullopt);
   }
   | IF '(' Cond ')' Stmt ELSE Stmt {
-    $$ = ast::create_if_stmt($3, $5, std::make_optional($7));
+    $$ = ast::create_if_stmt($3, $5, driver, std::make_optional($7));
   }
   ;
 
 WhileStmt 
   : WHILE '(' Cond ')' Stmt {
-    $$ = ast::create_while_stmt($3, $5);
+    $$ = ast::create_while_stmt($3, $5, driver);
   }
   ;
 
