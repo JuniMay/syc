@@ -83,10 +83,8 @@ std::string Type::to_string() const {
   }
   if (is_array()) {
     auto array = std::get<type::Array>(kind);
-    std::string length = array.maybe_length.has_value()
-                           ? std::to_string(array.maybe_length.value()) + " "
-                           : "";
-    return "[" + length + "x " + array.element_type->to_string() + "]";
+    return "[" + std::to_string(array.length) + "x " +
+           array.element_type->to_string() + "]";
   }
   if (is_void()) {
     return "VOID";
@@ -118,11 +116,7 @@ size_t Type::get_size() const {
       [](const type::Void& kind) -> size_t { return 0; },
       [](const type::Pointer& kind) -> size_t { return 64; },
       [](const type::Array& kind) -> size_t {
-        if (!kind.maybe_length.has_value()) {
-          return 64;
-        } else {
-          return kind.element_type->get_size() * kind.maybe_length.value();
-        }
+        return kind.element_type->get_size() * kind.length;
       },
       [](const auto&) -> size_t { return 0; },
     },
@@ -148,8 +142,12 @@ TypePtr create_void_type() {
 
 TypePtr
 create_array_type(TypePtr element_type, std::optional<size_t> maybe_length) {
-  return std::make_shared<Type>(TypeKind(type::Array{element_type, maybe_length}
-  ));
+  if (!maybe_length.has_value()) {
+    return create_pointer_type(element_type);
+  } else {
+    return std::make_shared<Type>(TypeKind(type::Array{
+      element_type, maybe_length.value()}));
+  }
 }
 
 TypePtr create_pointer_type(TypePtr value_type) {
@@ -201,13 +199,8 @@ bool operator==(TypePtr lhs, TypePtr rhs) {
       },
       [](type::Float& lhs, type::Float& rhs) { return true; },
       [](type::Array& lhs, type::Array& rhs) {
-        if (lhs.maybe_length.has_value() != rhs.maybe_length.has_value()) {
+        if (lhs.length != rhs.length) {
           return false;
-        }
-        if (lhs.maybe_length.has_value()) {
-          if (lhs.maybe_length.value() != rhs.maybe_length.value()) {
-            return false;
-          }
         }
         return lhs.element_type == rhs.element_type;
       },

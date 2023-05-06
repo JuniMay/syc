@@ -9,7 +9,7 @@
 
 ### Submission
 
-The machanism of the contest is compile everything altogether. So we need to flatten the source code.
+The machanism of the contest is compiling everything altogether. So we need to flatten the source code.
 
 ```shell
 python3 scripts/flatten.py --input_dir ./src --output_dir ./flattened
@@ -56,4 +56,6 @@ This will generate the `syc` executable in the current directory.
 
 - [x] Temporary symbol duplication in the symbol table.
   - Fixed. The actual problem is that if there is a while/if/else, the block will be added twice: once by the driver and another time by the while/if/else statement.
+- [ ] Fix `getelementptr` for array parameter that is treated as pointer (no first index).
+- [ ] Fix array-type parameter/argument passing.
 - [ ] Optimize `86_long_code2.sy`.

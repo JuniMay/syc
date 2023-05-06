@@ -223,7 +223,8 @@ void irgen_stmt(
 
           auto ir_func_return_block = builder.fetch_basic_block();
           builder.append_basic_block(ir_func_return_block);
-
+          builder.curr_function->maybe_return_block = ir_func_return_block;
+          
           builder.set_curr_basic_block(ir_func_return_block);
 
           if (!ast_func_ret_type->is_void()) {
@@ -699,17 +700,12 @@ std::optional<IrTypePtr> irgen_type(AstTypePtr type, IrBuilder& builder) {
     );
   } else if (type->is_array()) {
     auto element_type = type->get_element_type().value();
-    auto maybe_length =
-      std::get<frontend::type::Array>(type->kind).maybe_length;
-    if (maybe_length.has_value()) {
-      return builder.fetch_array_type(
-        maybe_length.value(), irgen_type(element_type, builder).value()
-      );
-    } else {
-      return builder.fetch_pointer_type(
-        irgen_type(element_type, builder).value()
-      );
-    }
+    auto length = std::get<frontend::type::Array>(type->kind).length;
+
+    return builder.fetch_array_type(
+      length, irgen_type(element_type, builder).value()
+    );
+
   } else {
     std::string error_message = "Erro: cannot generate a function type in ir.";
     std::cerr << error_message << std::endl;

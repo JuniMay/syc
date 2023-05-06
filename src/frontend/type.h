@@ -24,7 +24,7 @@ struct Float {};
 
 struct Array {
   TypePtr element_type;
-  std::optional<size_t> maybe_length;
+  size_t length;
 };
 
 struct Void {};

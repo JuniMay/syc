@@ -83,13 +83,14 @@ void Function::add_terminators(Builder& builder) {
   auto curr_basic_block = this->head_basic_block->next;
   while (curr_basic_block->next != this->tail_basic_block) {
     if (curr_basic_block->has_terminator()) {
+      curr_basic_block = curr_basic_block->next;
       continue;
     } else {
       curr_basic_block->append_instruction(
         builder.fetch_br_instruction(curr_basic_block->next->id)
       );
+      curr_basic_block = curr_basic_block->next;
     }
-    curr_basic_block = curr_basic_block->next;
   }
 }
 

@@ -23,7 +23,7 @@ void expr::InitializerList::set_type(TypePtr type, Driver& driver) {
     this->type = type;
     this->is_zeroinitializer = false;
 
-    auto length = std::get<type::Array>(type->kind).maybe_length.value_or(0);
+    auto length = std::get<type::Array>(type->kind).length;
 
     auto root_element_type = type->get_root_element_type().value();
     auto element_type = type->get_element_type().value();
@@ -333,6 +333,8 @@ create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver) {
     case BinaryOp::Index: {
       if (lhs->get_type()->is_array()) {
         type = lhs->get_type()->get_element_type();
+      } else if (lhs->get_type()->is_pointer()) {
+        type = lhs->get_type()->get_value_type();
       } else {
         throw std::runtime_error("Error: indexing on non-array type.");
       }
