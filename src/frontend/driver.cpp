@@ -27,30 +27,30 @@ Driver::Driver(std::string filename) {
   this->add_function_decl(create_float_type(), "getfloat", {});
   this->add_function_decl(
     create_int_type(), "getarray",
-    {{create_array_type(create_int_type(), std::nullopt), ""}}
+    {{create_array_type(create_int_type(), std::nullopt), "a"}}
   );
   this->add_function_decl(
     create_int_type(), "getfarray",
-    {{create_array_type(create_float_type(), std::nullopt), ""}}
+    {{create_array_type(create_float_type(), std::nullopt), "a"}}
   );
   this->add_function_decl(
-    create_void_type(), "putint", {{create_int_type(), ""}}
+    create_void_type(), "putint", {{create_int_type(), "a"}}
   );
   this->add_function_decl(
-    create_void_type(), "putch", {{create_int_type(), ""}}
+    create_void_type(), "putch", {{create_int_type(), "a"}}
   );
   this->add_function_decl(
-    create_void_type(), "putfloat", {{create_float_type(), ""}}
+    create_void_type(), "putfloat", {{create_float_type(), "a"}}
   );
   this->add_function_decl(
     create_void_type(), "putarray",
-    {{create_int_type(), ""},
-     {create_array_type(create_int_type(), std::nullopt), ""}}
+    {{create_int_type(), "n"},
+     {create_array_type(create_int_type(), std::nullopt), "a"}}
   );
   this->add_function_decl(
     create_void_type(), "putfarray",
-    {{create_int_type(), ""},
-     {create_array_type(create_float_type(), std::nullopt), ""}}
+    {{create_int_type(), "n"},
+     {create_array_type(create_float_type(), std::nullopt), "a"}}
   );
 
   // `putf` function is not added yet.

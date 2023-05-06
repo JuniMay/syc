@@ -36,7 +36,7 @@ Options parse_args(int argc, char** argv) {
     std::string arg = argv[i];
     if (arg[0] == '-') {
       std::string key = arg.substr(1);
-      if (key[0] == '-') 
+      if (key[0] == '-')
         key = key.substr(1);
       if (i + 1 < argc && argv[i + 1][0] != '-') {
         arguments[key] = argv[++i];
@@ -57,14 +57,14 @@ Options parse_args(int argc, char** argv) {
     exit(1);
   } else {
     options.input_filename = positional_arguments[0];
-  } 
+  }
   if (!std::filesystem::exists(options.input_filename)) {
     std::cerr << "error: input file not exists" << std::endl;
     exit(1);
   }
 
   // output file
-  if (arguments.find("o") != arguments.end()){
+  if (arguments.find("o") != arguments.end()) {
     options.output_file = arguments.find("o")->second;
     if (options.output_file == "") {
       std::cerr << "error: no output file specified" << std::endl;
@@ -75,48 +75,48 @@ Options parse_args(int argc, char** argv) {
   }
 
   // tokens file
-  if (arguments.find("emit-tokens") != arguments.end()){
+  if (arguments.find("emit-tokens") != arguments.end()) {
     options.token_file = arguments.find("emit-tokens")->second;
     if (options.token_file == "") {
       std::cerr << "error: no tokens file specified" << std::endl;
       exit(1);
     }
-  } 
+  }
 
   // ast file
-  if (arguments.find("emit-ast") != arguments.end()){
+  if (arguments.find("emit-ast") != arguments.end()) {
     options.ast_file = arguments.find("emit-ast")->second;
     if (options.ast_file == "") {
       std::cerr << "error: no ast file specified" << std::endl;
       exit(1);
     }
-  } 
+  }
 
   // ir file
-  if (arguments.find("emit-ir") != arguments.end()){
+  if (arguments.find("emit-ir") != arguments.end()) {
     options.ir_file = arguments.find("emit-ir")->second;
     if (options.ir_file == "") {
       std::cerr << "error: no ir file specified" << std::endl;
       exit(1);
     }
-  } 
+  }
 
   // Optimization level
-  if (arguments.find("O0") != arguments.end()){
+  if (arguments.find("O0") != arguments.end()) {
     options.optimization_level = 0;
   }
-  if (arguments.find("O1") != arguments.end()){
+  if (arguments.find("O1") != arguments.end()) {
     options.optimization_level = 1;
   }
-  if (arguments.find("O2") != arguments.end()){
+  if (arguments.find("O2") != arguments.end()) {
     options.optimization_level = 2;
   }
-  if (arguments.find("O3") != arguments.end()){
+  if (arguments.find("O3") != arguments.end()) {
     options.optimization_level = 3;
   }
 
   // -S
-  if (arguments.find("S") != arguments.end()){
+  if (arguments.find("S") != arguments.end()) {
     // do nothing
   }
   return options;

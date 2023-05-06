@@ -105,8 +105,9 @@ void irgen_stmt(
             break;
           }
           default: {
-            // TODO
-
+            std::string error_message =
+              "Error: scope is not supported for declaration";
+            throw std::runtime_error(error_message);
             break;
           }
         }
@@ -160,9 +161,9 @@ void irgen_stmt(
           const auto& ast_block =
             std::get<frontend::ast::stmt::Block>(ast_body->kind);
 
-          auto ir_basic_block = builder.fetch_basic_block();
-          builder.append_basic_block(ir_basic_block);
-          builder.set_curr_basic_block(ir_basic_block);
+          auto ir_func_entry_block = builder.fetch_basic_block();
+          builder.append_basic_block(ir_func_entry_block);
+          builder.set_curr_basic_block(ir_func_entry_block);
 
           // store all the argument/parameter to the memory and set the operand
           // id of the param symbol to the corresponding pointer.
@@ -202,10 +203,62 @@ void irgen_stmt(
             ast_param_symbol->set_ir_operand_id(ir_alloca_dst_id);
           }
 
+          // generate the return operand and return block.
+
+          // if the return type is not void, an address for the return value is
+          // needed.
+          if (!ast_func_ret_type->is_void()) {
+            builder.curr_function->maybe_return_operand_id =
+              builder.fetch_arbitrary_operand(
+                builder.fetch_pointer_type(ir_func_ret_type)
+              );
+
+            auto alloca_instruction = builder.fetch_alloca_instruction(
+              builder.curr_function->maybe_return_operand_id.value(),
+              ir_func_ret_type, std::nullopt, std::nullopt, std::nullopt
+            );
+
+            builder.prepend_instruction_to_curr_function(alloca_instruction);
+          }
+
+          auto ir_func_return_block = builder.fetch_basic_block();
+          builder.append_basic_block(ir_func_return_block);
+
+          builder.set_curr_basic_block(ir_func_return_block);
+
+          if (!ast_func_ret_type->is_void()) {
+            // if the return type is not void, the return value need to be
+            // loaded from the memory.
+            auto ir_loaded_return_operand_id =
+              builder.fetch_arbitrary_operand(ir_func_ret_type);
+
+            auto load_instruction = builder.fetch_load_instruction(
+              ir_loaded_return_operand_id,
+              builder.curr_function->maybe_return_operand_id.value(),
+              std::nullopt
+            );
+
+            builder.append_instruction(load_instruction);
+
+            auto ret_instruction =
+              builder.fetch_ret_instruction(ir_loaded_return_operand_id);
+
+            builder.append_instruction(ret_instruction);
+          } else {
+            // otherwise just return.
+            auto ret_instruction = builder.fetch_ret_instruction(std::nullopt);
+            builder.append_instruction(ret_instruction);
+          }
+
+          // set the block back to the entry block
+          builder.set_curr_basic_block(ir_func_entry_block);
+
           // generate the statements in the body
           for (const auto& stmt : ast_block.stmts) {
             irgen_stmt(stmt, ast_block.symtable, builder);
           }
+
+          builder.curr_function->add_terminators(builder);
         }
       },
       [&builder](const frontend::ast::stmt::Block& kind) {
@@ -226,6 +279,9 @@ void irgen_stmt(
         );
 
         builder.append_instruction(store_instruction);
+      },
+      [symtable, &builder](const frontend::ast::stmt::Return& kind) {
+
       },
       [&builder](const auto&) {
         // TODO
@@ -500,9 +556,13 @@ IrOperandID irgen_expr(
             }
             // If the identifier is not used as a lval, the actuall value needs
             // to be loaded.
-            // TODO the array-typed identifier cannot be loaded as an
-            // lval(address).
             if (!is_lval) {
+              if (ast_symbol->type->is_array()) {
+                std::string error_message =
+                  "Error: array type cannot be loaded directly.";
+                throw std::runtime_error(error_message);
+              }
+
               auto ir_load_dst_operand_id = builder.fetch_arbitrary_operand(
                 irgen_type(ast_symbol->type, builder).value()
               );

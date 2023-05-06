@@ -56,6 +56,9 @@ struct BasicBlock : std::enable_shared_from_this<BasicBlock> {
 
   /// Convert the basic block and its instructions to a string in IR form.
   std::string to_string(Context& context);
+
+  /// If the last instruction is a terminator.
+  bool has_terminator() const;
 };
 
 /// Create a basic block.

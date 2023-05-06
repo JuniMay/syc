@@ -1,8 +1,8 @@
 #ifndef SYC_UTILS_H_
 #define SYC_UTILS_H_
 
-#include "common.h"
 #include <filesystem>
+#include "common.h"
 
 namespace syc {
 

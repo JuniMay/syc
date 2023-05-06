@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "ir/basic_block.h"
+#include "ir/builder.h"
 
 namespace syc {
 namespace ir {
@@ -25,6 +26,9 @@ struct Function {
 
   bool is_declare;
 
+  std::optional<OperandID> maybe_return_operand_id;
+  std::optional<BasicBlockPtr> maybe_return_block;
+
   /// Constructor
   Function(
     std::string name,
@@ -38,6 +42,9 @@ struct Function {
 
   /// Convert the function and its basic blocks to a string in IR form.
   std::string to_string(Context& context);
+
+  /// Add terminator to each block if there is no terminator in it.
+  void add_terminators(Builder& builder);
 };
 
 }  // namespace ir

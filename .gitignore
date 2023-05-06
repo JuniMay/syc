@@ -1,14 +1,12 @@
-.vscode
-build
+/.vscode/
+/src/frontend/generated/
+/flattened/
+/tests/
+/tests_output/
+/.cache/
+/build/
 
+/syc
 *.ll
 *.asm
-
-/tests
 .DS_Store
-
-src/frontend/generated
-
-/flattened
-/syc
-/tests_output

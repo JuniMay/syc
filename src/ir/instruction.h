@@ -236,6 +236,9 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
 
   /// Convert the instruction to a string of IR form.
   std::string to_string(Context& context);
+
+  /// If this is a terminator instruction.
+  bool is_terminator() const;
 };
 
 /// Create an instruction.

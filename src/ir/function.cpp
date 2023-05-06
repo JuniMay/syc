@@ -20,17 +20,25 @@ Function::Function(
   this->head_basic_block = create_dummy_basic_block();
   this->tail_basic_block = create_dummy_basic_block();
 
+  this->maybe_return_operand_id = std::nullopt;
+  this->maybe_return_block = std::nullopt;
+
   this->head_basic_block->insert_next(this->tail_basic_block);
 }
 
 void Function::append_basic_block(BasicBlockPtr basic_block) {
-  this->tail_basic_block->insert_prev(basic_block);
+  if (this->maybe_return_block.has_value()) {
+    this->maybe_return_block.value()->insert_prev(basic_block);
+  } else {
+    this->tail_basic_block->insert_prev(basic_block);
+  }
 }
 
 std::string Function::to_string(Context& context) {
   if (this->is_declare) {
-    std::string result = "declare " + type::to_string(return_type) + " @" + name + "(";
-    for (auto operand_id: parameter_id_list) {
+    std::string result =
+      "declare " + type::to_string(return_type) + " @" + name + "(";
+    for (auto operand_id : parameter_id_list) {
       auto operand = context.get_operand(operand_id);
       result += type::to_string(operand->get_type()) + ", ";
     }
@@ -69,6 +77,20 @@ std::string Function::to_string(Context& context) {
   result += "}\n";
 
   return result;
+}
+
+void Function::add_terminators(Builder& builder) {
+  auto curr_basic_block = this->head_basic_block->next;
+  while (curr_basic_block->next != this->tail_basic_block) {
+    if (curr_basic_block->has_terminator()) {
+      continue;
+    } else {
+      curr_basic_block->append_instruction(
+        builder.fetch_br_instruction(curr_basic_block->next->id)
+      );
+    }
+    curr_basic_block = curr_basic_block->next;
+  }
 }
 
 }  // namespace ir

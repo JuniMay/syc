@@ -82,5 +82,9 @@ void BasicBlock::add_use(InstructionID use_id) {
   this->use_id_list.push_back(use_id);
 }
 
+bool BasicBlock::has_terminator() const {
+  return this->tail_instruction->prev.lock()->is_terminator();
+}
+
 }  // namespace ir
 }  // namespace syc

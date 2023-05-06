@@ -53,6 +53,12 @@ void Instruction::remove() {
   }
 }
 
+bool Instruction::is_terminator() const {
+  return std::holds_alternative<instruction::Br>(this->kind) ||
+         std::holds_alternative<instruction::CondBr>(this->kind) ||
+         std::holds_alternative<instruction::Ret>(this->kind);
+}
+
 Instruction::Instruction(
   InstructionID id,
   InstructionKind kind,
