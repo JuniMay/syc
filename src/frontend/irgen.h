@@ -45,13 +45,13 @@ void irgen_stmt(
 );
 
 /// Generate IR for expression.
-/// `is_lval` is used to decide if the value shall be loaded from the address or
-/// just get the operand as a pointer.
+/// `use_address` is used to decide if the value shall be loaded from the
+/// address or just get a pointer.
 IrOperandID irgen_expr(
   AstExprPtr expr,
   AstSymbolTablePtr symtable,
   IrBuilder& builder,
-  bool is_lval = false
+  bool use_address = false
 );
 
 std::optional<IrTypePtr> irgen_type(AstTypePtr type, IrBuilder& builder);

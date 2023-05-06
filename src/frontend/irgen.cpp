@@ -224,7 +224,7 @@ void irgen_stmt(
           auto ir_func_return_block = builder.fetch_basic_block();
           builder.append_basic_block(ir_func_return_block);
           builder.curr_function->maybe_return_block = ir_func_return_block;
-          
+
           builder.set_curr_basic_block(ir_func_return_block);
 
           if (!ast_func_ret_type->is_void()) {
@@ -296,7 +296,7 @@ IrOperandID irgen_expr(
   AstExprPtr expr,
   AstSymbolTablePtr symtable,
   IrBuilder& builder,
-  bool is_lval
+  bool use_address
 ) {
   return std::visit(
     overloaded{
@@ -306,29 +306,28 @@ IrOperandID irgen_expr(
           builder.fetch_operand(ir_constant->type, ir_constant);
         return ir_constant_operand_id;
       },
-      [symtable, &builder, is_lval](const frontend::ast::expr::Binary& kind) {
-        IrOperandID ir_lhs_operand_id;
-        if (kind.op == AstBinaryOp::Index) {
-          ir_lhs_operand_id = irgen_expr(kind.lhs, symtable, builder, true);
-        } else {
-          ir_lhs_operand_id = irgen_expr(kind.lhs, symtable, builder, false);
-        }
-        auto ir_rhs_operand_id = irgen_expr(kind.rhs, symtable, builder, false);
-
+      [symtable, &builder,
+       use_address](const frontend::ast::expr::Binary& kind) {
         auto symbol = kind.symbol;
 
         auto ast_dst_type = symbol->type;
         auto ast_lhs_type = kind.lhs->get_type();
         auto ast_rhs_type = kind.rhs->get_type();
 
-        auto ir_dst_operand_id = builder.fetch_arbitrary_operand(
-          irgen_type(ast_dst_type, builder).value()
-        );
-
-        symbol->set_ir_operand_id(ir_dst_operand_id);
+        IrOperandID ir_dst_operand_id;
 
         switch (kind.op) {
           case AstBinaryOp::Add: {
+            auto ir_lhs_operand_id =
+              irgen_expr(kind.lhs, symtable, builder, false);
+            auto ir_rhs_operand_id =
+              irgen_expr(kind.rhs, symtable, builder, false);
+
+            ir_dst_operand_id = builder.fetch_arbitrary_operand(
+              irgen_type(ast_dst_type, builder).value()
+            );
+            symbol->set_ir_operand_id(ir_dst_operand_id);
+
             IrBinaryOp ir_op;
             if (ast_dst_type->is_float()) {
               ir_op = IrBinaryOp::FAdd;
@@ -342,6 +341,16 @@ IrOperandID irgen_expr(
             break;
           }
           case AstBinaryOp::Sub: {
+            auto ir_lhs_operand_id =
+              irgen_expr(kind.lhs, symtable, builder, false);
+            auto ir_rhs_operand_id =
+              irgen_expr(kind.rhs, symtable, builder, false);
+
+            ir_dst_operand_id = builder.fetch_arbitrary_operand(
+              irgen_type(ast_dst_type, builder).value()
+            );
+            symbol->set_ir_operand_id(ir_dst_operand_id);
+
             IrBinaryOp ir_op;
             if (ast_dst_type->is_float()) {
               ir_op = IrBinaryOp::FSub;
@@ -355,6 +364,16 @@ IrOperandID irgen_expr(
             break;
           }
           case AstBinaryOp::Div: {
+            auto ir_lhs_operand_id =
+              irgen_expr(kind.lhs, symtable, builder, false);
+            auto ir_rhs_operand_id =
+              irgen_expr(kind.rhs, symtable, builder, false);
+
+            ir_dst_operand_id = builder.fetch_arbitrary_operand(
+              irgen_type(ast_dst_type, builder).value()
+            );
+            symbol->set_ir_operand_id(ir_dst_operand_id);
+
             IrBinaryOp ir_op;
             if (ast_dst_type->is_float()) {
               ir_op = IrBinaryOp::FDiv;
@@ -368,6 +387,16 @@ IrOperandID irgen_expr(
             break;
           }
           case AstBinaryOp::Mul: {
+            auto ir_lhs_operand_id =
+              irgen_expr(kind.lhs, symtable, builder, false);
+            auto ir_rhs_operand_id =
+              irgen_expr(kind.rhs, symtable, builder, false);
+
+            ir_dst_operand_id = builder.fetch_arbitrary_operand(
+              irgen_type(ast_dst_type, builder).value()
+            );
+            symbol->set_ir_operand_id(ir_dst_operand_id);
+
             IrBinaryOp ir_op;
             if (ast_dst_type->is_float()) {
               ir_op = IrBinaryOp::FMul;
@@ -381,6 +410,16 @@ IrOperandID irgen_expr(
             break;
           }
           case AstBinaryOp::Mod: {
+            auto ir_lhs_operand_id =
+              irgen_expr(kind.lhs, symtable, builder, false);
+            auto ir_rhs_operand_id =
+              irgen_expr(kind.rhs, symtable, builder, false);
+
+            ir_dst_operand_id = builder.fetch_arbitrary_operand(
+              irgen_type(ast_dst_type, builder).value()
+            );
+            symbol->set_ir_operand_id(ir_dst_operand_id);
+
             IrBinaryOp ir_op = IrBinaryOp::SRem;
             auto instruction = builder.fetch_binary_instruction(
               ir_op, ir_dst_operand_id, ir_lhs_operand_id, ir_rhs_operand_id
@@ -389,6 +428,16 @@ IrOperandID irgen_expr(
             break;
           }
           case AstBinaryOp::Lt: {
+            auto ir_lhs_operand_id =
+              irgen_expr(kind.lhs, symtable, builder, false);
+            auto ir_rhs_operand_id =
+              irgen_expr(kind.rhs, symtable, builder, false);
+
+            ir_dst_operand_id = builder.fetch_arbitrary_operand(
+              irgen_type(ast_dst_type, builder).value()
+            );
+            symbol->set_ir_operand_id(ir_dst_operand_id);
+
             if (ast_lhs_type->is_float()) {
               auto instruction = builder.fetch_fcmp_instruction(
                 IrFCmpCond::Olt, ir_dst_operand_id, ir_lhs_operand_id,
@@ -405,6 +454,16 @@ IrOperandID irgen_expr(
             break;
           }
           case AstBinaryOp::Le: {
+            auto ir_lhs_operand_id =
+              irgen_expr(kind.lhs, symtable, builder, false);
+            auto ir_rhs_operand_id =
+              irgen_expr(kind.rhs, symtable, builder, false);
+
+            ir_dst_operand_id = builder.fetch_arbitrary_operand(
+              irgen_type(ast_dst_type, builder).value()
+            );
+            symbol->set_ir_operand_id(ir_dst_operand_id);
+
             if (ast_lhs_type->is_float()) {
               auto instruction = builder.fetch_fcmp_instruction(
                 IrFCmpCond::Ole, ir_dst_operand_id, ir_lhs_operand_id,
@@ -421,6 +480,16 @@ IrOperandID irgen_expr(
             break;
           }
           case AstBinaryOp::Gt: {
+            auto ir_lhs_operand_id =
+              irgen_expr(kind.lhs, symtable, builder, false);
+            auto ir_rhs_operand_id =
+              irgen_expr(kind.rhs, symtable, builder, false);
+
+            ir_dst_operand_id = builder.fetch_arbitrary_operand(
+              irgen_type(ast_dst_type, builder).value()
+            );
+            symbol->set_ir_operand_id(ir_dst_operand_id);
+
             if (ast_lhs_type->is_float()) {
               auto instruction = builder.fetch_fcmp_instruction(
                 IrFCmpCond::Olt, ir_dst_operand_id, ir_rhs_operand_id,
@@ -437,6 +506,16 @@ IrOperandID irgen_expr(
             break;
           }
           case AstBinaryOp::Ge: {
+            auto ir_lhs_operand_id =
+              irgen_expr(kind.lhs, symtable, builder, false);
+            auto ir_rhs_operand_id =
+              irgen_expr(kind.rhs, symtable, builder, false);
+
+            ir_dst_operand_id = builder.fetch_arbitrary_operand(
+              irgen_type(ast_dst_type, builder).value()
+            );
+            symbol->set_ir_operand_id(ir_dst_operand_id);
+
             if (ast_lhs_type->is_float()) {
               auto instruction = builder.fetch_fcmp_instruction(
                 IrFCmpCond::Ole, ir_dst_operand_id, ir_rhs_operand_id,
@@ -453,6 +532,16 @@ IrOperandID irgen_expr(
             break;
           }
           case AstBinaryOp::Eq: {
+            auto ir_lhs_operand_id =
+              irgen_expr(kind.lhs, symtable, builder, false);
+            auto ir_rhs_operand_id =
+              irgen_expr(kind.rhs, symtable, builder, false);
+
+            ir_dst_operand_id = builder.fetch_arbitrary_operand(
+              irgen_type(ast_dst_type, builder).value()
+            );
+            symbol->set_ir_operand_id(ir_dst_operand_id);
+
             if (ast_lhs_type->is_float()) {
               auto instruction = builder.fetch_fcmp_instruction(
                 IrFCmpCond::Oeq, ir_dst_operand_id, ir_lhs_operand_id,
@@ -469,6 +558,16 @@ IrOperandID irgen_expr(
             break;
           }
           case AstBinaryOp::Ne: {
+            auto ir_lhs_operand_id =
+              irgen_expr(kind.lhs, symtable, builder, false);
+            auto ir_rhs_operand_id =
+              irgen_expr(kind.rhs, symtable, builder, false);
+
+            ir_dst_operand_id = builder.fetch_arbitrary_operand(
+              irgen_type(ast_dst_type, builder).value()
+            );
+            symbol->set_ir_operand_id(ir_dst_operand_id);
+
             if (ast_lhs_type->is_float()) {
               auto instruction = builder.fetch_fcmp_instruction(
                 IrFCmpCond::One, ir_dst_operand_id, ir_lhs_operand_id,
@@ -493,44 +592,92 @@ IrOperandID irgen_expr(
             break;
           }
           case AstBinaryOp::Index: {
-            auto ir_lhs_operand =
-              builder.context.get_operand(ir_lhs_operand_id);
-            auto ir_rhs_operand =
-              builder.context.get_operand(ir_rhs_operand_id);
+            IrOperandID ir_lhs_operand_id;
 
-            auto ir_gep_dst_type = builder.fetch_pointer_type(
-              irgen_type(ast_dst_type, builder).value()
-            );
+            IrTypePtr basis_type;
 
-            auto ir_gep_dst_operand_id =
-              builder.fetch_arbitrary_operand(ir_gep_dst_type);
-
-            auto ir_gep_index_0 =
-              builder.fetch_constant_operand(builder.fetch_i32_type(), (int)0);
-
-            auto gep_instruction = builder.fetch_getelementptr_instruction(
-              ir_gep_dst_operand_id, irgen_type(ast_lhs_type, builder).value(),
-              ir_lhs_operand_id, {ir_gep_index_0, ir_rhs_operand_id}
-            );
-
-            builder.append_instruction(gep_instruction);
-
-            if (!is_lval) {
-              auto ir_load_dst_operand_id = builder.fetch_arbitrary_operand(
-                irgen_type(ast_dst_type, builder).value()
-              );
-              auto load_instruction = builder.fetch_load_instruction(
-                ir_load_dst_operand_id, ir_gep_dst_operand_id, std::nullopt
-              );
-              builder.append_instruction(load_instruction);
-              symbol->set_ir_operand_id(ir_load_dst_operand_id);
-              ir_dst_operand_id = ir_load_dst_operand_id;
+            if (ast_lhs_type->is_array()) {
+              ir_lhs_operand_id = irgen_expr(kind.lhs, symtable, builder, true);
+              basis_type =
+                irgen_type(ast_lhs_type->get_element_type().value(), builder)
+                  .value();
+            } else if (ast_lhs_type->is_pointer()) {
+              ir_lhs_operand_id =
+                irgen_expr(kind.lhs, symtable, builder, false);
+              basis_type =
+                irgen_type(ast_lhs_type->get_value_type().value(), builder)
+                  .value();
             } else {
-              symbol->set_ir_operand_id(ir_gep_dst_operand_id);
-              ir_dst_operand_id = ir_gep_dst_operand_id;
+              std::string error_message =
+                "Error: indexing on non-array/pointer type.";
+              throw std::runtime_error(error_message);
             }
 
-            break;
+            auto ir_rhs_operand_id =
+              irgen_expr(kind.rhs, symtable, builder, false);
+
+            if (use_address) {
+              ir_dst_operand_id =
+                builder.fetch_arbitrary_operand(builder.fetch_pointer_type(
+                  irgen_type(ast_dst_type, builder).value()
+                ));
+              symbol->set_ir_operand_id(ir_dst_operand_id);
+
+              if (ast_lhs_type->is_array()) {
+                auto ir_zero_index_operand_id = builder.fetch_constant_operand(
+                  builder.fetch_i32_type(), (int)0
+                );
+                auto gep_instruction = builder.fetch_getelementptr_instruction(
+                  ir_dst_operand_id, basis_type, ir_lhs_operand_id,
+                  {ir_zero_index_operand_id, ir_rhs_operand_id}
+                );
+                builder.append_instruction(gep_instruction);
+              } else if (ast_lhs_type->is_pointer()) {
+                auto gep_instruction = builder.fetch_getelementptr_instruction(
+                  ir_dst_operand_id, basis_type, ir_lhs_operand_id,
+                  {ir_rhs_operand_id}
+                );
+                builder.append_instruction(gep_instruction);
+              }
+            } else {
+              ir_dst_operand_id = builder.fetch_arbitrary_operand(
+                irgen_type(ast_dst_type, builder).value()
+              );
+              symbol->set_ir_operand_id(ir_dst_operand_id);
+
+              if (ast_lhs_type->is_array()) {
+                auto ir_zero_index_operand_id = builder.fetch_constant_operand(
+                  builder.fetch_i32_type(), (int)0
+                );
+                auto ir_tmp_pointer_operand_id =
+                  builder.fetch_arbitrary_operand(builder.fetch_pointer_type(
+                    irgen_type(ast_dst_type, builder).value()
+                  ));
+                auto gep_instruction = builder.fetch_getelementptr_instruction(
+                  ir_tmp_pointer_operand_id, basis_type, ir_lhs_operand_id,
+                  {ir_zero_index_operand_id, ir_rhs_operand_id}
+                );
+                builder.append_instruction(gep_instruction);
+                auto load_instruction = builder.fetch_load_instruction(
+                  ir_dst_operand_id, ir_tmp_pointer_operand_id, std::nullopt
+                );
+                builder.append_instruction(load_instruction);
+              } else if (ast_lhs_type->is_pointer()) {
+                auto ir_tmp_pointer_operand_id =
+                  builder.fetch_arbitrary_operand(builder.fetch_pointer_type(
+                    irgen_type(ast_dst_type, builder).value()
+                  ));
+                auto gep_instruction = builder.fetch_getelementptr_instruction(
+                  ir_tmp_pointer_operand_id, basis_type, ir_lhs_operand_id,
+                  {ir_rhs_operand_id}
+                );
+                builder.append_instruction(gep_instruction);
+                auto load_instruction = builder.fetch_load_instruction(
+                  ir_dst_operand_id, ir_tmp_pointer_operand_id, std::nullopt
+                );
+                builder.append_instruction(load_instruction);
+              }
+            }
           }
           default:
             // unreachable.
@@ -539,53 +686,31 @@ IrOperandID irgen_expr(
         return ir_dst_operand_id;
       },
       [symtable, &builder,
-       is_lval](const frontend::ast::expr::Identifier& kind) -> IrOperandID {
+       use_address](const frontend::ast::expr::Identifier& kind
+      ) -> IrOperandID {
         auto ast_symbol = kind.symbol;
+
+        if (!ast_symbol->maybe_ir_operand_id.has_value()) {
+          std::string error_message =
+            "Error: symbol `" + ast_symbol->name + "` is not defined";
+          throw std::runtime_error(error_message);
+        }
+
+        auto ast_type = ast_symbol->type;
+        auto ir_type = irgen_type(ast_type, builder).value();
 
         IrOperandID ir_operand_id;
 
-        switch (ast_symbol->scope) {
-          case AstScope::Global:
-          case AstScope::Local:
-          case AstScope::Param: {
-            if (ast_symbol->maybe_ir_operand_id.has_value()) {
-              ir_operand_id = ast_symbol->maybe_ir_operand_id.value();
-            } else {
-              std::string error_message =
-                "Error: identifier `" + ast_symbol->name + "` is not defined.";
-              throw std::runtime_error(error_message);
-            }
-            // If the identifier is not used as a lval, the actuall value needs
-            // to be loaded.
-            if (!is_lval) {
-              if (ast_symbol->type->is_array()) {
-                std::string error_message =
-                  "Error: array type cannot be loaded directly.";
-                throw std::runtime_error(error_message);
-              }
-
-              auto ir_load_dst_operand_id = builder.fetch_arbitrary_operand(
-                irgen_type(ast_symbol->type, builder).value()
-              );
-
-              auto load_instruction = builder.fetch_load_instruction(
-                ir_load_dst_operand_id, ir_operand_id, std::nullopt
-              );
-              builder.append_instruction(load_instruction);
-
-              ir_operand_id = ir_load_dst_operand_id;
-            }
-            break;
-          }
-          case AstScope::Temp: {
-            std::string error_message =
-              "Error: using temporary symbol as identifier.";
-            throw std::runtime_error(error_message);
-          }
-          default:
-            // unreachable
-            break;
+        if (use_address) {
+          ir_operand_id = ast_symbol->maybe_ir_operand_id.value();
+        } else {
+          ir_operand_id = builder.fetch_arbitrary_operand(ir_type);
+          auto load_instruction = builder.fetch_load_instruction(
+            ir_operand_id, ast_symbol->maybe_ir_operand_id.value(), std::nullopt
+          );
+          builder.append_instruction(load_instruction);
         }
+
         return ir_operand_id;
       },
       [symtable, &builder](const frontend::ast::expr::Cast& kind) {

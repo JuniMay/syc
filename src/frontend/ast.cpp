@@ -481,6 +481,11 @@ StmtPtr create_func_def_stmt(
   std::vector<std::string> param_names;
 
   for (auto [type, name] : params) {
+    if (type->is_array()) {
+      // pass array as pointer
+      auto element_type = type->get_element_type().value();
+      type = create_pointer_type(element_type);
+    }
     param_types.push_back(type);
     param_names.push_back(name);
   }
@@ -495,6 +500,11 @@ StmtPtr create_func_def_stmt(
   parent_symtable->add_symbol_entry(symbol_entry);
 
   for (auto [type, name] : params) {
+    if (type->is_array()) {
+      // pass array as pointer
+      auto element_type = type->get_element_type().value();
+      type = create_pointer_type(element_type);
+    }
     auto symbol_entry =
       create_symbol_entry(Scope::Param, name, type, false, std::nullopt);
     symtable->add_symbol_entry(symbol_entry);
