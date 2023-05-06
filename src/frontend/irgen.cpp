@@ -1,9 +1,5 @@
 #include "frontend/irgen.h"
 
-#include "frontend/ast.h"
-#include "frontend/symtable.h"
-#include "ir/operand.h"
-
 namespace syc {
 
 void irgen(const AstCompunit& compunit, IrBuilder& builder) {
@@ -26,6 +22,7 @@ void irgen_stmt(
               auto ir_type = irgen_type(ast_type, builder).value();
               auto is_constant_value = kind.is_const;
               IrOperandID ir_operand_id = 0;
+
               if (maybe_ast_expr.has_value()) {
                 auto ast_expr = maybe_ast_expr.value();
                 if (!ast_expr->is_comptime()) {
@@ -54,6 +51,7 @@ void irgen_stmt(
                 );
               }
               auto maybe_symbol = symtable->lookup(name);
+
               if (maybe_symbol.has_value()) {
                 auto symbol = maybe_symbol.value();
                 symbol->set_ir_operand_id(ir_operand_id);
@@ -83,6 +81,7 @@ void irgen_stmt(
               builder.prepend_instruction_to_curr_function(alloca_instruction);
 
               auto maybe_symbol = symtable->lookup(name);
+
               if (maybe_symbol.has_value()) {
                 auto symbol = maybe_symbol.value();
                 symbol->set_ir_operand_id(ir_dst_operand_id);
@@ -102,9 +101,8 @@ void irgen_stmt(
                 );
                 builder.append_instruction(store_instruction);
               }
-
-              break;
             }
+            break;
           }
           default: {
             // TODO
@@ -130,6 +128,7 @@ void irgen_stmt(
         auto ast_func_ret_type = ast_func_type->get_ret_type().value();
         auto ir_func_ret_type = irgen_type(ast_func_ret_type, builder).value();
 
+        // set the operand in the symbol to the parameter first.
         for (auto param_name : kind.param_names) {
           auto maybe_ast_param_symbol = kind.symtable->lookup(param_name);
 
@@ -148,6 +147,7 @@ void irgen_stmt(
           parameter_id_list.push_back(ir_param_operand_id);
         }
 
+        // if the function is just a declaration.
         bool is_declare = !kind.maybe_body.has_value();
 
         builder.add_function(
@@ -155,7 +155,57 @@ void irgen_stmt(
         );
 
         if (!is_declare) {
-          irgen_stmt(kind.maybe_body.value(), kind.symtable, builder);
+          auto ast_body = kind.maybe_body.value();
+
+          const auto& ast_block =
+            std::get<frontend::ast::stmt::Block>(ast_body->kind);
+
+          auto ir_basic_block = builder.fetch_basic_block();
+          builder.append_basic_block(ir_basic_block);
+          builder.set_curr_basic_block(ir_basic_block);
+
+          // store all the argument/parameter to the memory and set the operand
+          // id of the param symbol to the corresponding pointer.
+          for (auto param_name : kind.param_names) {
+            auto maybe_ast_param_symbol = kind.symtable->lookup(param_name);
+
+            if (!maybe_ast_param_symbol.has_value()) {
+              std::string error_messgae =
+                "Error: parameter `" + param_name + "` is not defined.";
+              throw std::runtime_error(error_messgae);
+            }
+
+            auto ast_param_symbol = maybe_ast_param_symbol.value();
+            auto ir_param_operand_id =
+              ast_param_symbol->maybe_ir_operand_id.value();
+            auto ir_param_operand =
+              builder.context.get_operand(ir_param_operand_id);
+
+            auto ir_alloca_dst_id = builder.fetch_arbitrary_operand(
+              builder.fetch_pointer_type(ir_param_operand->type)
+            );
+
+            auto alloca_instruction = builder.fetch_alloca_instruction(
+              ir_alloca_dst_id, ir_param_operand->type, std::nullopt,
+              std::nullopt, std::nullopt
+            );
+
+            builder.prepend_instruction_to_curr_function(alloca_instruction);
+
+            auto store_instruction = builder.fetch_store_instruction(
+              ir_param_operand_id, ir_alloca_dst_id, std::nullopt
+            );
+
+            builder.append_instruction(store_instruction);
+
+            // set the ir operand to be the pointer/address
+            ast_param_symbol->set_ir_operand_id(ir_alloca_dst_id);
+          }
+
+          // generate the statements in the body
+          for (const auto& stmt : ast_block.stmts) {
+            irgen_stmt(stmt, ast_block.symtable, builder);
+          }
         }
       },
       [&builder](const frontend::ast::stmt::Block& kind) {
@@ -167,6 +217,16 @@ void irgen_stmt(
           irgen_stmt(stmt, kind.symtable, builder);
         }
       },
+      [symtable, &builder](const frontend::ast::stmt::Assign& kind) {
+        auto ir_lhs_operand_id = irgen_expr(kind.lhs, symtable, builder, true);
+        auto ir_rhs_operand_id = irgen_expr(kind.rhs, symtable, builder, false);
+
+        auto store_instruction = builder.fetch_store_instruction(
+          ir_rhs_operand_id, ir_lhs_operand_id, std::nullopt
+        );
+
+        builder.append_instruction(store_instruction);
+      },
       [&builder](const auto&) {
         // TODO
       },
@@ -175,8 +235,12 @@ void irgen_stmt(
   );
 }
 
-IrOperandID
-irgen_expr(AstExprPtr expr, AstSymbolTablePtr symtable, IrBuilder& builder) {
+IrOperandID irgen_expr(
+  AstExprPtr expr,
+  AstSymbolTablePtr symtable,
+  IrBuilder& builder,
+  bool is_lval
+) {
   return std::visit(
     overloaded{
       [&builder](const frontend::ast::expr::Constant& kind) {
@@ -185,54 +249,283 @@ irgen_expr(AstExprPtr expr, AstSymbolTablePtr symtable, IrBuilder& builder) {
           builder.fetch_operand(ir_constant->type, ir_constant);
         return ir_constant_operand_id;
       },
-      [symtable,
-       &builder](const frontend::ast::expr::Binary& kind) -> IrOperandID {
-        auto lhs_operand_id = irgen_expr(kind.lhs, symtable, builder);
-        auto rhs_operand_id = irgen_expr(kind.rhs, symtable, builder);
+      [symtable, &builder, is_lval](const frontend::ast::expr::Binary& kind) {
+        IrOperandID ir_lhs_operand_id;
+        if (kind.op == AstBinaryOp::Index) {
+          ir_lhs_operand_id = irgen_expr(kind.lhs, symtable, builder, true);
+        } else {
+          ir_lhs_operand_id = irgen_expr(kind.lhs, symtable, builder, false);
+        }
+        auto ir_rhs_operand_id = irgen_expr(kind.rhs, symtable, builder, false);
 
         auto symbol = kind.symbol;
 
+        auto ast_dst_type = symbol->type;
+        auto ast_lhs_type = kind.lhs->get_type();
+        auto ast_rhs_type = kind.rhs->get_type();
+
         auto ir_dst_operand_id = builder.fetch_arbitrary_operand(
-          irgen_type(symbol->type, builder).value()
+          irgen_type(ast_dst_type, builder).value()
         );
 
         symbol->set_ir_operand_id(ir_dst_operand_id);
 
-        // TODO
         switch (kind.op) {
-          case AstBinaryOp::Add:
+          case AstBinaryOp::Add: {
+            IrBinaryOp ir_op;
+            if (ast_dst_type->is_float()) {
+              ir_op = IrBinaryOp::FAdd;
+            } else {
+              ir_op = IrBinaryOp::Add;
+            }
+            auto instruction = builder.fetch_binary_instruction(
+              ir_op, ir_dst_operand_id, ir_lhs_operand_id, ir_rhs_operand_id
+            );
+            builder.append_instruction(instruction);
             break;
-          case AstBinaryOp::Sub:
+          }
+          case AstBinaryOp::Sub: {
+            IrBinaryOp ir_op;
+            if (ast_dst_type->is_float()) {
+              ir_op = IrBinaryOp::FSub;
+            } else {
+              ir_op = IrBinaryOp::Sub;
+            }
+            auto instruction = builder.fetch_binary_instruction(
+              ir_op, ir_dst_operand_id, ir_lhs_operand_id, ir_rhs_operand_id
+            );
+            builder.append_instruction(instruction);
             break;
-          case AstBinaryOp::Div:
+          }
+          case AstBinaryOp::Div: {
+            IrBinaryOp ir_op;
+            if (ast_dst_type->is_float()) {
+              ir_op = IrBinaryOp::FDiv;
+            } else {
+              ir_op = IrBinaryOp::SDiv;
+            }
+            auto instruction = builder.fetch_binary_instruction(
+              ir_op, ir_dst_operand_id, ir_lhs_operand_id, ir_rhs_operand_id
+            );
+            builder.append_instruction(instruction);
             break;
-          case AstBinaryOp::Mul:
+          }
+          case AstBinaryOp::Mul: {
+            IrBinaryOp ir_op;
+            if (ast_dst_type->is_float()) {
+              ir_op = IrBinaryOp::FMul;
+            } else {
+              ir_op = IrBinaryOp::Mul;
+            }
+            auto instruction = builder.fetch_binary_instruction(
+              ir_op, ir_dst_operand_id, ir_lhs_operand_id, ir_rhs_operand_id
+            );
+            builder.append_instruction(instruction);
             break;
-          case AstBinaryOp::Mod:
+          }
+          case AstBinaryOp::Mod: {
+            IrBinaryOp ir_op = IrBinaryOp::SRem;
+            auto instruction = builder.fetch_binary_instruction(
+              ir_op, ir_dst_operand_id, ir_lhs_operand_id, ir_rhs_operand_id
+            );
+            builder.append_instruction(instruction);
             break;
-          case AstBinaryOp::Lt:
+          }
+          case AstBinaryOp::Lt: {
+            if (ast_lhs_type->is_float()) {
+              auto instruction = builder.fetch_fcmp_instruction(
+                IrFCmpCond::Olt, ir_dst_operand_id, ir_lhs_operand_id,
+                ir_rhs_operand_id
+              );
+              builder.append_instruction(instruction);
+            } else {
+              auto instruction = builder.fetch_icmp_instruction(
+                IrICmpCond::Slt, ir_dst_operand_id, ir_lhs_operand_id,
+                ir_rhs_operand_id
+              );
+              builder.append_instruction(instruction);
+            }
             break;
-          case AstBinaryOp::Le:
+          }
+          case AstBinaryOp::Le: {
+            if (ast_lhs_type->is_float()) {
+              auto instruction = builder.fetch_fcmp_instruction(
+                IrFCmpCond::Ole, ir_dst_operand_id, ir_lhs_operand_id,
+                ir_rhs_operand_id
+              );
+              builder.append_instruction(instruction);
+            } else {
+              auto instruction = builder.fetch_icmp_instruction(
+                IrICmpCond::Sle, ir_dst_operand_id, ir_lhs_operand_id,
+                ir_rhs_operand_id
+              );
+              builder.append_instruction(instruction);
+            }
             break;
-          case AstBinaryOp::Gt:
+          }
+          case AstBinaryOp::Gt: {
+            if (ast_lhs_type->is_float()) {
+              auto instruction = builder.fetch_fcmp_instruction(
+                IrFCmpCond::Olt, ir_dst_operand_id, ir_rhs_operand_id,
+                ir_lhs_operand_id
+              );
+              builder.append_instruction(instruction);
+            } else {
+              auto instruction = builder.fetch_icmp_instruction(
+                IrICmpCond::Slt, ir_dst_operand_id, ir_rhs_operand_id,
+                ir_lhs_operand_id
+              );
+              builder.append_instruction(instruction);
+            }
             break;
-          case AstBinaryOp::Ge:
+          }
+          case AstBinaryOp::Ge: {
+            if (ast_lhs_type->is_float()) {
+              auto instruction = builder.fetch_fcmp_instruction(
+                IrFCmpCond::Ole, ir_dst_operand_id, ir_rhs_operand_id,
+                ir_lhs_operand_id
+              );
+              builder.append_instruction(instruction);
+            } else {
+              auto instruction = builder.fetch_icmp_instruction(
+                IrICmpCond::Sle, ir_dst_operand_id, ir_rhs_operand_id,
+                ir_lhs_operand_id
+              );
+              builder.append_instruction(instruction);
+            }
             break;
-          case AstBinaryOp::Eq:
+          }
+          case AstBinaryOp::Eq: {
+            if (ast_lhs_type->is_float()) {
+              auto instruction = builder.fetch_fcmp_instruction(
+                IrFCmpCond::Oeq, ir_dst_operand_id, ir_lhs_operand_id,
+                ir_rhs_operand_id
+              );
+              builder.append_instruction(instruction);
+            } else {
+              auto instruction = builder.fetch_icmp_instruction(
+                IrICmpCond::Eq, ir_dst_operand_id, ir_lhs_operand_id,
+                ir_rhs_operand_id
+              );
+              builder.append_instruction(instruction);
+            }
             break;
-          case AstBinaryOp::Ne:
+          }
+          case AstBinaryOp::Ne: {
+            if (ast_lhs_type->is_float()) {
+              auto instruction = builder.fetch_fcmp_instruction(
+                IrFCmpCond::One, ir_dst_operand_id, ir_lhs_operand_id,
+                ir_rhs_operand_id
+              );
+              builder.append_instruction(instruction);
+            } else {
+              auto instruction = builder.fetch_icmp_instruction(
+                IrICmpCond::Ne, ir_dst_operand_id, ir_lhs_operand_id,
+                ir_rhs_operand_id
+              );
+              builder.append_instruction(instruction);
+            }
             break;
+          }
           case AstBinaryOp::LogicalAnd:
+          case AstBinaryOp::LogicalOr: {
+            std::string error_message =
+              "Error: Logical and/or shall be expanded to be short-circuit "
+              "evaluation.";
+            throw std::runtime_error(error_message);
             break;
-          case AstBinaryOp::LogicalOr:
+          }
+          case AstBinaryOp::Index: {
+            auto ir_lhs_operand =
+              builder.context.get_operand(ir_lhs_operand_id);
+            auto ir_rhs_operand =
+              builder.context.get_operand(ir_rhs_operand_id);
+
+            auto ir_gep_dst_type = builder.fetch_pointer_type(
+              irgen_type(ast_dst_type, builder).value()
+            );
+
+            auto ir_gep_dst_operand_id =
+              builder.fetch_arbitrary_operand(ir_gep_dst_type);
+
+            auto ir_gep_index_0 =
+              builder.fetch_constant_operand(builder.fetch_i32_type(), (int)0);
+
+            auto gep_instruction = builder.fetch_getelementptr_instruction(
+              ir_gep_dst_operand_id, irgen_type(ast_lhs_type, builder).value(),
+              ir_lhs_operand_id, {ir_gep_index_0, ir_rhs_operand_id}
+            );
+
+            builder.append_instruction(gep_instruction);
+
+            if (!is_lval) {
+              auto ir_load_dst_operand_id = builder.fetch_arbitrary_operand(
+                irgen_type(ast_dst_type, builder).value()
+              );
+              auto load_instruction = builder.fetch_load_instruction(
+                ir_load_dst_operand_id, ir_gep_dst_operand_id, std::nullopt
+              );
+              builder.append_instruction(load_instruction);
+              symbol->set_ir_operand_id(ir_load_dst_operand_id);
+              ir_dst_operand_id = ir_load_dst_operand_id;
+            } else {
+              symbol->set_ir_operand_id(ir_gep_dst_operand_id);
+              ir_dst_operand_id = ir_gep_dst_operand_id;
+            }
+
             break;
-          case AstBinaryOp::Index:
-            break;
+          }
           default:
             // unreachable.
             break;
         }
-        return 0;
+        return ir_dst_operand_id;
+      },
+      [symtable, &builder,
+       is_lval](const frontend::ast::expr::Identifier& kind) -> IrOperandID {
+        auto ast_symbol = kind.symbol;
+
+        IrOperandID ir_operand_id;
+
+        switch (ast_symbol->scope) {
+          case AstScope::Global:
+          case AstScope::Local:
+          case AstScope::Param: {
+            if (ast_symbol->maybe_ir_operand_id.has_value()) {
+              ir_operand_id = ast_symbol->maybe_ir_operand_id.value();
+            } else {
+              std::string error_message =
+                "Error: identifier `" + ast_symbol->name + "` is not defined.";
+              throw std::runtime_error(error_message);
+            }
+            // If the identifier is not used as a lval, the actuall value needs
+            // to be loaded.
+            // TODO the array-typed identifier cannot be loaded as an
+            // lval(address).
+            if (!is_lval) {
+              auto ir_load_dst_operand_id = builder.fetch_arbitrary_operand(
+                irgen_type(ast_symbol->type, builder).value()
+              );
+
+              auto load_instruction = builder.fetch_load_instruction(
+                ir_load_dst_operand_id, ir_operand_id, std::nullopt
+              );
+              builder.append_instruction(load_instruction);
+
+              ir_operand_id = ir_load_dst_operand_id;
+            }
+            break;
+          }
+          case AstScope::Temp: {
+            std::string error_message =
+              "Error: using temporary symbol as identifier.";
+            throw std::runtime_error(error_message);
+          }
+          default:
+            // unreachable
+            break;
+        }
+        return ir_operand_id;
       },
       [](const auto& kind) -> IrOperandID { return 0; },
     },

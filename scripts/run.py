@@ -49,7 +49,7 @@ def dfs(exec_path: str, test_dir: str, output_dir: str, runtime_header: str):
                 f'{exec_path} {full_path} -S -o {output_asm_path} '
                 f'--emit-ast {output_ast_path} '
                 f'--emit-tokens {output_token_path} '
-                #   f'--emit-ir {output_ir_path}'
+                f'--emit-ir {output_ir_path}'
             )
 
             exec_result = execute(command)

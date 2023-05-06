@@ -17,6 +17,8 @@ enum class BinaryOp {
   Mul,
   /// Divide two signed integers.
   SDiv,
+  /// Remainder of two signed integers.
+  SRem,
   /// Divide two floating point numbers.
   FAdd,
   /// Subtract two floating point numbers.
@@ -47,6 +49,8 @@ enum class ICmpCond {
   Ne,
   /// Signed less than
   Slt,
+  /// Signed less or equal
+  Sle,
 };
 
 struct ICmp {
@@ -64,6 +68,8 @@ struct ICmp {
 enum class FCmpCond {
   /// (ordered and) Equal
   Oeq,
+  /// (ordered and) Not equal
+  One,
   /// (ordered and) Less than
   Olt,
   /// (ordered and) Less than or equal

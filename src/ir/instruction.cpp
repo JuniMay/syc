@@ -93,7 +93,10 @@ std::string Instruction::to_string(Context& context) {
             result = dst_str + " = sdiv " + type::to_string(type) + " " +
                      lhs_str + ", " + rhs_str;
             break;
-
+          case BinaryOp::SRem:
+            result = dst_str + " = srem " + type::to_string(type) + " " +
+                     lhs_str + ", " + rhs_str;
+            break;
           case BinaryOp::FAdd:
             result = dst_str + " = fadd " + type::to_string(type) + " " +
                      lhs_str + ", " + rhs_str;
@@ -140,6 +143,10 @@ std::string Instruction::to_string(Context& context) {
             result = dst_str + " = icmp slt " + type::to_string(type) + " " +
                      lhs_str + ", " + rhs_str;
             break;
+          case ICmpCond::Sle:
+            result = dst_str + " = icmp sle " + type::to_string(type) + " " +
+                     lhs_str + ", " + rhs_str;
+            break;
           default:
             // unreachable
             break;
@@ -161,6 +168,10 @@ std::string Instruction::to_string(Context& context) {
         switch (instruction.cond) {
           case FCmpCond::Oeq:
             result = dst_str + " = fcmp oeq " + type::to_string(type) + " " +
+                     lhs_str + ", " + rhs_str;
+            break;
+          case FCmpCond::One:
+            result = dst_str + " = fcmp one " + type::to_string(type) + " " +
                      lhs_str + ", " + rhs_str;
             break;
           case FCmpCond::Olt:
