@@ -27,6 +27,7 @@ using AstComptimeValuePtr = frontend::ComptimeValuePtr;
 using IrBinaryOp = ir::instruction::BinaryOp;
 using IrICmpCond = ir::instruction::ICmpCond;
 using IrFCmpCond = ir::instruction::FCmpCond;
+using IrCastOp = ir::instruction::CastOp;
 
 using IrBuilder = ir::Builder;
 using IrTypePtr = ir::TypePtr;

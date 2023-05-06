@@ -414,7 +414,7 @@ ExprPtr create_cast_expr(ExprPtr expr, TypePtr type, Driver& driver) {
     }
   }
 
-  // int/float -> int/float cast
+  // int/float/bool -> int/float cast
   auto symbol_name = driver.get_next_temp_name();
   auto symtable = driver.curr_symtable;
 

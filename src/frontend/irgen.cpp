@@ -587,6 +587,64 @@ IrOperandID irgen_expr(
         }
         return ir_operand_id;
       },
+      [symtable, &builder](const frontend::ast::expr::Cast& kind) {
+        auto ast_from_type = kind.expr->get_type();
+        auto ast_to_type = kind.type;
+
+        auto ir_operand_id = irgen_expr(kind.expr, symtable, builder, false);
+
+        IrOperandID ir_dst_operand_id;
+
+        if (ast_from_type == ast_to_type) {
+          return ir_operand_id;
+        }
+
+        if (ast_from_type->is_int() && ast_to_type->is_float()) {
+          ir_dst_operand_id = builder.fetch_arbitrary_operand(
+            irgen_type(ast_to_type, builder).value()
+          );
+          auto cast_instruction = builder.fetch_cast_instruction(
+            IrCastOp::SIToFP, ir_dst_operand_id, ir_operand_id
+          );
+          builder.append_instruction(cast_instruction);
+        } else if (ast_from_type->is_float() && ast_to_type->is_int()) {
+          ir_dst_operand_id = builder.fetch_arbitrary_operand(
+            irgen_type(ast_to_type, builder).value()
+          );
+          auto cast_instruction = builder.fetch_cast_instruction(
+            IrCastOp::FPToSI, ir_dst_operand_id, ir_operand_id
+          );
+          builder.append_instruction(cast_instruction);
+        } else if (ast_from_type->is_bool() && ast_to_type->is_int()) {
+          ir_dst_operand_id = builder.fetch_arbitrary_operand(
+            irgen_type(ast_to_type, builder).value()
+          );
+          auto cast_instruction = builder.fetch_cast_instruction(
+            IrCastOp::ZExt, ir_dst_operand_id, ir_operand_id
+          );
+          builder.append_instruction(cast_instruction);
+        } else if (ast_from_type->is_bool() && ast_to_type->is_float()) {
+          // first cast it to i32
+          ir_dst_operand_id =
+            builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+          auto cast_instruction = builder.fetch_cast_instruction(
+            IrCastOp::ZExt, ir_dst_operand_id, ir_operand_id
+          );
+          builder.append_instruction(cast_instruction);
+          // then cast it to float
+          ir_dst_operand_id = builder.fetch_arbitrary_operand(
+            irgen_type(ast_to_type, builder).value()
+          );
+          cast_instruction = builder.fetch_cast_instruction(
+            IrCastOp::SIToFP, ir_dst_operand_id, ir_operand_id
+          );
+          builder.append_instruction(cast_instruction);
+        } else {
+          std::string error_message = "Error: unsupported cast expression.";
+          throw std::runtime_error(error_message);
+        }
+        return ir_dst_operand_id;
+      },
       [](const auto& kind) -> IrOperandID { return 0; },
     },
     expr->kind
