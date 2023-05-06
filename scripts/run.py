@@ -45,34 +45,60 @@ def dfs(exec_path: str, test_dir: str, output_dir: str, runtime_header: str):
             output_asm_path = os.path.join(output_dir, basename + '.asm')
             output_ir_std_path = os.path.join(output_dir, basename + '.std.ll')
 
-            command = (
-                f'{exec_path} {full_path} -S -o {output_asm_path} '
-                f'--emit-ast {output_ast_path} '
-                f'--emit-tokens {output_token_path} '
-                f'--emit-ir {output_ir_path}'
-            )
+            output_asm_std_path = os.path.join(output_dir,
+                                               basename + '.std.asm')
+            output_asm_std_from_ir_path = os.path.join(
+                output_dir, basename + '.std_from_ir.asm')
+
+            command = (f'{exec_path} {full_path} -S -o {output_asm_path} '
+                       f'--emit-ast {output_ast_path} '
+                       f'--emit-tokens {output_token_path} '
+                       f'--emit-ir {output_ir_path}')
 
             exec_result = execute(command)
 
             log_path = os.path.join(output_dir, basename + '.log')
 
-            with open(log_path, 'w') as f:
-                f.write(command)
-                f.write('\n')
-                f.write(exec_result['stdout'])
-                f.write('\n')
-                f.write(exec_result['stderr'])
-                f.write('\n')
+            logfile = open(log_path, 'w')
+
+            logfile.write(command)
+            logfile.write('\n')
+            logfile.write(exec_result['stdout'])
+            logfile.write('\n')
+            logfile.write(exec_result['stderr'])
+            logfile.write('\n')
 
             if (exec_result['returncode'] != 0):
                 print(f'[  ERROR  ] {full_path}')
+                logfile.write('Error occured when running compiler.\n')
+                continue
             else:
-                print(f'[ SUCCESS ] {full_path}')
+                logfile.write('Successfully compiled.\n')
 
             command = (
                 f'clang -x c {full_path} -include {runtime_header} -S -emit-llvm -o {output_ir_std_path}'
             )
             exec_result = execute(command)
+
+            command = (
+                f'llc {output_ir_path} -o {output_asm_std_from_ir_path} --march=riscv64'
+            )
+            exec_result = execute(command)
+
+            logfile.write(command)
+            logfile.write('\n')
+            logfile.write(exec_result['stdout'])
+            logfile.write('\n')
+            logfile.write(exec_result['stderr'])
+            logfile.write('\n')
+
+            if (exec_result['returncode'] != 0):
+                print(f'[  ERROR  ] {full_path}')
+                logfile.write('Error in generated IR.\n')
+                continue
+            else:
+                print(f'[ SUCCESS ] {full_path}')
+                logfile.write('IR is verified.\n')
 
         elif os.path.isdir(full_path):
             dfs(exec_path, full_path, output_dir, runtime_header)
