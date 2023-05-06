@@ -215,6 +215,8 @@ Def
     if (init_val->is_initializer_list()) {
       std::get<ast::expr::InitializerList>(init_val->kind)
         .set_type(driver.curr_decl_type, driver);
+    } else if (init_val->get_type() != driver.curr_decl_type) {
+      init_val = create_cast_expr(init_val, driver.curr_decl_type, driver);
     }
     $$ = std::make_tuple(
       driver.curr_decl_type, 

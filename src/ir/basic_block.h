@@ -37,6 +37,9 @@ struct BasicBlock : std::enable_shared_from_this<BasicBlock> {
   /// Append instruction to the end of the basic block.
   void append_instruction(InstructionPtr instruction);
 
+  /// Prepend instruction to the beginning of the basic block.
+  void prepend_instruction(InstructionPtr instruction);
+
   /// Add a instruction id that use this block to `use_id_list`
   void add_use(InstructionID use_id);
 

@@ -161,8 +161,13 @@ struct Builder {
   /// Append an instruction to the current block.
   void append_instruction(InstructionPtr instruction);
 
-  /// Create a new block for the current function and set the current block to
-  /// the newly created block.
+  /// Prepend an instruction to the current block.
+  void prepend_instruction_to_curr_basic_block(InstructionPtr instruction);
+
+  /// Prepend an instruction to the current function.
+  void prepend_instruction_to_curr_function(InstructionPtr instruction);
+
+  /// Create a new block for the current function.
   BasicBlockPtr fetch_basic_block();
 
   /// Append a block to the current function.
