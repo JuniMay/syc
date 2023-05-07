@@ -40,15 +40,33 @@ This will generate the `syc` executable in the current directory.
   - [x] Expression
   - [x] Prettify
 - [ ] IR Generation
-  - [ ] Compunit
+  - [x] Compunit
   - [ ] Stmt
+    - [x] Decl
+    - [x] FuncDef
+    - [x] Return
+    - [x] Assign
+    - [x] Block
+    - [ ] If
+    - [ ] While
+    - [ ] Break
+    - [ ] Continue
   - [ ] Expr
-  - [ ] Type
-  - [ ] Symbol entry -> operand
+    - [x] Binary
+    - [x] Unary
+    - [x] Constant
+    - [x] Identifier
+    - [x] Cast
+    - [ ] Call
+    - [ ] Initializer list
+  - [x] Type
+  - [x] Symbol entry -> operand
 - [ ] Code generation
 - [ ] Code print
 - [ ] AST simplification
   - [x] Compile-time value for initializer list
+  - [ ] Constant folding
+  - [ ] Constant propagation
 - [ ] IR Optimization
 - [ ] Code Optimization
 
@@ -56,6 +74,6 @@ This will generate the `syc` executable in the current directory.
 
 - [x] Temporary symbol duplication in the symbol table.
   - Fixed. The actual problem is that if there is a while/if/else, the block will be added twice: once by the driver and another time by the while/if/else statement.
-- [ ] Fix `getelementptr` for array parameter that is treated as pointer (no first index).
+- [x] Fix `getelementptr` for array parameter that is treated as pointer (no first index).
 - [ ] Fix array-type parameter/argument passing.
 - [ ] Optimize `86_long_code2.sy`.
