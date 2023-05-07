@@ -47,7 +47,7 @@ void irgen_stmt(
 /// Generate IR for expression.
 /// `use_address` is used to decide if the value shall be loaded from the
 /// address or just get a pointer.
-IrOperandID irgen_expr(
+std::optional<IrOperandID> irgen_expr(
   AstExprPtr expr,
   AstSymbolTablePtr symtable,
   IrBuilder& builder,

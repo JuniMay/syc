@@ -57,8 +57,9 @@ This will generate the `syc` executable in the current directory.
     - [x] Constant
     - [x] Identifier
     - [x] Cast
-    - [ ] Call
+    - [x] Call
     - [ ] Initializer list
+      - Memcpy or multiple assignment
   - [x] Type
   - [x] Symbol entry -> operand
 - [ ] Code generation
@@ -75,5 +76,4 @@ This will generate the `syc` executable in the current directory.
 - [x] Temporary symbol duplication in the symbol table.
   - Fixed. The actual problem is that if there is a while/if/else, the block will be added twice: once by the driver and another time by the while/if/else statement.
 - [x] Fix `getelementptr` for array parameter that is treated as pointer (no first index).
-- [ ] Fix array-type parameter/argument passing.
-- [ ] Optimize `86_long_code2.sy`.
+- [x] Fix array-type parameter/argument passing.

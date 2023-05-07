@@ -32,6 +32,7 @@ def execute(command) -> Dict[str, Any]:
 
 def dfs(exec_path: str, test_dir: str, output_dir: str, runtime_header: str):
     paths = os.listdir(test_dir)
+    paths = sorted(paths)
 
     for file_or_dir in paths:
         full_path = os.path.join(test_dir, file_or_dir)
@@ -75,14 +76,12 @@ def dfs(exec_path: str, test_dir: str, output_dir: str, runtime_header: str):
             else:
                 logfile.write('Successfully compiled.\n')
 
-            command = (
-                f'clang -x c {full_path} -include {runtime_header} -S -emit-llvm -o {output_ir_std_path}'
-            )
+            command = (f'clang -x c {full_path} -include {runtime_header}'
+                       f' -S -emit-llvm -o {output_ir_std_path}')
             exec_result = execute(command)
 
-            command = (
-                f'llc {output_ir_path} -o {output_asm_std_from_ir_path} --march=riscv64'
-            )
+            command = (f'llc {output_ir_path} -o '
+                       f'{output_asm_std_from_ir_path} --march=riscv64')
             exec_result = execute(command)
 
             logfile.write(command)
@@ -135,7 +134,6 @@ def run(exec_path: str, test_dir: str, output_dir: str, runtime_header: str):
 
 
 if __name__ == '__main__':
-    compile('./flattened')
 
     if os.path.exists('./tests_output'):
         shutil.rmtree('./tests_output')

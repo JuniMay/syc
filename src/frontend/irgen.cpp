@@ -95,7 +95,7 @@ void irgen_stmt(
               if (maybe_ast_expr.has_value()) {
                 auto ast_expr = maybe_ast_expr.value();
                 auto ir_init_operand_id =
-                  irgen_expr(ast_expr, symtable, builder);
+                  irgen_expr(ast_expr, symtable, builder).value();
                 auto store_instruction = builder.fetch_store_instruction(
                   ir_init_operand_id, ir_dst_operand_id, std::nullopt
                 );
@@ -272,8 +272,10 @@ void irgen_stmt(
         }
       },
       [symtable, &builder](const frontend::ast::stmt::Assign& kind) {
-        auto ir_lhs_operand_id = irgen_expr(kind.lhs, symtable, builder, true);
-        auto ir_rhs_operand_id = irgen_expr(kind.rhs, symtable, builder, false);
+        auto ir_lhs_operand_id =
+          irgen_expr(kind.lhs, symtable, builder, true).value();
+        auto ir_rhs_operand_id =
+          irgen_expr(kind.rhs, symtable, builder, false).value();
 
         auto store_instruction = builder.fetch_store_instruction(
           ir_rhs_operand_id, ir_lhs_operand_id, std::nullopt
@@ -284,7 +286,8 @@ void irgen_stmt(
       [symtable, &builder](const frontend::ast::stmt::Return& kind) {
         if (kind.maybe_expr.has_value()) {
           auto ir_operand_id =
-            irgen_expr(kind.maybe_expr.value(), symtable, builder, false);
+            irgen_expr(kind.maybe_expr.value(), symtable, builder, false)
+              .value();
           auto store_instruction = builder.fetch_store_instruction(
             ir_operand_id,
             builder.curr_function->maybe_return_operand_id.value(), std::nullopt
@@ -304,7 +307,7 @@ void irgen_stmt(
   );
 }
 
-IrOperandID irgen_expr(
+std::optional<IrOperandID> irgen_expr(
   AstExprPtr expr,
   AstSymbolTablePtr symtable,
   IrBuilder& builder,
@@ -312,14 +315,15 @@ IrOperandID irgen_expr(
 ) {
   return std::visit(
     overloaded{
-      [&builder](const frontend::ast::expr::Constant& kind) {
+      [&builder](const frontend::ast::expr::Constant& kind
+      ) -> std::optional<IrOperandID> {
         auto ir_constant = irgen_comptime_value(kind.value, builder);
         auto ir_constant_operand_id =
           builder.fetch_operand(ir_constant->type, ir_constant);
         return ir_constant_operand_id;
       },
-      [symtable, &builder,
-       use_address](const frontend::ast::expr::Binary& kind) {
+      [symtable, &builder, use_address](const frontend::ast::expr::Binary& kind
+      ) -> std::optional<IrOperandID> {
         auto symbol = kind.symbol;
 
         auto ast_dst_type = symbol->type;
@@ -331,9 +335,9 @@ IrOperandID irgen_expr(
         switch (kind.op) {
           case AstBinaryOp::Add: {
             auto ir_lhs_operand_id =
-              irgen_expr(kind.lhs, symtable, builder, false);
+              irgen_expr(kind.lhs, symtable, builder, false).value();
             auto ir_rhs_operand_id =
-              irgen_expr(kind.rhs, symtable, builder, false);
+              irgen_expr(kind.rhs, symtable, builder, false).value();
 
             ir_dst_operand_id = builder.fetch_arbitrary_operand(
               irgen_type(ast_dst_type, builder).value()
@@ -354,9 +358,9 @@ IrOperandID irgen_expr(
           }
           case AstBinaryOp::Sub: {
             auto ir_lhs_operand_id =
-              irgen_expr(kind.lhs, symtable, builder, false);
+              irgen_expr(kind.lhs, symtable, builder, false).value();
             auto ir_rhs_operand_id =
-              irgen_expr(kind.rhs, symtable, builder, false);
+              irgen_expr(kind.rhs, symtable, builder, false).value();
 
             ir_dst_operand_id = builder.fetch_arbitrary_operand(
               irgen_type(ast_dst_type, builder).value()
@@ -377,9 +381,9 @@ IrOperandID irgen_expr(
           }
           case AstBinaryOp::Div: {
             auto ir_lhs_operand_id =
-              irgen_expr(kind.lhs, symtable, builder, false);
+              irgen_expr(kind.lhs, symtable, builder, false).value();
             auto ir_rhs_operand_id =
-              irgen_expr(kind.rhs, symtable, builder, false);
+              irgen_expr(kind.rhs, symtable, builder, false).value();
 
             ir_dst_operand_id = builder.fetch_arbitrary_operand(
               irgen_type(ast_dst_type, builder).value()
@@ -400,9 +404,9 @@ IrOperandID irgen_expr(
           }
           case AstBinaryOp::Mul: {
             auto ir_lhs_operand_id =
-              irgen_expr(kind.lhs, symtable, builder, false);
+              irgen_expr(kind.lhs, symtable, builder, false).value();
             auto ir_rhs_operand_id =
-              irgen_expr(kind.rhs, symtable, builder, false);
+              irgen_expr(kind.rhs, symtable, builder, false).value();
 
             ir_dst_operand_id = builder.fetch_arbitrary_operand(
               irgen_type(ast_dst_type, builder).value()
@@ -423,9 +427,9 @@ IrOperandID irgen_expr(
           }
           case AstBinaryOp::Mod: {
             auto ir_lhs_operand_id =
-              irgen_expr(kind.lhs, symtable, builder, false);
+              irgen_expr(kind.lhs, symtable, builder, false).value();
             auto ir_rhs_operand_id =
-              irgen_expr(kind.rhs, symtable, builder, false);
+              irgen_expr(kind.rhs, symtable, builder, false).value();
 
             ir_dst_operand_id = builder.fetch_arbitrary_operand(
               irgen_type(ast_dst_type, builder).value()
@@ -441,9 +445,9 @@ IrOperandID irgen_expr(
           }
           case AstBinaryOp::Lt: {
             auto ir_lhs_operand_id =
-              irgen_expr(kind.lhs, symtable, builder, false);
+              irgen_expr(kind.lhs, symtable, builder, false).value();
             auto ir_rhs_operand_id =
-              irgen_expr(kind.rhs, symtable, builder, false);
+              irgen_expr(kind.rhs, symtable, builder, false).value();
 
             ir_dst_operand_id = builder.fetch_arbitrary_operand(
               irgen_type(ast_dst_type, builder).value()
@@ -467,9 +471,9 @@ IrOperandID irgen_expr(
           }
           case AstBinaryOp::Le: {
             auto ir_lhs_operand_id =
-              irgen_expr(kind.lhs, symtable, builder, false);
+              irgen_expr(kind.lhs, symtable, builder, false).value();
             auto ir_rhs_operand_id =
-              irgen_expr(kind.rhs, symtable, builder, false);
+              irgen_expr(kind.rhs, symtable, builder, false).value();
 
             ir_dst_operand_id = builder.fetch_arbitrary_operand(
               irgen_type(ast_dst_type, builder).value()
@@ -493,9 +497,9 @@ IrOperandID irgen_expr(
           }
           case AstBinaryOp::Gt: {
             auto ir_lhs_operand_id =
-              irgen_expr(kind.lhs, symtable, builder, false);
+              irgen_expr(kind.lhs, symtable, builder, false).value();
             auto ir_rhs_operand_id =
-              irgen_expr(kind.rhs, symtable, builder, false);
+              irgen_expr(kind.rhs, symtable, builder, false).value();
 
             ir_dst_operand_id = builder.fetch_arbitrary_operand(
               irgen_type(ast_dst_type, builder).value()
@@ -519,9 +523,9 @@ IrOperandID irgen_expr(
           }
           case AstBinaryOp::Ge: {
             auto ir_lhs_operand_id =
-              irgen_expr(kind.lhs, symtable, builder, false);
+              irgen_expr(kind.lhs, symtable, builder, false).value();
             auto ir_rhs_operand_id =
-              irgen_expr(kind.rhs, symtable, builder, false);
+              irgen_expr(kind.rhs, symtable, builder, false).value();
 
             ir_dst_operand_id = builder.fetch_arbitrary_operand(
               irgen_type(ast_dst_type, builder).value()
@@ -545,9 +549,9 @@ IrOperandID irgen_expr(
           }
           case AstBinaryOp::Eq: {
             auto ir_lhs_operand_id =
-              irgen_expr(kind.lhs, symtable, builder, false);
+              irgen_expr(kind.lhs, symtable, builder, false).value();
             auto ir_rhs_operand_id =
-              irgen_expr(kind.rhs, symtable, builder, false);
+              irgen_expr(kind.rhs, symtable, builder, false).value();
 
             ir_dst_operand_id = builder.fetch_arbitrary_operand(
               irgen_type(ast_dst_type, builder).value()
@@ -571,9 +575,9 @@ IrOperandID irgen_expr(
           }
           case AstBinaryOp::Ne: {
             auto ir_lhs_operand_id =
-              irgen_expr(kind.lhs, symtable, builder, false);
+              irgen_expr(kind.lhs, symtable, builder, false).value();
             auto ir_rhs_operand_id =
-              irgen_expr(kind.rhs, symtable, builder, false);
+              irgen_expr(kind.rhs, symtable, builder, false).value();
 
             ir_dst_operand_id = builder.fetch_arbitrary_operand(
               irgen_type(ast_dst_type, builder).value()
@@ -609,13 +613,12 @@ IrOperandID irgen_expr(
             IrTypePtr basis_type;
 
             if (ast_lhs_type->is_array()) {
-              ir_lhs_operand_id = irgen_expr(kind.lhs, symtable, builder, true);
-              basis_type =
-                irgen_type(ast_lhs_type->get_element_type().value(), builder)
-                  .value();
+              ir_lhs_operand_id =
+                irgen_expr(kind.lhs, symtable, builder, true).value();
+              basis_type = irgen_type(ast_lhs_type, builder).value();
             } else if (ast_lhs_type->is_pointer()) {
               ir_lhs_operand_id =
-                irgen_expr(kind.lhs, symtable, builder, false);
+                irgen_expr(kind.lhs, symtable, builder, false).value();
               basis_type =
                 irgen_type(ast_lhs_type->get_value_type().value(), builder)
                   .value();
@@ -626,7 +629,7 @@ IrOperandID irgen_expr(
             }
 
             auto ir_rhs_operand_id =
-              irgen_expr(kind.rhs, symtable, builder, false);
+              irgen_expr(kind.rhs, symtable, builder, false).value();
 
             if (use_address) {
               ir_dst_operand_id =
@@ -699,7 +702,7 @@ IrOperandID irgen_expr(
       },
       [symtable, &builder,
        use_address](const frontend::ast::expr::Identifier& kind
-      ) -> IrOperandID {
+      ) -> std::optional<IrOperandID> {
         auto ast_symbol = kind.symbol;
 
         if (!ast_symbol->maybe_ir_operand_id.has_value()) {
@@ -725,11 +728,13 @@ IrOperandID irgen_expr(
 
         return ir_operand_id;
       },
-      [symtable, &builder](const frontend::ast::expr::Cast& kind) {
+      [symtable, &builder](const frontend::ast::expr::Cast& kind
+      ) -> std::optional<IrOperandID> {
         auto ast_from_type = kind.expr->get_type();
         auto ast_to_type = kind.type;
 
-        auto ir_operand_id = irgen_expr(kind.expr, symtable, builder, false);
+        auto ir_operand_id =
+          irgen_expr(kind.expr, symtable, builder, false).value();
 
         IrOperandID ir_dst_operand_id;
 
@@ -783,9 +788,10 @@ IrOperandID irgen_expr(
         }
         return ir_dst_operand_id;
       },
-      [symtable, &builder](const frontend::ast::expr::Unary& kind) {
+      [symtable, &builder](const frontend::ast::expr::Unary& kind
+      ) -> std::optional<IrOperandID> {
         auto ir_src_operand_id =
-          irgen_expr(kind.expr, symtable, builder, false);
+          irgen_expr(kind.expr, symtable, builder, false).value();
 
         IrOperandID ir_dst_operand_id;
 
@@ -841,7 +847,70 @@ IrOperandID irgen_expr(
         }
         return ir_dst_operand_id;
       },
-      [](const auto& kind) -> IrOperandID { return 0; },
+      [symtable, &builder](const frontend::ast::expr::Call& kind
+      ) -> std::optional<IrOperandID> {
+        auto maybe_ast_func_symbol = symtable->lookup(kind.name);
+        if (!maybe_ast_func_symbol.has_value()) {
+          std::string error_message =
+            "Error: function `" + kind.name + "` not found.";
+          throw std::runtime_error(error_message);
+        }
+        auto ast_func_symbol = maybe_ast_func_symbol.value();
+        if (!ast_func_symbol->type->is_function()) {
+          std::string error_message =
+            "Error: symbol `" + kind.name + "` is not a function.";
+          throw std::runtime_error(error_message);
+        }
+
+        std::optional<IrOperandID> maybe_ir_dst_operand_id = std::nullopt;
+
+        if (!ast_func_symbol->type->is_void()) {
+          maybe_ir_dst_operand_id = builder.fetch_arbitrary_operand(
+            irgen_type(kind.symbol->type, builder).value()
+          );
+        }
+
+        std::vector<IrOperandID> ir_arg_id_list;
+        for (auto arg : kind.args) {
+          IrOperandID ir_arg_id;
+          if (arg->get_type()->is_pointer()) {
+            ir_arg_id = irgen_expr(arg, symtable, builder, false).value();
+          } else if (arg->get_type()->is_array()) {
+            auto ir_temp_id = irgen_expr(arg, symtable, builder, true).value();
+            // pass the pointer to the first dimension of the array.
+            ir_arg_id =
+              builder.fetch_arbitrary_operand(builder.fetch_pointer_type(
+                irgen_type(arg->get_type()->get_element_type().value(), builder)
+                  .value()
+              ));
+
+            // A gep instruction is required.
+            auto gep_instruction = builder.fetch_getelementptr_instruction(
+              ir_arg_id, irgen_type(arg->get_type(), builder).value(),
+              ir_temp_id,
+              {
+                builder.fetch_constant_operand(
+                  builder.fetch_i32_type(), (int)0
+                ),
+                builder.fetch_constant_operand(
+                  builder.fetch_i32_type(), (int)0
+                ),
+              }
+            );
+            builder.append_instruction(gep_instruction);
+
+          } else {
+            ir_arg_id = irgen_expr(arg, symtable, builder, false).value();
+          }
+          ir_arg_id_list.push_back(ir_arg_id);
+        }
+        auto call_instruction = builder.fetch_call_instruction(
+          maybe_ir_dst_operand_id, kind.name, ir_arg_id_list
+        );
+        builder.append_instruction(call_instruction);
+        return maybe_ir_dst_operand_id;
+      },
+      [](const auto& kind) -> std::optional<IrOperandID> { return 0; },
     },
     expr->kind
   );
