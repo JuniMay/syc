@@ -783,6 +783,64 @@ IrOperandID irgen_expr(
         }
         return ir_dst_operand_id;
       },
+      [symtable, &builder](const frontend::ast::expr::Unary& kind) {
+        auto ir_src_operand_id =
+          irgen_expr(kind.expr, symtable, builder, false);
+
+        IrOperandID ir_dst_operand_id;
+
+        switch (kind.op) {
+          case AstUnaryOp::Pos:
+            ir_dst_operand_id = ir_src_operand_id;
+            break;
+          case AstUnaryOp::Neg: {
+            if (kind.expr->get_type()->is_int()) {
+              ir_dst_operand_id =
+                builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+              auto ir_zero_operand_id = builder.fetch_constant_operand(
+                builder.fetch_i32_type(), (int)0
+              );
+              auto sub_instruction = builder.fetch_binary_instruction(
+                IrBinaryOp::Sub, ir_dst_operand_id, ir_zero_operand_id,
+                ir_src_operand_id
+              );
+              builder.append_instruction(sub_instruction);
+            } else if (kind.expr->get_type()->is_float()) {
+              ir_dst_operand_id =
+                builder.fetch_arbitrary_operand(builder.fetch_float_type());
+              auto ir_zero_operand_id = builder.fetch_constant_operand(
+                builder.fetch_float_type(), (float)0.0
+              );
+              auto sub_instruction = builder.fetch_binary_instruction(
+                IrBinaryOp::FSub, ir_dst_operand_id, ir_zero_operand_id,
+                ir_src_operand_id
+              );
+              builder.append_instruction(sub_instruction);
+            } else {
+              std::string error_message =
+                "Error: unsupported type for unary expression.";
+              throw std::runtime_error(error_message);
+            }
+            break;
+          }
+          case AstUnaryOp::LogicalNot: {
+            // This shall all be converted to bool in ast.
+            ir_dst_operand_id =
+              builder.fetch_arbitrary_operand(builder.fetch_i1_type());
+            auto ir_zero_operand_id =
+              builder.fetch_constant_operand(builder.fetch_i1_type(), (int)0);
+
+            auto eq_instruction = builder.fetch_icmp_instruction(
+              IrICmpCond::Eq, ir_dst_operand_id, ir_src_operand_id,
+              ir_zero_operand_id
+            );
+
+            builder.append_instruction(eq_instruction);
+            break;
+          }
+        }
+        return ir_dst_operand_id;
+      },
       [](const auto& kind) -> IrOperandID { return 0; },
     },
     expr->kind
