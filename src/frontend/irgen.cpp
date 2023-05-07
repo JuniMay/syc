@@ -282,7 +282,19 @@ void irgen_stmt(
         builder.append_instruction(store_instruction);
       },
       [symtable, &builder](const frontend::ast::stmt::Return& kind) {
-
+        if (kind.maybe_expr.has_value()) {
+          auto ir_operand_id =
+            irgen_expr(kind.maybe_expr.value(), symtable, builder, false);
+          auto store_instruction = builder.fetch_store_instruction(
+            ir_operand_id,
+            builder.curr_function->maybe_return_operand_id.value(), std::nullopt
+          );
+          builder.append_instruction(store_instruction);
+        }
+        auto br_instruction = builder.fetch_br_instruction(
+          builder.curr_function->maybe_return_block.value()->id
+        );
+        builder.append_instruction(br_instruction);
       },
       [&builder](const auto&) {
         // TODO
