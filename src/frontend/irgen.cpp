@@ -365,6 +365,42 @@ void irgen_stmt(
         builder.append_basic_block(ir_tail_basic_block);
         builder.set_curr_basic_block(ir_tail_basic_block);
       },
+      [symtable, &builder](const frontend::ast::stmt::While& kind) {
+        // TODO: record a stack of while for continue/break statements.
+
+        auto ir_cond_basic_block = builder.fetch_basic_block();
+        auto ir_body_basic_block = builder.fetch_basic_block();
+        auto ir_tail_basic_block = builder.fetch_basic_block();
+
+        builder.append_basic_block(ir_cond_basic_block);
+        builder.set_curr_basic_block(ir_cond_basic_block);
+        auto ir_cond_operand_id =
+          irgen_expr(kind.cond, symtable, builder, false).value();
+        auto condbr_instruction = builder.fetch_condbr_instruction(
+          ir_cond_operand_id, ir_body_basic_block->id, ir_tail_basic_block->id
+        );
+        builder.append_instruction(condbr_instruction);
+
+        builder.append_basic_block(ir_body_basic_block);
+        builder.set_curr_basic_block(ir_body_basic_block);
+
+        auto maybe_block = kind.body->as_block();
+        if (maybe_block.has_value()) {
+          auto block = maybe_block.value();
+          for (auto stmt : block.stmts) {
+            irgen_stmt(stmt, block.symtable, builder);
+          }
+        } else {
+          irgen_stmt(kind.body, symtable, builder);
+        }
+
+        auto br_instruction =
+          builder.fetch_br_instruction(ir_cond_basic_block->id);
+        builder.append_instruction(br_instruction);
+
+        builder.append_basic_block(ir_tail_basic_block);
+        builder.set_curr_basic_block(ir_tail_basic_block);
+      },
       [&builder](const auto&) {
         // TODO
       },
