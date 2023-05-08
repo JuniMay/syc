@@ -74,7 +74,7 @@ def dfs(exec_path: str, test_dir: str, output_dir: str, runtime_header: str):
                 logfile.write('Error occured when running compiler.\n')
                 continue
             else:
-                logfile.write('Successfully compiled.\n')
+                logfile.write('Successfully compiled.\n\n')
 
             command = (f'clang -x c {full_path} -include {runtime_header}'
                        f' -S -emit-llvm -o {output_ir_std_path}')

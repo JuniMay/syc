@@ -327,14 +327,20 @@ void irgen_stmt(
           auto block = maybe_block.value();
           for (auto stmt : block.stmts) {
             irgen_stmt(stmt, block.symtable, builder);
+            if (builder.curr_basic_block->has_terminator()) {
+              break;
+            }
           }
         } else {
           irgen_stmt(kind.then_stmt, symtable, builder);
         }
-        // after finishing the then stmt, jump to the tail.
-        auto br_instruction =
-          builder.fetch_br_instruction(ir_tail_basic_block->id);
-        builder.append_instruction(br_instruction);
+
+        if (!builder.curr_basic_block->has_terminator()) {
+          // after finishing the then stmt, jump to the tail.
+          auto br_instruction =
+            builder.fetch_br_instruction(ir_tail_basic_block->id);
+          builder.append_instruction(br_instruction);
+        }
 
         // generate the else stmt (if exists).
         if (maybe_ir_else_basic_block.has_value()) {
@@ -348,13 +354,18 @@ void irgen_stmt(
             auto block = maybe_block.value();
             for (auto stmt : block.stmts) {
               irgen_stmt(stmt, block.symtable, builder);
+              if (builder.curr_basic_block->has_terminator()) {
+                break;
+              }
             }
           } else {
             irgen_stmt(ast_else_stmt, symtable, builder);
           }
-          auto br_instruction =
-            builder.fetch_br_instruction(ir_tail_basic_block->id);
-          builder.append_instruction(br_instruction);
+          if (!builder.curr_basic_block->has_terminator()) {
+            auto br_instruction =
+              builder.fetch_br_instruction(ir_tail_basic_block->id);
+            builder.append_instruction(br_instruction);
+          }
         }
 
         // just append the tail and set it to be the current block.
@@ -362,8 +373,6 @@ void irgen_stmt(
         builder.set_curr_basic_block(ir_tail_basic_block);
       },
       [symtable, &builder](const frontend::ast::stmt::While& kind) {
-        // TODO: record a stack of while for continue/break statements.
-
         auto ir_cond_basic_block = builder.fetch_basic_block();
         auto ir_body_basic_block = builder.fetch_basic_block();
         auto ir_tail_basic_block = builder.fetch_basic_block();
@@ -388,14 +397,19 @@ void irgen_stmt(
           auto block = maybe_block.value();
           for (auto stmt : block.stmts) {
             irgen_stmt(stmt, block.symtable, builder);
+            if (builder.curr_basic_block->has_terminator()) {
+              break;
+            }
           }
         } else {
           irgen_stmt(kind.body, symtable, builder);
         }
 
-        auto br_instruction =
-          builder.fetch_br_instruction(ir_cond_basic_block->id);
-        builder.append_instruction(br_instruction);
+        if (!builder.curr_basic_block->has_terminator()) {
+          auto br_instruction =
+            builder.fetch_br_instruction(ir_cond_basic_block->id);
+          builder.append_instruction(br_instruction);
+        }
 
         builder.append_basic_block(ir_tail_basic_block);
         builder.set_curr_basic_block(ir_tail_basic_block);

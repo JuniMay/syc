@@ -235,7 +235,9 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
   /// Note that if the previous instruction is a terminator, insertion will not
   /// do anything.
   void insert_prev(InstructionPtr instruction);
+  
   /// Remove the instruction from the linked list.
+  /// TODO: update use & def.
   void remove();
 
   /// Convert the instruction to a string of IR form.

@@ -59,6 +59,9 @@ struct BasicBlock : std::enable_shared_from_this<BasicBlock> {
 
   /// If the last instruction is a terminator.
   bool has_terminator() const;
+
+  /// If the block is used.
+  bool has_use() const;
 };
 
 /// Create a basic block.

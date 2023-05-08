@@ -58,7 +58,9 @@ void BasicBlock::remove() {
 
 std::string BasicBlock::to_string(Context& context) {
   std::string label = this->get_label();
-  std::string result = label + ":\n";
+  std::string result = label + ": ";
+  
+  result += "; use count: " + std::to_string(this->use_id_list.size()) + "\n";
 
   auto curr_instruction = this->head_instruction->next;
 
@@ -84,6 +86,10 @@ void BasicBlock::add_use(InstructionID use_id) {
 
 bool BasicBlock::has_terminator() const {
   return this->tail_instruction->prev.lock()->is_terminator();
+}
+
+bool BasicBlock::has_use() const {
+  return !this->use_id_list.empty();
 }
 
 }  // namespace ir

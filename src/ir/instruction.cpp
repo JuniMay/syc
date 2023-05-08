@@ -24,10 +24,6 @@ InstructionPtr create_dummy_instruction() {
 }
 
 void Instruction::insert_next(InstructionPtr instruction) {
-  if (this->is_terminator()) {
-    return;
-  }
-
   instruction->next = this->next;
   instruction->prev = this->shared_from_this();
 
@@ -38,10 +34,6 @@ void Instruction::insert_next(InstructionPtr instruction) {
 }
 
 void Instruction::insert_prev(InstructionPtr instruction) {
-  if (this->prev.lock()->is_terminator()) {
-    return;
-  }
-
   instruction->next = this->shared_from_this();
   instruction->prev = this->prev;
 
