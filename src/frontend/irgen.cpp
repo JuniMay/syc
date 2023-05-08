@@ -1139,7 +1139,7 @@ std::optional<IrOperandID> irgen_expr(
 
         std::optional<IrOperandID> maybe_ir_dst_operand_id = std::nullopt;
 
-        if (!ast_func_symbol->type->is_void()) {
+        if (!ast_func_symbol->type->get_ret_type().value()->is_void()) {
           maybe_ir_dst_operand_id = builder.fetch_arbitrary_operand(
             irgen_type(kind.symbol->type, builder).value()
           );
