@@ -17,6 +17,12 @@ struct Builder {
   /// Current block
   BasicBlockPtr curr_basic_block;
 
+  /// Stack to record the condition basic block of while statement.
+  std::stack<BasicBlockPtr> while_cond_basic_block_stack;
+
+  /// Stack to record the tail basic block of while statement.
+  std::stack<BasicBlockPtr> while_tail_basic_block_stack;
+
   Builder() = default;
 
   TypePtr fetch_i32_type() { return std::make_shared<Type>(type::Integer{32}); }

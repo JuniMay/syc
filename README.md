@@ -41,16 +41,17 @@ This will generate the `syc` executable in the current directory.
   - [x] Prettify
 - [ ] IR Generation
   - [x] Compunit
-  - [ ] Stmt
+  - [x] Stmt
     - [x] Decl
     - [x] FuncDef
     - [x] Return
     - [x] Assign
     - [x] Block
     - [x] If
-    - [ ] While
-    - [ ] Break
-    - [ ] Continue
+    - [x] While
+    - [x] Break
+    - [x] Continue
+    - [x] Expr
   - [ ] Expr
     - [x] Binary
     - [x] Unary

@@ -228,8 +228,12 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
   );
 
   /// Insert the instruction after the current instruction.
+  /// Note that if the instruction is a terminator, insertion will not do
+  /// anything.
   void insert_next(InstructionPtr instruction);
   /// Insert the instruction before the current instruction.
+  /// Note that if the previous instruction is a terminator, insertion will not
+  /// do anything.
   void insert_prev(InstructionPtr instruction);
   /// Remove the instruction from the linked list.
   void remove();

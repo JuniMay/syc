@@ -263,10 +263,6 @@ void irgen_stmt(
         }
       },
       [&builder](const frontend::ast::stmt::Block& kind) {
-        auto ir_basic_block = builder.fetch_basic_block();
-        builder.append_basic_block(ir_basic_block);
-        builder.set_curr_basic_block(ir_basic_block);
-
         for (auto stmt : kind.stmts) {
           irgen_stmt(stmt, kind.symtable, builder);
         }
@@ -372,6 +368,9 @@ void irgen_stmt(
         auto ir_body_basic_block = builder.fetch_basic_block();
         auto ir_tail_basic_block = builder.fetch_basic_block();
 
+        builder.while_cond_basic_block_stack.push(ir_cond_basic_block);
+        builder.while_tail_basic_block_stack.push(ir_tail_basic_block);
+
         builder.append_basic_block(ir_cond_basic_block);
         builder.set_curr_basic_block(ir_cond_basic_block);
         auto ir_cond_operand_id =
@@ -400,10 +399,26 @@ void irgen_stmt(
 
         builder.append_basic_block(ir_tail_basic_block);
         builder.set_curr_basic_block(ir_tail_basic_block);
+
+        builder.while_cond_basic_block_stack.pop();
+        builder.while_tail_basic_block_stack.pop();
       },
-      [&builder](const auto&) {
-        // TODO
+      [symtable, &builder](const frontend::ast::stmt::Break& kind) {
+        auto br_instruction = builder.fetch_br_instruction(
+          builder.while_tail_basic_block_stack.top()->id
+        );
+        builder.append_instruction(br_instruction);
       },
+      [symtable, &builder](const frontend::ast::stmt::Continue& kind) {
+        auto br_instruction = builder.fetch_br_instruction(
+          builder.while_cond_basic_block_stack.top()->id
+        );
+        builder.append_instruction(br_instruction);
+      },
+      [symtable, &builder](const frontend::ast::stmt::Expr& kind) {
+        irgen_expr(kind.expr, symtable, builder, false);
+      },
+      [&builder](const auto&) {},
     },
     stmt->kind
   );
