@@ -94,12 +94,129 @@ void irgen_stmt(
 
               if (maybe_ast_expr.has_value()) {
                 auto ast_expr = maybe_ast_expr.value();
-                auto ir_init_operand_id =
-                  irgen_expr(ast_expr, symtable, builder).value();
-                auto store_instruction = builder.fetch_store_instruction(
-                  ir_init_operand_id, ir_dst_operand_id, std::nullopt
-                );
-                builder.append_instruction(store_instruction);
+                if (ast_expr->is_initializer_list()) {
+                  auto ir_ptr_id = ir_dst_operand_id;
+
+                  auto curr_ast_type = ast_type;
+                  while (curr_ast_type->is_array()) {
+                    auto ast_elem_type =
+                      curr_ast_type->get_element_type().value();
+                    auto ir_tmp_ptr_id = builder.fetch_arbitrary_operand(
+                      builder.fetch_pointer_type(
+                        irgen_type(ast_elem_type, builder).value()
+                      )
+                    );
+                    auto gep_instruction =
+                      builder.fetch_getelementptr_instruction(
+                        ir_tmp_ptr_id,
+                        irgen_type(curr_ast_type, builder).value(), ir_ptr_id,
+                        {
+                          builder.fetch_constant_operand(
+                            builder.fetch_i32_type(), (int)0
+                          ),
+                          builder.fetch_constant_operand(
+                            builder.fetch_i32_type(), (int)0
+                          ),
+                        }
+                      );
+                    builder.append_instruction(gep_instruction);
+
+                    curr_ast_type = ast_elem_type;
+                    ir_ptr_id = ir_tmp_ptr_id;
+                  }
+
+                  std::queue<AstExprPtr> ast_expr_queue;
+
+                  ast_expr_queue.push(ast_expr);
+
+                  while (!ast_expr_queue.empty()) {
+                    auto ast_expr = ast_expr_queue.front();
+                    ast_expr_queue.pop();
+
+                    if (ast_expr->is_initializer_list()) {
+                      auto ast_initializer_list =
+                        std::get<frontend::ast::expr::InitializerList>(
+                          ast_expr->kind
+                        );
+                      if (ast_initializer_list.is_zeroinitializer) {
+                        auto ast_type = ast_expr->get_type();
+                        auto ast_elem_type =
+                          ast_type->get_element_type().value();
+                        auto length =
+                          ast_type->get_size() / ast_elem_type->get_size();
+
+                        for (size_t i = 0; i < length; ++i) {
+                          AstExprPtr sub_expr;
+
+                          if (ast_elem_type->is_array()) {
+                            sub_expr =
+                              frontend::ast::create_initializer_list_expr({});
+
+                            std::get<frontend::ast::expr::InitializerList>(
+                              sub_expr->kind
+                            )
+                              .type = ast_elem_type;
+
+                            std::get<frontend::ast::expr::InitializerList>(
+                              sub_expr->kind
+                            )
+                              .is_zeroinitializer = true;
+
+                          } else {
+                            auto ast_zero_constant =
+                              frontend::create_zero_comptime_value(ast_elem_type
+                              );
+
+                            sub_expr = frontend::ast::create_constant_expr(
+                              ast_zero_constant
+                            );
+                          }
+
+                          ast_expr_queue.push(sub_expr);
+                        }
+
+                      } else {
+                        for (auto sub_expr : ast_initializer_list.init_list) {
+                          ast_expr_queue.push(sub_expr);
+                        }
+                      }
+                    } else {
+                      auto ir_value_id =
+                        irgen_expr(ast_expr, symtable, builder, false).value();
+
+                      auto store_instruction = builder.fetch_store_instruction(
+                        ir_value_id, ir_ptr_id, std::nullopt
+                      );
+
+                      builder.append_instruction(store_instruction);
+
+                      auto ir_tmp_ptr_id = builder.fetch_arbitrary_operand(
+                        builder.fetch_pointer_type(
+                          irgen_type(curr_ast_type, builder).value()
+                        )
+                      );
+                      auto gep_instruction =
+                        builder.fetch_getelementptr_instruction(
+                          ir_tmp_ptr_id,
+                          irgen_type(curr_ast_type, builder).value(), ir_ptr_id,
+                          {
+                            builder.fetch_constant_operand(
+                              builder.fetch_i32_type(), (int)1
+                            ),
+                          }
+                        );
+                      builder.append_instruction(gep_instruction);
+                      ir_ptr_id = ir_tmp_ptr_id;
+                    }
+                  }
+                } else {
+                  auto ir_init_operand_id =
+                    irgen_expr(ast_expr, symtable, builder).value();
+                  auto store_instruction = builder.fetch_store_instruction(
+                    ir_init_operand_id, ir_dst_operand_id, std::nullopt
+                  );
+                  builder.append_instruction(store_instruction);
+                }
               }
             }
             break;

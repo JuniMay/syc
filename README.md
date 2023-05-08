@@ -39,7 +39,7 @@ This will generate the `syc` executable in the current directory.
   - [x] Statement
   - [x] Expression
   - [x] Prettify
-- [ ] IR Generation
+- [x] IR Generation
   - [x] Compunit
   - [x] Stmt
     - [x] Decl
@@ -52,15 +52,14 @@ This will generate the `syc` executable in the current directory.
     - [x] Break
     - [x] Continue
     - [x] Expr
-  - [ ] Expr
+  - [x] Expr
     - [x] Binary
     - [x] Unary
     - [x] Constant
     - [x] Identifier
     - [x] Cast
     - [x] Call
-    - [ ] Initializer list
-      - Memcpy or multiple assignment
+    - [x] Initializer list
   - [x] Type
   - [x] Symbol entry -> operand
   - [x] Update def & use when removing instructions and basic blocks.
@@ -72,6 +71,9 @@ This will generate the `syc` executable in the current directory.
   - [ ] Constant folding
   - [ ] Constant propagation
 - [ ] IR Optimization
+  - [ ] Memset for most-zero initialization.
+  - [ ] Dead code elimination.
+  - [ ] Memcpy for most-comptime initialization.
 - [ ] Code Optimization
 
 ## Fixme
@@ -80,3 +82,4 @@ This will generate the `syc` executable in the current directory.
   - Fixed. The actual problem is that if there is a while/if/else, the block will be added twice: once by the driver and another time by the while/if/else statement.
 - [x] Fix `getelementptr` for array parameter that is treated as pointer (no first index).
 - [x] Fix array-type parameter/argument passing.
+- [ ] Bool -> int conversion in unary expression.
