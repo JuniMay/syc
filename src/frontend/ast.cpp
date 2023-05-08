@@ -130,6 +130,14 @@ bool Expr::is_comptime() const {
   );
 }
 
+std::optional<expr::Binary> Expr::as_binary() const {
+  if (!std::holds_alternative<expr::Binary>(this->kind)) {
+    return std::nullopt;
+  }
+
+  return std::get<expr::Binary>(this->kind);
+}
+
 std::optional<ComptimeValuePtr> Expr::get_comptime_value() const {
   if (!this->is_comptime()) {
     return std::nullopt;
@@ -204,6 +212,13 @@ TypePtr Expr::get_type() const {
 
 bool Expr::is_initializer_list() const {
   return std::holds_alternative<expr::InitializerList>(this->kind);
+}
+
+std::optional<stmt::Block> Stmt::as_block() const {
+  if (!std::holds_alternative<stmt::Block>(this->kind)) {
+    return std::nullopt;
+  }
+  return std::get<stmt::Block>(this->kind);
 }
 
 Compunit::Compunit() : symtable(create_symbol_table(std::nullopt)), stmts({}) {}

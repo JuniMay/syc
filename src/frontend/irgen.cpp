@@ -299,6 +299,72 @@ void irgen_stmt(
         );
         builder.append_instruction(br_instruction);
       },
+      [symtable, &builder](const frontend::ast::stmt::If& kind) {
+        auto ir_then_basic_block = builder.fetch_basic_block();
+        auto maybe_ir_else_basic_block =
+          kind.maybe_else_stmt.has_value()
+            ? std::make_optional(builder.fetch_basic_block())
+            : std::nullopt;
+
+        auto ir_tail_basic_block = builder.fetch_basic_block();
+
+        // generate condition in the previous basic block.
+        auto ir_cond_operand_id =
+          irgen_expr(kind.cond, symtable, builder, false).value();
+
+        // if the condition is true, jump to the then stmt.
+        // otherwise, if there is an else stmt, jump to the else stmt, or jump
+        // to the tail.
+        auto condbr_instruction = builder.fetch_condbr_instruction(
+          ir_cond_operand_id, ir_then_basic_block->id,
+          maybe_ir_else_basic_block.has_value()
+            ? maybe_ir_else_basic_block.value()->id
+            : ir_tail_basic_block->id
+        );
+        builder.append_instruction(condbr_instruction);
+
+        // generate the then stmt.
+        builder.append_basic_block(ir_then_basic_block);
+        builder.set_curr_basic_block(ir_then_basic_block);
+        auto maybe_block = kind.then_stmt->as_block();
+        if (maybe_block.has_value()) {
+          auto block = maybe_block.value();
+          for (auto stmt : block.stmts) {
+            irgen_stmt(stmt, block.symtable, builder);
+          }
+        } else {
+          irgen_stmt(kind.then_stmt, symtable, builder);
+        }
+        // after finishing the then stmt, jump to the tail.
+        auto br_instruction =
+          builder.fetch_br_instruction(ir_tail_basic_block->id);
+        builder.append_instruction(br_instruction);
+
+        // generate the else stmt (if exists).
+        if (maybe_ir_else_basic_block.has_value()) {
+          auto ir_else_basic_block = maybe_ir_else_basic_block.value();
+          builder.append_basic_block(ir_else_basic_block);
+          builder.set_curr_basic_block(ir_else_basic_block);
+
+          auto ast_else_stmt = kind.maybe_else_stmt.value();
+          auto maybe_block = ast_else_stmt->as_block();
+          if (maybe_block.has_value()) {
+            auto block = maybe_block.value();
+            for (auto stmt : block.stmts) {
+              irgen_stmt(stmt, block.symtable, builder);
+            }
+          } else {
+            irgen_stmt(ast_else_stmt, symtable, builder);
+          }
+          auto br_instruction =
+            builder.fetch_br_instruction(ir_tail_basic_block->id);
+          builder.append_instruction(br_instruction);
+        }
+
+        // just append the tail and set it to be the current block.
+        builder.append_basic_block(ir_tail_basic_block);
+        builder.set_curr_basic_block(ir_tail_basic_block);
+      },
       [&builder](const auto&) {
         // TODO
       },
@@ -599,12 +665,170 @@ std::optional<IrOperandID> irgen_expr(
             }
             break;
           }
-          case AstBinaryOp::LogicalAnd:
+          case AstBinaryOp::LogicalAnd: {
+            // pointer of the address that store the result.
+            auto ir_dst_pointer_operand_id = builder.fetch_arbitrary_operand(
+              builder.fetch_pointer_type(builder.fetch_i1_type())
+            );
+            auto alloca_instruction = builder.fetch_alloca_instruction(
+              ir_dst_pointer_operand_id, builder.fetch_i1_type(), std::nullopt,
+              std::nullopt, std::nullopt
+            );
+            builder.prepend_instruction_to_curr_function(alloca_instruction);
+
+            // block to generate the rhs expression
+            auto ir_rhs_basic_block = builder.fetch_basic_block();
+            // block to store `true` into the result.
+            auto ir_true_basic_block = builder.fetch_basic_block();
+            // block to store `false` into the result.
+            auto ir_false_basic_block = builder.fetch_basic_block();
+            // end of the evaluation.
+            auto ir_tail_basic_block = builder.fetch_basic_block();
+
+            // generate lhs with short-circuit evaluation.
+            // lhs is generated in the previous basic block.
+            auto ir_lhs_operand_id =
+              irgen_expr(kind.lhs, symtable, builder, true).value();
+            // if lhs is true, evaluate the rhs, otherwise the result is false.
+            auto condbr_instruction = builder.fetch_condbr_instruction(
+              ir_lhs_operand_id, ir_rhs_basic_block->id,
+              ir_false_basic_block->id
+            );
+            builder.append_instruction(condbr_instruction);
+
+            // generate rhs with short-circuit evaluation.
+            builder.append_basic_block(ir_rhs_basic_block);
+            builder.set_curr_basic_block(ir_rhs_basic_block);
+            auto ir_rhs_operand_id =
+              irgen_expr(kind.rhs, symtable, builder, true).value();
+            // if rhs is true, the result is true, otherwise the result is
+            // false.
+            condbr_instruction = builder.fetch_condbr_instruction(
+              ir_rhs_operand_id, ir_true_basic_block->id,
+              ir_false_basic_block->id
+            );
+            builder.append_instruction(condbr_instruction);
+
+            // store `true` to the result.
+            builder.append_basic_block(ir_true_basic_block);
+            builder.set_curr_basic_block(ir_true_basic_block);
+            auto store_instruction = builder.fetch_store_instruction(
+              builder.fetch_constant_operand(builder.fetch_i1_type(), (int)1),
+              ir_dst_pointer_operand_id, std::nullopt
+            );
+            builder.append_instruction(store_instruction);
+            // after the result is stored, jump to the end of evaluation.
+            auto br_instruction =
+              builder.fetch_br_instruction(ir_tail_basic_block->id);
+            builder.append_instruction(br_instruction);
+
+            // store `false` to the result.
+            builder.append_basic_block(ir_false_basic_block);
+            builder.set_curr_basic_block(ir_false_basic_block);
+            store_instruction = builder.fetch_store_instruction(
+              builder.fetch_constant_operand(builder.fetch_i1_type(), (int)0),
+              ir_dst_pointer_operand_id, std::nullopt
+            );
+            builder.append_instruction(store_instruction);
+            // after the result is stored, jump to the end of evaluation.
+            br_instruction =
+              builder.fetch_br_instruction(ir_tail_basic_block->id);
+            builder.append_instruction(br_instruction);
+
+            // set current block to the end of evaluation.
+            builder.append_basic_block(ir_tail_basic_block);
+            builder.set_curr_basic_block(ir_tail_basic_block);
+
+            // load the result from the memory as an operand.
+            ir_dst_operand_id =
+              builder.fetch_arbitrary_operand(builder.fetch_i1_type());
+            auto load_instruction = builder.fetch_load_instruction(
+              ir_dst_operand_id, ir_dst_pointer_operand_id, std::nullopt
+            );
+            builder.append_instruction(load_instruction);
+            break;
+          }
           case AstBinaryOp::LogicalOr: {
-            std::string error_message =
-              "Error: Logical and/or shall be expanded to be short-circuit "
-              "evaluation.";
-            throw std::runtime_error(error_message);
+            // pointer of the address that store the result.
+            auto ir_dst_pointer_operand_id = builder.fetch_arbitrary_operand(
+              builder.fetch_pointer_type(builder.fetch_i1_type())
+            );
+            auto alloca_instruction = builder.fetch_alloca_instruction(
+              ir_dst_pointer_operand_id, builder.fetch_i1_type(), std::nullopt,
+              std::nullopt, std::nullopt
+            );
+            builder.prepend_instruction_to_curr_function(alloca_instruction);
+
+            // block to generate the rhs expression
+            auto ir_rhs_basic_block = builder.fetch_basic_block();
+            // block to store `true` into the result.
+            auto ir_true_basic_block = builder.fetch_basic_block();
+            // block to store `false` into the result.
+            auto ir_false_basic_block = builder.fetch_basic_block();
+            // end of the evaluation.
+            auto ir_tail_basic_block = builder.fetch_basic_block();
+
+            // generate lhs with short-circuit evaluation.
+            // lhs is generated in the previous basic block.
+            auto ir_lhs_operand_id =
+              irgen_expr(kind.lhs, symtable, builder, true).value();
+            // if lhs is true, the result is true.
+            // this is the only difference between logical and and logical or
+            auto condbr_instruction = builder.fetch_condbr_instruction(
+              ir_lhs_operand_id, ir_true_basic_block->id, ir_rhs_basic_block->id
+            );
+            builder.append_instruction(condbr_instruction);
+
+            // generate rhs with short-circuit evaluation.
+            builder.append_basic_block(ir_rhs_basic_block);
+            builder.set_curr_basic_block(ir_rhs_basic_block);
+            auto ir_rhs_operand_id =
+              irgen_expr(kind.rhs, symtable, builder, true).value();
+            // if rhs is true, the result is true, otherwise the result is
+            // false.
+            condbr_instruction = builder.fetch_condbr_instruction(
+              ir_rhs_operand_id, ir_true_basic_block->id,
+              ir_false_basic_block->id
+            );
+            builder.append_instruction(condbr_instruction);
+
+            // store `true` to the result.
+            builder.append_basic_block(ir_true_basic_block);
+            builder.set_curr_basic_block(ir_true_basic_block);
+            auto store_instruction = builder.fetch_store_instruction(
+              builder.fetch_constant_operand(builder.fetch_i1_type(), (int)1),
+              ir_dst_pointer_operand_id, std::nullopt
+            );
+            builder.append_instruction(store_instruction);
+            // after the result is stored, jump to the end of evaluation.
+            auto br_instruction =
+              builder.fetch_br_instruction(ir_tail_basic_block->id);
+            builder.append_instruction(br_instruction);
+
+            // store `false` to the result.
+            builder.append_basic_block(ir_false_basic_block);
+            builder.set_curr_basic_block(ir_false_basic_block);
+            store_instruction = builder.fetch_store_instruction(
+              builder.fetch_constant_operand(builder.fetch_i1_type(), (int)0),
+              ir_dst_pointer_operand_id, std::nullopt
+            );
+            builder.append_instruction(store_instruction);
+            // after the result is stored, jump to the end of evaluation.
+            br_instruction =
+              builder.fetch_br_instruction(ir_tail_basic_block->id);
+            builder.append_instruction(br_instruction);
+
+            // set current block to the end of evaluation.
+            builder.append_basic_block(ir_tail_basic_block);
+            builder.set_curr_basic_block(ir_tail_basic_block);
+
+            // load the result from the memory as an operand.
+            ir_dst_operand_id =
+              builder.fetch_arbitrary_operand(builder.fetch_i1_type());
+            auto load_instruction = builder.fetch_load_instruction(
+              ir_dst_operand_id, ir_dst_pointer_operand_id, std::nullopt
+            );
+            builder.append_instruction(load_instruction);
             break;
           }
           case AstBinaryOp::Index: {

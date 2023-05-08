@@ -4,6 +4,7 @@
 #include "common.h"
 #include "frontend/ast.h"
 #include "frontend/symtable.h"
+#include "ir/basic_block.h"
 #include "ir/builder.h"
 #include "ir/function.h"
 #include "ir/instruction.h"

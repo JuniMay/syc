@@ -153,6 +153,8 @@ struct Expr {
   std::string to_string() const;
 
   bool is_initializer_list() const;
+
+  std::optional<expr::Binary> as_binary() const;
 };
 
 namespace stmt {
@@ -253,6 +255,8 @@ struct Stmt {
   Stmt(StmtKind kins);
 
   std::string to_string() const;
+
+  std::optional<stmt::Block> as_block() const;
 };
 
 /// Compile unit.

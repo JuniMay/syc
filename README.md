@@ -47,7 +47,7 @@ This will generate the `syc` executable in the current directory.
     - [x] Return
     - [x] Assign
     - [x] Block
-    - [ ] If
+    - [x] If
     - [ ] While
     - [ ] Break
     - [ ] Continue
