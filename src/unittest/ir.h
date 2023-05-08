@@ -89,7 +89,7 @@ TEST_CASE("IR Instruction", "[ir][instruction]") {
 
     add_instruction->insert_next(add_instruction_1);
 
-    add_instruction->remove();
+    add_instruction->remove(builder.context);
 
     std::cout << builder.context.to_string() << std::endl;
   }
@@ -245,8 +245,8 @@ TEST_CASE("IR Basic Block", "[ir][basic_block]") {
     then_block->insert_prev(entry_block);
     entry_block->insert_next(else_block);
 
-    then_block->remove();
-    else_block->remove();
+    then_block->remove(builder.context);
+    else_block->remove(builder.context);
 
     std::cout << builder.context.to_string();
   }
