@@ -45,6 +45,10 @@ struct Function {
 
   /// Add terminator to each block if there is no terminator in it.
   void add_terminators(Builder& builder);
+
+  void remove_caller(InstructionID caller_id);
+
+  void remove_unused_basic_blocks(Context& context);
 };
 
 }  // namespace ir

@@ -43,12 +43,14 @@ struct BasicBlock : std::enable_shared_from_this<BasicBlock> {
   /// Add a instruction id that use this block to `use_id_list`
   void add_use(InstructionID use_id);
 
+  void remove_use(InstructionID use_id);
+
   /// Insert the basic block after the current basic block.
   void insert_next(BasicBlockPtr basic_block);
   /// Insert the basic block before the current basic block.
   void insert_prev(BasicBlockPtr basic_block);
   /// Remove the basic block from the linked list.
-  void remove();
+  void remove(Context& context);
 
   /// Get the label name of the basic block.
   /// Note that the returned string cannot be directly used as an IR operand.

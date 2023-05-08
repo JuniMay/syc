@@ -46,7 +46,15 @@ void BasicBlock::insert_prev(BasicBlockPtr basic_block) {
   this->prev = basic_block;
 }
 
-void BasicBlock::remove() {
+void BasicBlock::remove(Context& context) {
+  auto curr_instruction = this->head_instruction->next;
+
+  while (curr_instruction != this->tail_instruction) {
+    auto next_instruction = curr_instruction->next;
+    curr_instruction->remove(context);
+    curr_instruction = next_instruction;
+  }
+
   if (auto prev = this->prev.lock()) {
     prev->next = this->next;
   }
@@ -59,7 +67,7 @@ void BasicBlock::remove() {
 std::string BasicBlock::to_string(Context& context) {
   std::string label = this->get_label();
   std::string result = label + ": ";
-  
+
   result += "; use count: " + std::to_string(this->use_id_list.size()) + "\n";
 
   auto curr_instruction = this->head_instruction->next;
@@ -82,6 +90,13 @@ void BasicBlock::prepend_instruction(InstructionPtr instruction) {
 
 void BasicBlock::add_use(InstructionID use_id) {
   this->use_id_list.push_back(use_id);
+}
+
+void BasicBlock::remove_use(InstructionID use_id) {
+  this->use_id_list.erase(
+    std::remove(this->use_id_list.begin(), this->use_id_list.end(), use_id),
+    this->use_id_list.end()
+  );
 }
 
 bool BasicBlock::has_terminator() const {

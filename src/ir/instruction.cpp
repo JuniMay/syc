@@ -44,7 +44,107 @@ void Instruction::insert_prev(InstructionPtr instruction) {
   this->prev = instruction;
 }
 
-void Instruction::remove() {
+void Instruction::remove(Context& context) {
+  std::visit(
+    overloaded{
+      [this, &context](const instruction::Binary& kind) {
+        context.operand_table.erase(kind.dst_id);
+        context.operand_table[kind.lhs_id]->remove_use(this->id);
+        context.operand_table[kind.rhs_id]->remove_use(this->id);
+      },
+      [this, &context](const instruction::ICmp& kind) {
+        context.operand_table.erase(kind.dst_id);
+        context.operand_table[kind.lhs_id]->remove_use(this->id);
+        context.operand_table[kind.rhs_id]->remove_use(this->id);
+      },
+      [this, &context](const instruction::FCmp& kind) {
+        context.operand_table.erase(kind.dst_id);
+        context.operand_table[kind.lhs_id]->remove_use(this->id);
+        context.operand_table[kind.rhs_id]->remove_use(this->id);
+      },
+      [this, &context](const instruction::Cast& kind) {
+        context.operand_table.erase(kind.dst_id);
+        context.operand_table[kind.src_id]->remove_use(this->id);
+      },
+      [this, &context](const instruction::Ret& kind) {
+        if (kind.maybe_value_id.has_value()) {
+          context.operand_table[kind.maybe_value_id.value()]->remove_use(
+            this->id
+          );
+        }
+      },
+      [this, &context](const instruction::CondBr& kind) {
+        context.operand_table[kind.cond_id]->remove_use(this->id);
+        context.basic_block_table[kind.then_block_id]->remove_use(this->id);
+        context.basic_block_table[kind.else_block_id]->remove_use(this->id);
+      },
+      [this, &context](const instruction::Br& kind) {
+        context.basic_block_table[kind.block_id]->remove_use(this->id);
+      },
+      [this, &context](const instruction::Phi& kind) {
+        context.operand_table.erase(kind.dst_id);
+        for (auto [operand_id, basic_block_id] : kind.incoming_list) {
+          context.operand_table[operand_id]->remove_use(this->id);
+          context.basic_block_table[basic_block_id]->remove_use(this->id);
+        }
+      },
+      [this, &context](const instruction::Alloca& kind) {
+        context.operand_table.erase(kind.dst_id);
+        if (kind.maybe_size_id.has_value()) {
+          context.operand_table[kind.maybe_size_id.value()]->remove_use(this->id
+          );
+        }
+        if (kind.maybe_align_id.has_value()) {
+          context.operand_table[kind.maybe_align_id.value()]->remove_use(
+            this->id
+          );
+        }
+        if (kind.maybe_addrspace_id.has_value()) {
+          context.operand_table[kind.maybe_addrspace_id.value()]->remove_use(
+            this->id
+          );
+        }
+      },
+      [this, &context](const instruction::Load& kind) {
+        context.operand_table.erase(kind.dst_id);
+        context.operand_table[kind.ptr_id]->remove_use(this->id);
+        if (kind.maybe_align_id.has_value()) {
+          context.operand_table[kind.maybe_align_id.value()]->remove_use(
+            this->id
+          );
+        }
+      },
+      [this, &context](const instruction::Store& kind) {
+        context.operand_table[kind.value_id]->remove_use(this->id);
+        context.operand_table[kind.ptr_id]->remove_use(this->id);
+        if (kind.maybe_align_id.has_value()) {
+          context.operand_table[kind.maybe_align_id.value()]->remove_use(
+            this->id
+          );
+        }
+      },
+      [this, &context](const instruction::Call& kind) {
+        if (kind.maybe_dst_id.has_value()) {
+          context.operand_table[kind.maybe_dst_id.value()]->remove_use(this->id
+          );
+        }
+        context.function_table[kind.function_name]->remove_caller(this->id);
+        for (auto arg_id : kind.arg_id_list) {
+          context.operand_table[arg_id]->remove_use(this->id);
+        }
+      },
+      [this, &context](const instruction::GetElementPtr& kind) {
+        context.operand_table.erase(kind.dst_id);
+        context.operand_table[kind.ptr_id]->remove_use(this->id);
+        for (auto index_id : kind.index_id_list) {
+          context.operand_table[index_id]->remove_use(this->id);
+        }
+      },
+      [this, &context](const instruction::Dummy& kind) {},
+    },
+    this->kind
+  );
+
   if (auto prev = this->prev.lock()) {
     prev->next = this->next;
   }

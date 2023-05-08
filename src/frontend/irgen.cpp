@@ -260,6 +260,7 @@ void irgen_stmt(
           }
 
           builder.curr_function->add_terminators(builder);
+          builder.curr_function->remove_unused_basic_blocks(builder.context);
         }
       },
       [&builder](const frontend::ast::stmt::Block& kind) {

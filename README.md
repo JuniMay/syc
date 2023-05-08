@@ -63,8 +63,8 @@ This will generate the `syc` executable in the current directory.
       - Memcpy or multiple assignment
   - [x] Type
   - [x] Symbol entry -> operand
-  - [ ] Update def & use when removing instructions and basic blocks.
-  - [ ] Remove unused basic blocks.
+  - [x] Update def & use when removing instructions and basic blocks.
+  - [x] Remove unused basic blocks.
 - [ ] Code generation
 - [ ] Code print
 - [ ] AST simplification

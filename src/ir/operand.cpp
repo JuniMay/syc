@@ -74,6 +74,13 @@ void Operand::add_use(InstructionID use_id) {
   use_id_list.push_back(use_id);
 }
 
+void Operand::remove_use(InstructionID use_id) {
+  this->use_id_list.erase(
+    std::remove(this->use_id_list.begin(), this->use_id_list.end(), use_id),
+    this->use_id_list.end()
+  );
+}
+
 }  // namespace ir
 
 }  // namespace syc

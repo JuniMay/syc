@@ -94,5 +94,26 @@ void Function::add_terminators(Builder& builder) {
   }
 }
 
+void Function::remove_caller(InstructionID caller_id) {
+  this->caller_id_list.erase(
+    std::remove(
+      this->caller_id_list.begin(), this->caller_id_list.end(), caller_id
+    ),
+    this->caller_id_list.end()
+  );
+}
+
+void Function::remove_unused_basic_blocks(Context& context) {
+  // skip the entry block
+  auto curr_basic_block = this->head_basic_block->next->next;
+  while (curr_basic_block != this->tail_basic_block) {
+    auto next_basic_block = curr_basic_block->next;
+    if (!curr_basic_block->has_use()) {
+      curr_basic_block->remove(context);
+    }
+    curr_basic_block = next_basic_block;
+  }
+}
+
 }  // namespace ir
 }  // namespace syc
