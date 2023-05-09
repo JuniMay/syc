@@ -25,9 +25,5 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Flatten
-        run: python scripts/flatten.py --input_dir src --output_dir flattened
-
-      - name: Compile Flattened Source
-        run: python scripts/compile.py
-  
+      - name: Flatten and Compile
+        run: python scripts/execute.py --src-dir src --flatten-dir flattened --no-test

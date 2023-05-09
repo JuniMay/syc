@@ -5,6 +5,8 @@
 /tests_output/
 /.cache/
 /build/
+/sysy-runtime-lib
+/output
 
 /syc
 *.ll
