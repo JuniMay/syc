@@ -379,20 +379,32 @@ create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver) {
 ExprPtr create_unary_expr(UnaryOp op, ExprPtr expr, Driver& driver) {
   auto symbol_name = driver.get_next_temp_name();
   auto symtable = driver.curr_symtable;
-
   auto type = expr->get_type();
 
-  if (op == UnaryOp::Pos || 
-      op == UnaryOp::Neg || (op == UnaryOp::LogicalNot && type->is_bool())) {
+  if (type->is_bool()) {
+    if (op == UnaryOp::Pos || op == UnaryOp::Neg) {
+      // +bool / -bool => +int / -int
+      expr = create_cast_expr(expr, create_int_type(), driver);
+    }
     auto symbol_entry =
       create_symbol_entry(Scope::Temp, symbol_name, type, false, std::nullopt);
     symtable->add_symbol_entry(symbol_entry);
-    return std::make_shared<Expr>(ExprKind(expr::Unary{op, expr, symbol_entry})
-    );
-  } else {
-    // expr is int/float: !expr -> expr == 0
+    return std::make_shared<Expr>(ExprKind(expr::Unary{op, expr, symbol_entry}));
+  } else if (type->is_int() || type->is_float()) {
+    if (op == UnaryOp::LogicalNot) {
+      // expr is int/float: !expr -> expr == 0
     auto zero = create_constant_expr(create_zero_comptime_value(type));
     return create_binary_expr(BinaryOp::Eq, expr, zero, driver);
+    } else {
+      auto symbol_entry =
+      create_symbol_entry(Scope::Temp, symbol_name, type, false, std::nullopt);
+      symtable->add_symbol_entry(symbol_entry);
+      return std::make_shared<Expr>(ExprKind(expr::Unary{op, expr, symbol_entry}));
+    }
+  } else {
+    throw std::runtime_error(
+      "Error: unary expression on non-numeric type" + type->to_string() + "."
+    );
   }
 }
 

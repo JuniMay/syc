@@ -82,4 +82,4 @@ This will generate the `syc` executable in the current directory.
   - Fixed. The actual problem is that if there is a while/if/else, the block will be added twice: once by the driver and another time by the while/if/else statement.
 - [x] Fix `getelementptr` for array parameter that is treated as pointer (no first index).
 - [x] Fix array-type parameter/argument passing.
-- [ ] Bool -> int conversion in unary expression.
+- [x] Bool -> int conversion in unary expression.
