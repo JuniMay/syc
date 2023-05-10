@@ -273,6 +273,8 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
             print(f'[ CORRECT ] {testcase}')
         else:
             print(f'[  ERROR  ] (WA) {testcase}')
+        
+        log(log_file, command, exec_result)
 
 
 def main():
