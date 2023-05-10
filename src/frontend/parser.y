@@ -430,25 +430,25 @@ UnaryExpr
         {lineno_expr}, 
         driver
       );
-      YYACCEPT;
+    } else {
+      auto maybe_symbol_entry = driver.compunit.symtable->lookup($1);
+      if (!maybe_symbol_entry.has_value()) {
+        std::cerr << @1 << ":" << "Undefined identifier: " + $1;
+        YYABORT;
+      }
+      auto maybe_func_type = maybe_symbol_entry.value()->type;
+      if (
+        !std::holds_alternative<type::Function>(maybe_func_type->kind)
+      ) {
+        std::cerr << @1 << ":" << "Not a function: " + $1;
+        YYABORT;
+      }
+      $$ = ast::create_call_expr(
+        maybe_symbol_entry.value(), 
+        {}, 
+        driver
+      );
     }
-    auto maybe_symbol_entry = driver.compunit.symtable->lookup($1);
-    if (!maybe_symbol_entry.has_value()) {
-      std::cerr << @1 << ":" << "Undefined identifier: " + $1;
-      YYABORT;
-    }
-    auto maybe_func_type = maybe_symbol_entry.value()->type;
-    if (
-      !std::holds_alternative<type::Function>(maybe_func_type->kind)
-    ) {
-      std::cerr << @1 << ":" << "Not a function: " + $1;
-      YYABORT;
-    }
-    $$ = ast::create_call_expr(
-      maybe_symbol_entry.value(), 
-      {}, 
-      driver
-    );
   }
   ;
 
