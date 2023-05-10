@@ -83,3 +83,5 @@ This will generate the `syc` executable in the current directory.
 - [x] Fix `getelementptr` for array parameter that is treated as pointer (no first index).
 - [x] Fix array-type parameter/argument passing.
 - [x] Bool -> int conversion in unary expression.
+- [ ] Function symbol scope when generating ir, consider record the symbol in ast.
+- [ ] IR store type problem in functional testcases 95~99
