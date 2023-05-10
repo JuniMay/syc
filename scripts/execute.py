@@ -217,15 +217,15 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         exec_result = execute(command, exec_timeout)
         log(log_file, command, exec_result)
 
-        if exec_result['returncode'] is None:
-            print(f'[  ERROR  ] (std) {testcase}')
-            continue
-
         command = (f'clang -S --target=riscv64 -mcpu=sifive-u74 {ir_path} '
                    f'-o {std_asm_from_ir_path}')
 
         exec_result = execute(command, exec_timeout)
         log(log_file, command, exec_result)
+        
+        if exec_result['returncode'] is None:
+            print(f'[  ERROR  ] (ir->asm) {testcase}')
+            continue
 
         command = (
             f'clang -fPIC -c --target=riscv64 -mcpu=sifive-u74 {ir_path} '
@@ -233,6 +233,10 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
 
         exec_result = execute(command, exec_timeout)
         log(log_file, command, exec_result)
+        
+        if exec_result['returncode'] is None:
+            print(f'[  ERROR  ] (ir->obj) {testcase}')
+            continue
 
         command = (f'riscv64-linux-gnu-gcc -march=rv64gc {obj_from_ir_path}'
                    f' -L{runtime_lib_dir} -lsylib -o {exec_path}')

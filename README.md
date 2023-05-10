@@ -85,3 +85,4 @@ This will generate the `syc` executable in the current directory.
 - [x] Bool -> int conversion in unary expression.
 - [ ] Function symbol scope when generating ir, consider record the symbol in ast.
 - [ ] IR store type problem in functional testcases 95~99
+- [ ] Reshape initializer list in `hidden_functional/08_global_arr_init.sy`
