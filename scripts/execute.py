@@ -1,8 +1,25 @@
 import argparse
+import difflib
 import os
 import shutil
 import subprocess
 from typing import Any, Dict
+
+
+def check_file(file1, file2, diff_file):
+    with open(file1, 'r') as f1, open(file2, 'r') as f2:
+        diff = difflib.unified_diff(
+            f1.readlines(),
+            f2.readlines(),
+            fromfile=file1,
+            tofile=file2,
+        )
+        diff_list = list(diff)
+
+        with open(diff_file, 'w') as f:
+            f.writelines(diff_list)
+
+        return len(diff_list) == 0
 
 
 def execute(command, timeout) -> Dict[str, Any]:
@@ -125,6 +142,15 @@ def compile(include_dir: str, executable_path: str, timeout: int):
         print('BUILDING FINISHED.\n')
 
 
+def log(logfile, command, exec_result):
+    logfile.write(f'EXECUTE: {command}\n')
+    logfile.write(f'STDOUT:\n')
+    logfile.write(exec_result['stdout'])
+    logfile.write(f'STDERR:\n')
+    logfile.write(exec_result['stderr'])
+    logfile.write(f'STDERR:\n')
+
+
 def test(executable_path: str, testcase_dir: str, output_dir: str,
          runtime_lib_dir: str, exec_timeout: int):
     testcase_list = []
@@ -140,22 +166,33 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
 
             elif os.path.isdir(full_path):
                 dfs(full_path)
-                
+
     dfs(testcase_dir)
 
     for testcase in testcase_list:
-        basename : str =  os.path.basename(testcase)
+        basename: str = os.path.basename(testcase)
+
+        in_path = f'{testcase}.in'
+
+        std_out_path = f'{testcase}.out'
+        if not os.path.isfile(in_path):
+            in_path = None
 
         tokens_path = os.path.join(output_dir, f'{basename}.toks')
         ast_path = os.path.join(output_dir, f'{basename}.ast')
         ir_path = os.path.join(output_dir, f'{basename}.ll')
-        asm_path = os.path.join(output_dir, f'{basename}.asm')
+        asm_path = os.path.join(output_dir, f'{basename}.s')
+        obj_from_ir_path = os.path.join(output_dir, f'{basename}.o')
+        out_path = os.path.join(output_dir, f'{basename}.out')
+        exec_path = os.path.join(output_dir, f'{basename}')
+
+        diff_path = os.path.join(output_dir, f'{basename}.diff')
 
         std_asm_from_ir_path = os.path.join(output_dir,
-                                            f'{basename}.std_from_ir.asm')
+                                            f'{basename}.std_from_ir.s')
 
         std_ir_path = os.path.join(output_dir, f'{basename}.std.ll')
-        std_asm_path = os.path.join(output_dir, f'{basename}.std.asm')
+        std_asm_path = os.path.join(output_dir, f'{basename}.std.s')
         log_path = os.path.join(output_dir, f'{basename}.log')
 
         log_file = open(log_path, 'w')
@@ -167,57 +204,75 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
                    f'--emit-ir {ir_path} ')
 
         exec_result = execute(command, exec_timeout)
+        log(log_file, command, exec_result)
 
-        log_file.write(f'EXECUTE: {command}\n')
-        log_file.write(f'STDOUT:\n')
-        log_file.write(exec_result['stdout'])
-        log_file.write(f'STDERR:\n')
-        log_file.write(exec_result['stderr'])
-
-        if exec_result['returncode'] == 0:
-            print(f'(syc) [ SUCCESS ] {testcase}')
-
-        else:
+        if exec_result['returncode'] != 0:
             if exec_result['stderr'] == 'TIMEOUT':
-                print(f'(syc) [ TIMEOUT ] {testcase}')
+                print(f'[ TIMEOUT ] (syc) {testcase}')
             else:
-                print(f'(syc) [  ERROR  ] {testcase}')
+                print(f'[  ERROR  ] (syc) {testcase}')
+
+            continue
 
         command = (f'clang -xc {testcase}.sy -include '
                    f'{runtime_lib_dir}/sylib.h '
                    f'-S -emit-llvm -o {std_ir_path}')
 
         exec_result = execute(command, exec_timeout)
+        log(log_file, command, exec_result)
 
-        log_file.write(f'EXECUTE: {command}\n')
-        log_file.write(f'STDOUT:\n')
-        log_file.write(exec_result['stdout'])
-        log_file.write(f'STDERR:\n')
-        log_file.write(exec_result['stderr'])
-        
-        command = (f'clang -xc {testcase}.sy -include '
-                   f'{runtime_lib_dir}/sylib.h '
-                   f'-S --target=riscv64 -o {std_asm_path}')
+        if exec_result['returncode'] != 0:
+            print(f'[  ERROR  ] (std) {testcase}')
+
+        command = (f'clang -S --target=riscv64 -mcpu=sifive-u74 {ir_path} '
+                   f'-o {std_asm_from_ir_path}')
+
+        exec_result = execute(command, exec_timeout)
+        log(log_file, command, exec_result)
+
+        command = (
+            f'clang -fPIC -c --target=riscv64 -mcpu=sifive-u74 {ir_path} '
+            f'-o {obj_from_ir_path}')
+
+        exec_result = execute(command, exec_timeout)
+        log(log_file, command, exec_result)
+
+        command = (f'riscv64-linux-gnu-gcc -march=rv64gc {obj_from_ir_path}'
+                   f' -L{runtime_lib_dir} -lsylib -o {exec_path}')
+
+        exec_result = execute(command, exec_timeout)
+        log(log_file, command, exec_result)
+
+        if exec_result['returncode'] != 0:
+            print(f'[  ERROR  ] (gcc) {testcase}')
+
+        command = (f'qemu-riscv64 -L /usr/riscv64-linux-gnu {exec_path}'
+                   f' >{out_path}') if in_path is None else (
+                       f'qemu-riscv64 -L /usr/riscv64-linux-gnu {exec_path}'
+                       f' <{in_path} >{out_path}')
 
         exec_result = execute(command, exec_timeout)
 
-        log_file.write(f'EXECUTE: {command}\n')
-        log_file.write(f'STDOUT:\n')
-        log_file.write(exec_result['stdout'])
-        log_file.write(f'STDERR:\n')
-        log_file.write(exec_result['stderr'])
+        need_newline = False
+        with open(out_path, 'r') as f:
+            content = f.read()
+            if len(content) > 0:
+                if not content.endswith('\n'):
+                    need_newline = True
 
-        command = (f'llc {ir_path} -o '
-                   f'{std_asm_from_ir_path} '
-                   f'--march=riscv64')
+        # add return code to the last line of out file
+        with open(out_path, 'a+') as f:
+            if need_newline:
+                f.write('\n')
+            f.write(str(exec_result['returncode']))
+            f.write('\n')
 
-        exec_result = execute(command, exec_timeout)
+        is_equal = check_file(out_path, std_out_path, diff_path)
 
-        log_file.write(f'EXECUTE: {command}\n')
-        log_file.write(f'STDOUT:\n')
-        log_file.write(exec_result['stdout'])
-        log_file.write(f'STDERR:\n')
-        log_file.write(exec_result['stderr'])
+        if is_equal:
+            print(f'[ CORRECT ] {testcase}')
+        else:
+            print(f'[  ERROR  ] (WA) {testcase}')
 
 
 def main():
