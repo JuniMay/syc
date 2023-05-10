@@ -59,10 +59,14 @@ void expr::InitializerList::set_type(TypePtr type, Driver& driver) {
         auto expr = this->init_list[idx];
 
         if (expr->is_initializer_list()) {
-          // If the expression is a initializer list, just set the type.
-          std::get<expr::InitializerList>(expr->kind)
-            .set_type(element_type, driver);
-          new_init_list.push_back(expr);
+          if (element_init_list.size() > 0) {
+            element_init_list.push_back(expr);
+          } else {
+            // If the expression is a initializer list, just set the type.
+            std::get<expr::InitializerList>(expr->kind)
+              .set_type(element_type, driver);
+            new_init_list.push_back(expr);
+          }
         } else if (expr->get_type() == root_element_type) {
           // If the expression is a root element, add to the sub-array
           // initializer list.
@@ -386,20 +390,24 @@ ExprPtr create_unary_expr(UnaryOp op, ExprPtr expr, Driver& driver) {
       // +bool / -bool => +int / -int
       expr = create_cast_expr(expr, create_int_type(), driver);
     }
-    auto symbol_entry =
-      create_symbol_entry(Scope::Temp, symbol_name, create_int_type(), false, std::nullopt);
+    auto symbol_entry = create_symbol_entry(
+      Scope::Temp, symbol_name, create_int_type(), false, std::nullopt
+    );
     symtable->add_symbol_entry(symbol_entry);
-    return std::make_shared<Expr>(ExprKind(expr::Unary{op, expr, symbol_entry}));
+    return std::make_shared<Expr>(ExprKind(expr::Unary{op, expr, symbol_entry})
+    );
   } else if (type->is_int() || type->is_float()) {
     if (op == UnaryOp::LogicalNot) {
       // expr is int/float: !expr -> expr == 0
-    auto zero = create_constant_expr(create_zero_comptime_value(type));
-    return create_binary_expr(BinaryOp::Eq, expr, zero, driver);
+      auto zero = create_constant_expr(create_zero_comptime_value(type));
+      return create_binary_expr(BinaryOp::Eq, expr, zero, driver);
     } else {
-      auto symbol_entry =
-      create_symbol_entry(Scope::Temp, symbol_name, create_int_type(), false, std::nullopt);
+      auto symbol_entry = create_symbol_entry(
+        Scope::Temp, symbol_name, create_int_type(), false, std::nullopt
+      );
       symtable->add_symbol_entry(symbol_entry);
-      return std::make_shared<Expr>(ExprKind(expr::Unary{op, expr, symbol_entry}));
+      return std::make_shared<Expr>(ExprKind(expr::Unary{op, expr, symbol_entry}
+      ));
     }
   } else {
     throw std::runtime_error(
