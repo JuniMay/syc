@@ -299,10 +299,10 @@ WhileStmt
 
 ReturnStmt 
   : RETURN Expr ';' {
-    $$ = ast::create_return_stmt(std::make_optional($2));
+    $$ = ast::create_return_stmt(std::make_optional($2), driver);
   }
   | RETURN ';' {
-    $$ = ast::create_return_stmt(std::nullopt);
+    $$ = ast::create_return_stmt(std::nullopt, driver);
   }
   ;
 
@@ -383,12 +383,7 @@ LVal
 
 AssignStmt
   : LVal '=' Expr ';' {
-    auto lhs = $1;
-    auto rhs = $3;
-    if (rhs->get_type() != lhs->get_type()) {
-      rhs = create_cast_expr(rhs, lhs->get_type(), driver);
-    }
-    $$ = ast::create_assign_stmt(lhs, rhs);
+    $$ = ast::create_assign_stmt($1, $3, driver);
   }
   ;
 

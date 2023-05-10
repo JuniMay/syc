@@ -403,7 +403,7 @@ ExprPtr create_unary_expr(UnaryOp op, ExprPtr expr, Driver& driver) {
       return create_binary_expr(BinaryOp::Eq, expr, zero, driver);
     } else {
       auto symbol_entry = create_symbol_entry(
-        Scope::Temp, symbol_name, create_int_type(), false, std::nullopt
+        Scope::Temp, symbol_name, type, false, std::nullopt
       );
       symtable->add_symbol_entry(symbol_entry);
       return std::make_shared<Expr>(ExprKind(expr::Unary{op, expr, symbol_entry}
@@ -428,6 +428,21 @@ ExprPtr create_call_expr(
   auto func_type = func_symbol_entry->type;
 
   auto ret_type = std::get<type::Function>(func_type->kind).ret_type;
+  auto param_types = std::get<type::Function>(func_type->kind).param_types;
+
+  if (args.size() != param_types.size()) {
+    std::string error_message = "Error: incompatible number of arguments.";
+    throw std::runtime_error(error_message);
+  }
+
+  for (size_t i = 0; i < args.size(); i++) {
+    if (param_types[i]->is_array() || param_types[i]->is_pointer()) {
+      continue;
+    }
+    if (args[i]->get_type() != param_types[i]) {
+      args[i] = create_cast_expr(args[i], param_types[i], driver);
+    }
+  }
 
   auto symbol_entry = create_symbol_entry(
     Scope::Temp, symbol_name, ret_type, false, std::nullopt
@@ -467,8 +482,18 @@ StmtPtr create_blank_stmt() {
   return std::make_shared<Stmt>(StmtKind(stmt::Blank{}));
 }
 
-StmtPtr create_return_stmt(std::optional<ExprPtr> expr) {
-  return std::make_shared<Stmt>(StmtKind(stmt::Return{expr}));
+StmtPtr create_return_stmt(std::optional<ExprPtr> maybe_expr, Driver& driver) {
+  if (maybe_expr.has_value()) {
+    auto expr = maybe_expr.value();
+    auto curr_ret_type = std::get<stmt::FuncDef>(driver.curr_function->kind)
+                           .symbol_entry->type->get_ret_type()
+                           .value();
+    if (expr->get_type() != curr_ret_type) {
+      expr = create_cast_expr(expr, curr_ret_type, driver);
+    }
+    maybe_expr = std::make_optional(expr);
+  }
+  return std::make_shared<Stmt>(StmtKind(stmt::Return{maybe_expr}));
 }
 
 StmtPtr create_break_stmt() {
@@ -565,7 +590,10 @@ StmtPtr create_expr_stmt(ExprPtr expr) {
   return std::make_shared<Stmt>(StmtKind(stmt::Expr{expr}));
 }
 
-StmtPtr create_assign_stmt(ExprPtr lhs, ExprPtr rhs) {
+StmtPtr create_assign_stmt(ExprPtr lhs, ExprPtr rhs, Driver& driver) {
+  if (rhs->get_type() != lhs->get_type()) {
+    rhs = create_cast_expr(rhs, lhs->get_type(), driver);
+  }
   return std::make_shared<Stmt>(StmtKind(stmt::Assign{lhs, rhs}));
 }
 

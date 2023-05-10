@@ -311,7 +311,7 @@ ExprPtr create_initializer_list_expr(std::vector<ExprPtr> init_list);
 StmtPtr create_blank_stmt();
 
 /// Create a return statement.
-StmtPtr create_return_stmt(std::optional<ExprPtr> maybe_expr = std::nullopt);
+StmtPtr create_return_stmt(std::optional<ExprPtr> maybe_expr, Driver& driver);
 
 /// Create a break statement.
 StmtPtr create_break_stmt();
@@ -351,7 +351,7 @@ StmtPtr create_decl_stmt(
 
 StmtPtr create_expr_stmt(ExprPtr expr);
 
-StmtPtr create_assign_stmt(ExprPtr lhs, ExprPtr rhs);
+StmtPtr create_assign_stmt(ExprPtr lhs, ExprPtr rhs, Driver& driver);
 
 SymbolEntryPtr create_symbol_entry_from_decl_def(
   Scope scope,
