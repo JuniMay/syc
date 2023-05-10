@@ -102,8 +102,8 @@ struct InitializerList {
 
 /// Call expression.
 struct Call {
-  /// Function name.
-  std::string name;
+  /// Function symbol.
+  SymbolEntryPtr func_symbol;
   /// Arguments.
   std::vector<ExprPtr> args;
   /// Symbol entry for the destination.

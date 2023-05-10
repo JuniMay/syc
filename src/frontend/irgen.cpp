@@ -1256,18 +1256,7 @@ std::optional<IrOperandID> irgen_expr(
       },
       [symtable, &builder](const frontend::ast::expr::Call& kind
       ) -> std::optional<IrOperandID> {
-        auto maybe_ast_func_symbol = symtable->lookup(kind.name);
-        if (!maybe_ast_func_symbol.has_value()) {
-          std::string error_message =
-            "Error: function `" + kind.name + "` not found.";
-          throw std::runtime_error(error_message);
-        }
-        auto ast_func_symbol = maybe_ast_func_symbol.value();
-        if (!ast_func_symbol->type->is_function()) {
-          std::string error_message =
-            "Error: symbol `" + kind.name + "` is not a function.";
-          throw std::runtime_error(error_message);
-        }
+        auto ast_func_symbol = kind.func_symbol;
 
         std::optional<IrOperandID> maybe_ir_dst_operand_id = std::nullopt;
 
@@ -1312,7 +1301,7 @@ std::optional<IrOperandID> irgen_expr(
           ir_arg_id_list.push_back(ir_arg_id);
         }
         auto call_instruction = builder.fetch_call_instruction(
-          maybe_ir_dst_operand_id, kind.name, ir_arg_id_list
+          maybe_ir_dst_operand_id, kind.func_symbol->name, ir_arg_id_list
         );
         builder.append_instruction(call_instruction);
         return maybe_ir_dst_operand_id;

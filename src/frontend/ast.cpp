@@ -417,15 +417,15 @@ ExprPtr create_unary_expr(UnaryOp op, ExprPtr expr, Driver& driver) {
 }
 
 ExprPtr create_call_expr(
-  SymbolEntryPtr func_symbol_entry,
+  SymbolEntryPtr func_symbol,
   std::vector<ExprPtr> args,
   Driver& driver
 ) {
   auto symbol_name = driver.get_next_temp_name();
   auto symtable = driver.curr_symtable;
 
-  auto func_name = func_symbol_entry->name;
-  auto func_type = func_symbol_entry->type;
+  auto func_name = func_symbol->name;
+  auto func_type = func_symbol->type;
 
   auto ret_type = std::get<type::Function>(func_type->kind).ret_type;
   auto param_types = std::get<type::Function>(func_type->kind).param_types;
@@ -451,7 +451,7 @@ ExprPtr create_call_expr(
   symtable->add_symbol_entry(symbol_entry);
 
   return std::make_shared<Expr>(ExprKind(expr::Call{
-    func_name, args, symbol_entry}));
+    func_symbol, args, symbol_entry}));
 }
 
 ExprPtr create_cast_expr(ExprPtr expr, TypePtr type, Driver& driver) {

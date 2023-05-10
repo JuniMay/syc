@@ -86,7 +86,7 @@ std::string Expr::to_string() const {
       },
       [&buf, this](const expr::Call& kind) {
         buf << "Call " << kind.symbol->name << std::endl;
-        buf << "  FUNCTION: " << kind.name << std::endl;
+        buf << "  FUNCTION: " << kind.func_symbol->name << std::endl;
         for (auto expr : kind.args) {
           buf << indent_str(expr->to_string(), "\t") << std::endl;
         }
