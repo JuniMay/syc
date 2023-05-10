@@ -23,25 +23,21 @@ def check_file(file1, file2, diff_file):
 
 
 def execute(command, timeout) -> Dict[str, Any]:
-    p = subprocess.Popen(command,
-                         shell=True,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-
     try:
-        stdout, stderr = p.communicate(timeout=timeout)
-        returncode = p.returncode
-
-        p.terminate()
+        result = subprocess.run(command,
+                                shell=True,
+                                timeout=timeout,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                universal_newlines=True)
 
         return {
-            'returncode': returncode,
-            'stdout': stdout.decode(),
-            'stderr': stderr.decode(),
+            'returncode': result.returncode,
+            'stdout': result.stdout,
+            'stderr': result.stderr,
         }
-
-    except subprocess.TimeoutExpired:
-        return {'returncode': -1, 'stdout': '', 'stderr': 'TIMEOUT'}
+    except Exception as e:
+        return {'returncode': None, 'stdout': '', 'stderr': str(e)}
 
 
 def parse_args():
@@ -148,7 +144,7 @@ def log(logfile, command, exec_result):
     logfile.write(exec_result['stdout'])
     logfile.write(f'STDERR:\n')
     logfile.write(exec_result['stderr'])
-    logfile.write(f'STDERR:\n')
+    logfile.write(f'\n')
 
 
 def test(executable_path: str, testcase_dir: str, output_dir: str,
@@ -193,8 +189,8 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
 
         std_ir_path = os.path.join(output_dir, f'{basename}.std.ll')
         std_asm_path = os.path.join(output_dir, f'{basename}.std.s')
+        
         log_path = os.path.join(output_dir, f'{basename}.log')
-
         log_file = open(log_path, 'w')
 
         command = (f'{executable_path} {testcase}.sy -S '
@@ -206,7 +202,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         exec_result = execute(command, exec_timeout)
         log(log_file, command, exec_result)
 
-        if exec_result['returncode'] != 0:
+        if exec_result['returncode'] is None:
             if exec_result['stderr'] == 'TIMEOUT':
                 print(f'[ TIMEOUT ] (syc) {testcase}')
             else:
@@ -221,8 +217,9 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         exec_result = execute(command, exec_timeout)
         log(log_file, command, exec_result)
 
-        if exec_result['returncode'] != 0:
+        if exec_result['returncode'] is None:
             print(f'[  ERROR  ] (std) {testcase}')
+            continue
 
         command = (f'clang -S --target=riscv64 -mcpu=sifive-u74 {ir_path} '
                    f'-o {std_asm_from_ir_path}')
@@ -243,7 +240,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         exec_result = execute(command, exec_timeout)
         log(log_file, command, exec_result)
 
-        if exec_result['returncode'] != 0:
+        if exec_result['returncode'] is None:
             print(f'[  ERROR  ] (gcc) {testcase}')
 
         command = (f'qemu-riscv64 -L /usr/riscv64-linux-gnu {exec_path}'
@@ -259,7 +256,6 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
             if len(content) > 0:
                 if not content.endswith('\n'):
                     need_newline = True
-
         # add return code to the last line of out file
         with open(out_path, 'a+') as f:
             if need_newline:
