@@ -383,7 +383,12 @@ LVal
 
 AssignStmt
   : LVal '=' Expr ';' {
-    $$ = ast::create_assign_stmt($1, $3);
+    auto lhs = $1;
+    auto rhs = $3;
+    if (rhs->get_type() != lhs->get_type()) {
+      rhs = create_cast_expr(rhs, lhs->get_type(), driver);
+    }
+    $$ = ast::create_assign_stmt(lhs, rhs);
   }
   ;
 
