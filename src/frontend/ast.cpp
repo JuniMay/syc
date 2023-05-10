@@ -387,7 +387,7 @@ ExprPtr create_unary_expr(UnaryOp op, ExprPtr expr, Driver& driver) {
       expr = create_cast_expr(expr, create_int_type(), driver);
     }
     auto symbol_entry =
-      create_symbol_entry(Scope::Temp, symbol_name, type, false, std::nullopt);
+      create_symbol_entry(Scope::Temp, symbol_name, create_int_type(), false, std::nullopt);
     symtable->add_symbol_entry(symbol_entry);
     return std::make_shared<Expr>(ExprKind(expr::Unary{op, expr, symbol_entry}));
   } else if (type->is_int() || type->is_float()) {
@@ -397,7 +397,7 @@ ExprPtr create_unary_expr(UnaryOp op, ExprPtr expr, Driver& driver) {
     return create_binary_expr(BinaryOp::Eq, expr, zero, driver);
     } else {
       auto symbol_entry =
-      create_symbol_entry(Scope::Temp, symbol_name, type, false, std::nullopt);
+      create_symbol_entry(Scope::Temp, symbol_name, create_int_type(), false, std::nullopt);
       symtable->add_symbol_entry(symbol_entry);
       return std::make_shared<Expr>(ExprKind(expr::Unary{op, expr, symbol_entry}));
     }
