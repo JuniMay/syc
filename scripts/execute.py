@@ -217,7 +217,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         exec_result = execute(command, exec_timeout)
         log(log_file, command, exec_result)
 
-        command = (f'clang -S --target=riscv64 -mcpu=sifive-u74 {ir_path} '
+        command = (f'clang -S --target=riscv64 -mabi=lp64d {ir_path} '
                    f'-o {std_asm_from_ir_path}')
 
         exec_result = execute(command, exec_timeout)
@@ -228,7 +228,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
             continue
 
         command = (
-            f'clang -fPIC -c --target=riscv64 -mcpu=sifive-u74 {ir_path} '
+            f'clang -fPIC -c --target=riscv64 -mabi=lp64d {ir_path} '
             f'-o {obj_from_ir_path}')
 
         exec_result = execute(command, exec_timeout)
