@@ -1266,24 +1266,44 @@ std::optional<IrOperandID> irgen_expr(
           );
         }
 
+        const auto& param_types =
+          std::get<frontend::type::Function>(ast_func_symbol->type->kind)
+            .param_types;
+
         std::vector<IrOperandID> ir_arg_id_list;
-        for (auto arg : kind.args) {
+
+        for (size_t i = 0; i < kind.args.size(); ++i) {
+          auto arg = kind.args[i];
+          auto param_type = param_types[i];
+
+          auto ir_param_type = irgen_type(param_type, builder).value();
+
           IrOperandID ir_arg_id;
           if (arg->get_type()->is_pointer()) {
             ir_arg_id = irgen_expr(arg, symtable, builder, false).value();
+            if (arg->get_type() != param_type) {
+              // If pointer types are not the same, perform a bitcast so the
+              // type is compatible.
+              auto ir_tmp_id = builder.fetch_arbitrary_operand(ir_param_type);
+              auto cast_instruction = builder.fetch_cast_instruction(
+                IrCastOp::BitCast, ir_tmp_id, ir_arg_id
+              );
+              builder.append_instruction(cast_instruction);
+              ir_arg_id = ir_tmp_id;
+            }
           } else if (arg->get_type()->is_array()) {
-            auto ir_temp_id = irgen_expr(arg, symtable, builder, true).value();
-            // pass the pointer to the first dimension of the array.
-            ir_arg_id =
-              builder.fetch_arbitrary_operand(builder.fetch_pointer_type(
-                irgen_type(arg->get_type()->get_element_type().value(), builder)
-                  .value()
-              ));
+            auto ir_arr_id = irgen_expr(arg, symtable, builder, true).value();
 
+            auto ir_arg_type = builder.fetch_pointer_type(
+              irgen_type(arg->get_type()->get_element_type().value(), builder)
+                .value()
+            );
+            // pass the pointer to the first dimension of the array.
+            ir_arg_id = builder.fetch_arbitrary_operand(ir_arg_type);
             // A gep instruction is required.
             auto gep_instruction = builder.fetch_getelementptr_instruction(
               ir_arg_id, irgen_type(arg->get_type(), builder).value(),
-              ir_temp_id,
+              ir_arr_id,
               {
                 builder.fetch_constant_operand(
                   builder.fetch_i32_type(), (int)0
@@ -1294,6 +1314,17 @@ std::optional<IrOperandID> irgen_expr(
               }
             );
             builder.append_instruction(gep_instruction);
+
+            if (ir_arg_type != ir_param_type) {
+              // If pointer types are not the same, perform a bitcast so the
+              // type is compatible.
+              auto ir_tmp_id = builder.fetch_arbitrary_operand(ir_param_type);
+              auto cast_instruction = builder.fetch_cast_instruction(
+                IrCastOp::BitCast, ir_tmp_id, ir_arg_id
+              );
+              builder.append_instruction(cast_instruction);
+              ir_arg_id = ir_tmp_id;
+            }
 
           } else {
             ir_arg_id = irgen_expr(arg, symtable, builder, false).value();

@@ -437,6 +437,8 @@ ExprPtr create_call_expr(
 
   for (size_t i = 0; i < args.size(); i++) {
     if (param_types[i]->is_array() || param_types[i]->is_pointer()) {
+      // Ref/Deref ops are not supported here so array->pointer/pointer->pointer
+      // cast is carried out when generating ir.
       continue;
     }
     if (args[i]->get_type() != param_types[i]) {

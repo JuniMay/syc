@@ -9,8 +9,8 @@ from typing import Any, Dict
 def check_file(file1, file2, diff_file):
     with open(file1, 'r') as f1, open(file2, 'r') as f2:
         diff = difflib.unified_diff(
-            f1.readlines(),
-            f2.readlines(),
+            list(map(lambda x: x.strip(), f1.readlines())),
+            list(map(lambda x: x.strip(), f2.readlines())),
             fromfile=file1,
             tofile=file2,
         )
@@ -189,7 +189,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
 
         std_ir_path = os.path.join(output_dir, f'{basename}.std.ll')
         std_asm_path = os.path.join(output_dir, f'{basename}.std.s')
-        
+
         log_path = os.path.join(output_dir, f'{basename}.log')
         log_file = open(log_path, 'w')
 
@@ -222,18 +222,17 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
 
         exec_result = execute(command, exec_timeout)
         log(log_file, command, exec_result)
-        
+
         if exec_result['returncode'] is None:
             print(f'[  ERROR  ] (ir->asm) {testcase}')
             continue
 
-        command = (
-            f'clang -fPIC -c --target=riscv64 -mabi=lp64d {ir_path} '
-            f'-o {obj_from_ir_path}')
+        command = (f'clang -fPIC -c --target=riscv64 -mabi=lp64d {ir_path} '
+                   f'-o {obj_from_ir_path}')
 
         exec_result = execute(command, exec_timeout)
         log(log_file, command, exec_result)
-        
+
         if exec_result['returncode'] is None:
             print(f'[  ERROR  ] (ir->obj) {testcase}')
             continue
@@ -273,7 +272,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
             print(f'[ CORRECT ] {testcase}')
         else:
             print(f'[  ERROR  ] (WA) {testcase}')
-        
+
         log(log_file, command, exec_result)
 
 
