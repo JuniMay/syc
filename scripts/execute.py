@@ -54,6 +54,8 @@ def parse_args():
     parser.add_argument('--no-compile', action='store_true', default=False)
     parser.add_argument('--no-flatten', action='store_true', default=False)
     parser.add_argument('--no-test', action='store_true', default=False)
+    
+    parser.add_argument('--llm', action='store_true', default=False)
 
     return parser.parse_args()
 
@@ -275,9 +277,46 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
 
         log(log_file, command, exec_result)
 
+# put all files together in an .txt file with their relative path
+def flatten4llm(dir_path: str, flatten_dir_path: str):
+    # 指定需要的文件扩展名
+    extensions = ['.h', '.cpp', '.y', '.l']
+    output_file_path = os.path.join(flatten_dir_path, "llm.txt")
+
+    with open(output_file_path, 'w') as output_file:
+        # 遍历根目录下的所有目录和文件
+        for foldername, subfolders, filenames in os.walk(dir_path):
+            # 排除包含generated的路径
+            if 'generated' in foldername:
+                continue
+            
+            for filename in filenames:
+                # 使用endswith过滤文件
+                if any(filename.endswith(ext) for ext in extensions):
+                    # 获取文件的相对路径
+                    relative_path = os.path.join(foldername, filename)
+                    with open(relative_path, 'r') as source_file:
+                        try:
+                            source_code = source_file.read()
+                            # 在txt文件中写入文件的相对路径和源代码
+                            output_file.write(f'Path: {relative_path}\n{source_code}\n\n')
+                        except Exception as e:
+                            print(f"Error reading file {relative_path}: {e}")
+
 
 def main():
     args = parse_args()
+
+    if args.llm:
+        if os.path.exists(args.flatten_dir):
+            shutil.rmtree(args.flatten_dir)
+
+        if not os.path.exists(args.flatten_dir):
+            os.makedirs(args.flatten_dir)
+        
+        flatten4llm(args.src_dir, args.flatten_dir)
+        
+        return
 
     if not args.no_flatten:
         if os.path.exists(args.flatten_dir):
