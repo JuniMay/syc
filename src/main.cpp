@@ -5,6 +5,8 @@
 #include "frontend/irgen.h"
 #include "ir/builder.h"
 #include "ir/instruction.h"
+#include "backend/builder.h"
+#include "backend/codegen.h"
 #include "utils.h"
 
 #ifdef UNITTEST
@@ -52,6 +54,15 @@ int main(int argc, char* argv[]) {
   if (parse_success != 0) {
     std::cerr << "Parse failed." << std::endl;
     return 1;
+  }
+
+  auto backend_builder = backend::Builder();
+
+  codegen(ir_builder.context, backend_builder);
+
+  if (options.output_file.has_value()) {
+    std::ofstream output_file(options.output_file.value());
+    output_file << backend_builder.context.to_string();
   }
 
   return 0;
