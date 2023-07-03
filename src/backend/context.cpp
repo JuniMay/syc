@@ -1,9 +1,9 @@
 #include "backend/context.h"
+#include "backend/basic_block.h"
 #include "backend/function.h"
 #include "backend/global.h"
-#include "backend/operand.h"
-#include "backend/basic_block.h"
 #include "backend/instruction.h"
+#include "backend/operand.h"
 #include "common.h"
 #include "ir/operand.h"
 
@@ -53,6 +53,10 @@ InstructionPtr Context::get_instruction(InstructionID id) {
 
 BasicBlockPtr Context::get_basic_block(BasicBlockID id) {
   return basic_block_table.at(id);
+}
+
+FunctionPtr Context::get_function(std::string name) {
+  return function_table.at(name);
 }
 
 std::string Context::to_string() {

@@ -17,6 +17,7 @@ struct Function {
   Function(std::string name);
 
   void append_basic_block(BasicBlockPtr basic_block);
+
   std::string to_string();
 };
 

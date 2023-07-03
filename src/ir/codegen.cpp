@@ -1,7 +1,4 @@
 #include "ir/codegen.h"
-#include "backend/builder.h"
-#include "ir/operand.h"
-#include "ir/type.h"
 
 namespace syc {
 
@@ -106,6 +103,9 @@ void codegen(
   }
 
   for (auto& [ir_function_name, ir_function] : ir_context.function_table) {
+    if (ir_function->is_declare) {
+      continue;
+    }
     codegen_function(ir_function, builder, codegen_context);
   }
 }
@@ -115,7 +115,14 @@ void codegen_function(
   AsmBuilder& builder,
   CodegenContext& codegen_context
 ) {
-  // TODO
+  builder.add_function(ir_function->name);
+  builder.switch_function(ir_function->name);
+
+  auto curr_ir_basic_block = ir_function->head_basic_block->next;
+  while (curr_ir_basic_block != ir_function->tail_basic_block) {
+    codegen_basic_block(curr_ir_basic_block, builder, codegen_context);
+    curr_ir_basic_block = curr_ir_basic_block->next;
+  }
 }
 
 void codegen_basic_block(
@@ -123,7 +130,14 @@ void codegen_basic_block(
   AsmBuilder& builder,
   CodegenContext& codegen_context
 ) {
-  // TODO
+  auto basic_block = builder.fetch_basic_block();
+  builder.set_curr_basic_block(basic_block);
+
+  auto curr_ir_instruction = ir_basic_block->head_instruction->next;
+  while (curr_ir_instruction != ir_basic_block->tail_instruction) {
+    codegen_instruction(curr_ir_instruction, builder, codegen_context);
+    curr_ir_instruction = curr_ir_instruction->next;
+  }
 }
 
 void codegen_instruction(
@@ -131,7 +145,31 @@ void codegen_instruction(
   AsmBuilder& builder,
   CodegenContext& codegen_context
 ) {
-  // TODO
+  std::visit(
+    overloaded{
+      [&](ir::instruction::Alloca& ir_alloca) {
+        auto ir_allocated_type = ir_alloca.allocated_type;
+        auto ir_allocated_size = ir::get_size(ir_allocated_type);
+
+        auto curr_frame_size = builder.curr_function->stack_frame_size;
+        auto asm_allocated_size = ir_allocated_size / 8;
+        auto asm_local_memory_id = builder.fetch_local_memory(curr_frame_size);
+        builder.curr_function->stack_frame_size += asm_allocated_size;
+
+        codegen_context.operand_map[ir_alloca.dst_id] = asm_local_memory_id;
+      },
+      [&](ir::instruction::Store& ir_store) {
+
+      },
+      [&](ir::instruction::Binary& ir_binary) {
+
+      },
+      [&](auto& ir_instruction) {
+
+      },
+    },
+    ir_instruction->kind
+  );
 }
 
 /// Perform register allocation.

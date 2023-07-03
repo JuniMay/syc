@@ -1,8 +1,8 @@
 #ifndef SYC_BACKEND_CONTEXT_H_
 #define SYC_BACKEND_CONTEXT_H_
 
-#include "common.h"
 #include "backend/global.h"
+#include "common.h"
 
 namespace syc {
 namespace backend {
@@ -44,6 +44,8 @@ struct Context {
   InstructionPtr get_instruction(InstructionID id);
 
   BasicBlockPtr get_basic_block(BasicBlockID id);
+
+  FunctionPtr get_function(std::string name);
 
   std::string to_string();
 };

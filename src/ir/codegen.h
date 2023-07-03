@@ -1,9 +1,15 @@
 #ifndef SYC_IR_CODEGEN_H_
 #define SYC_IR_CODEGEN_H_
 
+#include "backend/builder.h"
 #include "backend/context.h"
 #include "common.h"
+#include "ir/basic_block.h"
 #include "ir/context.h"
+#include "ir/function.h"
+#include "ir/instruction.h"
+#include "ir/operand.h"
+#include "ir/type.h"
 
 namespace syc {
 
