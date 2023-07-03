@@ -26,13 +26,29 @@ struct CodegenContext {
   CodegenContext() = default;
 };
 
-void codegen(ir::Context& ir_context, AsmBuilder& builder);
+void codegen(
+  ir::Context& ir_context,
+  AsmBuilder& builder,
+  CodegenContext& codegen_context
+);
 
-void codegen_function(IrFunctionPtr ir_function, AsmBuilder& builder);
+void codegen_function(
+  IrFunctionPtr ir_function,
+  AsmBuilder& builder,
+  CodegenContext& codegen_context
+);
 
-void codegen_basic_block(IrBasicBlockPtr ir_basic_block, AsmBuilder& builder);
+void codegen_basic_block(
+  IrBasicBlockPtr ir_basic_block,
+  AsmBuilder& builder,
+  CodegenContext& codegen_context
+);
 
-void codegen_instruction(IrInstructionPtr ir_instruction, AsmBuilder& builder);
+void codegen_instruction(
+  IrInstructionPtr ir_instruction,
+  AsmBuilder& builder,
+  CodegenContext& codegen_context
+);
 
 /// Perform register allocation.
 void asm_register_allocation(AsmContext& context);

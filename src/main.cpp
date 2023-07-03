@@ -46,8 +46,9 @@ int main(int argc, char* argv[]) {
   }
 
   auto asm_builder = backend::Builder();
+  auto codegen_context = CodegenContext();
 
-  codegen(ir_builder.context, asm_builder);
+  codegen(ir_builder.context, asm_builder, codegen_context);
 
   if (options.output_file.has_value()) {
     std::ofstream output_file(options.output_file.value());
