@@ -10,6 +10,7 @@ namespace backend {
 struct Builder {
   Context context;
 
+  FunctionPtr curr_function;
   BasicBlockPtr curr_basic_block;
 
   Builder() = default;

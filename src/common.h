@@ -238,8 +238,6 @@ using OperandPtr = std::shared_ptr<Operand>;
 
 namespace backend {
 
-using IROperandID = ir::OperandID;
-
 enum class GenealRegister;
 enum class FloatRegister;
 

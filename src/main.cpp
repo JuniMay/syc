@@ -6,7 +6,7 @@
 #include "ir/builder.h"
 #include "ir/instruction.h"
 #include "backend/builder.h"
-#include "backend/codegen.h"
+#include "ir/codegen.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -45,13 +45,13 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  auto backend_builder = backend::Builder();
+  auto asm_builder = backend::Builder();
 
-  codegen(ir_builder.context, backend_builder);
+  codegen(ir_builder.context, asm_builder);
 
   if (options.output_file.has_value()) {
     std::ofstream output_file(options.output_file.value());
-    output_file << backend_builder.context.to_string();
+    output_file << asm_builder.context.to_string();
   }
 
   return 0;
