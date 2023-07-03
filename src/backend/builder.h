@@ -11,6 +11,8 @@ struct Builder {
   Context context;
 
   BasicBlockPtr curr_basic_block;
+
+  Builder() = default;
 };
 
 }  // namespace backend

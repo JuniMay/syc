@@ -1,5 +1,7 @@
 #include "backend/function.h"
 #include "backend/basic_block.h"
+#include "backend/context.h"
+#include "common.h"
 
 namespace syc {
 namespace backend {
@@ -12,6 +14,14 @@ Function::Function(std::string name) : name(name), stack_frame_size(0) {
 
 void Function::append_basic_block(BasicBlockPtr basic_block) {
   this->tail_basic_block->insert_prev(basic_block);
+}
+
+std::string Function::to_string()
+{
+  std::string result = "\t.globl " + this->name + "\n";
+  result += "\t.type " + this->name + ", @function\n";
+  result += this->name + ":\n";
+  
 }
 
 }  // namespace backend

@@ -260,6 +260,11 @@ struct BasicBlock;
 using BasicBlockPtr = std::shared_ptr<BasicBlock>;
 using BasicBlockPrevPtr = std::weak_ptr<BasicBlock>;
 
+struct Function;
+
+using FunctionPtr = std::shared_ptr<Function>;
+
+struct Context;
 namespace instruction {
 
 struct Load;
@@ -310,6 +315,8 @@ struct Memory;
 
 using OperandID = size_t;
 
+struct Global;
+
 using OperandKind = std::variant<Immediate, VirtualRegister, Register>;
 
 struct Operand;
@@ -317,6 +324,8 @@ struct Operand;
 using OperandPtr = std::shared_ptr<Operand>;
 
 struct Function;
+
+struct Builder;
 
 }  // namespace backend
 

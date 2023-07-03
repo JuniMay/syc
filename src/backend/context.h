@@ -11,6 +11,9 @@ struct Context {
   std::map<InstructionID, InstructionPtr> instruction_table;
   std::map<BasicBlockID, BasicBlockPtr> basic_block_table;
 
+  std::vector<Global> global_list;
+  std::map<std::string, FunctionPtr> function_table;
+
   OperandID next_operand_id;
   InstructionID next_instruction_id;
   BasicBlockID next_basic_block_id;
@@ -30,6 +33,7 @@ struct Context {
   OperandPtr get_operand(OperandID id);
   InstructionPtr get_instruction(InstructionID id);
   BasicBlockPtr get_basic_block(BasicBlockID id);
+  std::string to_string();
 };
 
 }  // namespace backend

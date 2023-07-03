@@ -3,6 +3,7 @@
 
 #include "backend/immediate.h"
 #include "backend/register.h"
+#include "backend/global.h"
 #include "common.h"
 
 namespace syc {
