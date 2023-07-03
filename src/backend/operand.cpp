@@ -18,6 +18,7 @@ std::string Operand::to_string() const {
       [](const Register& reg) { return reg.to_string(); },
       [](const VirtualRegister& vreg) { return vreg.to_string(); },
       [](const Global& global) { return global.name; },
+      [](const LocalMemory& local) { return std::to_string(local.offset); },
     },
     kind
   );

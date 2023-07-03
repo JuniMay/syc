@@ -311,13 +311,14 @@ struct Instruction;
 using InstructionPtr = std::shared_ptr<Instruction>;
 using InstructionPrevPtr = std::weak_ptr<Instruction>;
 
-struct Memory;
+struct LocalMemory;
 
 using OperandID = size_t;
 
 struct Global;
 
-using OperandKind = std::variant<Immediate, VirtualRegister, Register, Global>;
+using OperandKind =
+  std::variant<Immediate, VirtualRegister, Register, Global, LocalMemory>;
 
 struct Operand;
 
