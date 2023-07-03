@@ -6,201 +6,201 @@ namespace backend {
 std::string Register::to_string() const {
   std::string result = "";
 
-  if (is_gp()) {
-    switch (std::get<GPRegister>(reg)) {
-      case GPRegister::Zero:
+  if (is_general()) {
+    switch (std::get<GeneralRegister>(reg)) {
+      case GeneralRegister::Zero:
         result = "zero";
         break;
-      case GPRegister::Ra:
+      case GeneralRegister::Ra:
         result = "ra";
         break;
-      case GPRegister::Sp:
+      case GeneralRegister::Sp:
         result = "sp";
         break;
-      case GPRegister::Gp:
+      case GeneralRegister::Gp:
         result = "gp";
         break;
-      case GPRegister::Tp:
+      case GeneralRegister::Tp:
         result = "tp";
         break;
-      case GPRegister::T0:
+      case GeneralRegister::T0:
         result = "t0";
         break;
-      case GPRegister::T1:
+      case GeneralRegister::T1:
         result = "t1";
         break;
-      case GPRegister::T2:
+      case GeneralRegister::T2:
         result = "t2";
         break;
-      case GPRegister::S0:
+      case GeneralRegister::S0:
         result = "s0";
         break;
-      case GPRegister::S1:
+      case GeneralRegister::S1:
         result = "s1";
         break;
-      case GPRegister::A0:
+      case GeneralRegister::A0:
         result = "a0";
         break;
-      case GPRegister::A1:
+      case GeneralRegister::A1:
         result = "a1";
         break;
-      case GPRegister::A2:
+      case GeneralRegister::A2:
         result = "a2";
         break;
-      case GPRegister::A3:
+      case GeneralRegister::A3:
         result = "a3";
         break;
-      case GPRegister::A4:
+      case GeneralRegister::A4:
         result = "a4";
         break;
-      case GPRegister::A5:
+      case GeneralRegister::A5:
         result = "a5";
         break;
-      case GPRegister::A6:
+      case GeneralRegister::A6:
         result = "a6";
         break;
-      case GPRegister::A7:
+      case GeneralRegister::A7:
         result = "a7";
         break;
-      case GPRegister::S2:
+      case GeneralRegister::S2:
         result = "s2";
         break;
-      case GPRegister::S3:
+      case GeneralRegister::S3:
         result = "s3";
         break;
-      case GPRegister::S4:
+      case GeneralRegister::S4:
         result = "s4";
         break;
-      case GPRegister::S5:
+      case GeneralRegister::S5:
         result = "s5";
         break;
-      case GPRegister::S6:
+      case GeneralRegister::S6:
         result = "s6";
         break;
-      case GPRegister::S7:
+      case GeneralRegister::S7:
         result = "s7";
         break;
-      case GPRegister::S8:
+      case GeneralRegister::S8:
         result = "s8";
         break;
-      case GPRegister::S9:
+      case GeneralRegister::S9:
         result = "s9";
         break;
-      case GPRegister::S10:
+      case GeneralRegister::S10:
         result = "s10";
         break;
-      case GPRegister::S11:
+      case GeneralRegister::S11:
         result = "s11";
         break;
-      case GPRegister::T3:
+      case GeneralRegister::T3:
         result = "t3";
         break;
-      case GPRegister::T4:
+      case GeneralRegister::T4:
         result = "t4";
         break;
-      case GPRegister::T5:
+      case GeneralRegister::T5:
         result = "t5";
         break;
-      case GPRegister::T6:
+      case GeneralRegister::T6:
         result = "t6";
         break;
     }
-  } else if (is_fp()) {
-    switch (std::get<FPRegister>(reg)) {
-      case FPRegister::Ft0:
+  } else if (is_float()) {
+    switch (std::get<FloatRegister>(reg)) {
+      case FloatRegister::Ft0:
         result = "ft0";
         break;
-      case FPRegister::Ft1:
+      case FloatRegister::Ft1:
         result = "ft1";
         break;
-      case FPRegister::Ft2:
+      case FloatRegister::Ft2:
         result = "ft2";
         break;
-      case FPRegister::Ft3:
+      case FloatRegister::Ft3:
         result = "ft3";
         break;
-      case FPRegister::Ft4:
+      case FloatRegister::Ft4:
         result = "ft4";
         break;
-      case FPRegister::Ft5:
+      case FloatRegister::Ft5:
         result = "ft5";
         break;
-      case FPRegister::Ft6:
+      case FloatRegister::Ft6:
         result = "ft6";
         break;
-      case FPRegister::Ft7:
+      case FloatRegister::Ft7:
         result = "ft7";
         break;
-      case FPRegister::Fs0:
+      case FloatRegister::Fs0:
         result = "fs0";
         break;
-      case FPRegister::Fs1:
+      case FloatRegister::Fs1:
         result = "fs1";
         break;
-      case FPRegister::Fa0:
+      case FloatRegister::Fa0:
         result = "fa0";
         break;
-      case FPRegister::Fa1:
+      case FloatRegister::Fa1:
         result = "fa1";
         break;
-      case FPRegister::Fa2:
+      case FloatRegister::Fa2:
         result = "fa2";
         break;
-      case FPRegister::Fa3:
+      case FloatRegister::Fa3:
         result = "fa3";
         break;
-      case FPRegister::Fa4:
+      case FloatRegister::Fa4:
         result = "fa4";
         break;
-      case FPRegister::Fa5:
+      case FloatRegister::Fa5:
         result = "fa5";
         break;
-      case FPRegister::Fa6:
+      case FloatRegister::Fa6:
         result = "fa6";
         break;
-      case FPRegister::Fa7:
+      case FloatRegister::Fa7:
         result = "fa7";
         break;
-      case FPRegister::Fs2:
+      case FloatRegister::Fs2:
         result = "fs2";
         break;
-      case FPRegister::Fs3:
+      case FloatRegister::Fs3:
         result = "fs3";
         break;
-      case FPRegister::Fs4:
+      case FloatRegister::Fs4:
         result = "fs4";
         break;
-      case FPRegister::Fs5:
+      case FloatRegister::Fs5:
         result = "fs5";
         break;
-      case FPRegister::Fs6:
+      case FloatRegister::Fs6:
         result = "fs6";
         break;
-      case FPRegister::Fs7:
+      case FloatRegister::Fs7:
         result = "fs7";
         break;
-      case FPRegister::Fs8:
+      case FloatRegister::Fs8:
         result = "fs8";
         break;
-      case FPRegister::Fs9:
+      case FloatRegister::Fs9:
         result = "fs9";
         break;
-      case FPRegister::Fs10:
+      case FloatRegister::Fs10:
         result = "fs10";
         break;
-      case FPRegister::Fs11:
+      case FloatRegister::Fs11:
         result = "fs11";
         break;
-      case FPRegister::Ft8:
+      case FloatRegister::Ft8:
         result = "ft8";
         break;
-      case FPRegister::Ft9:
+      case FloatRegister::Ft9:
         result = "ft9";
         break;
-      case FPRegister::Ft10:
+      case FloatRegister::Ft10:
         result = "ft10";
         break;
-      case FPRegister::Ft11:
+      case FloatRegister::Ft11:
         result = "ft11";
         break;
     }
@@ -211,9 +211,9 @@ std::string Register::to_string() const {
 
 std::string VirtualRegister::to_string() const {
   std::string result = "";
-  if (is_gp()) {
+  if (is_general()) {
     result = "v" + std::to_string(id);
-  } else if (is_fp()) {
+  } else if (is_float()) {
     result = "fv" + std::to_string(id);
   }
   return result;

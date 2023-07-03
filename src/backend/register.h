@@ -7,7 +7,7 @@ namespace syc {
 namespace backend {
 
 /// RISC-V general purpose registers.
-enum class GPRegister {
+enum class GeneralRegister {
   Zero = 0,
   Ra = 1,
   Sp = 2,
@@ -43,7 +43,7 @@ enum class GPRegister {
 };
 
 /// RISC-V floating point registers.
-enum class FPRegister {
+enum class FloatRegister {
   Ft0 = 0,
   Ft1 = 1,
   Ft2 = 2,
@@ -79,10 +79,10 @@ enum class FPRegister {
 };
 
 struct Register {
-  std::variant<GPRegister, FPRegister> reg;
+  std::variant<GeneralRegister, FloatRegister> reg;
 
-  bool is_gp() const { return std::holds_alternative<GPRegister>(reg); }
-  bool is_fp() const { return std::holds_alternative<FPRegister>(reg); }
+  bool is_general() const { return std::holds_alternative<GeneralRegister>(reg); }
+  bool is_float() const { return std::holds_alternative<FloatRegister>(reg); }
 
   std::string to_string() const;
 };
@@ -90,9 +90,9 @@ struct Register {
 /// Virtual register kind.
 enum class VirtualRegisterKind {
   /// General purpose register.
-  Gp,
+  General,
   /// Floating point register.
-  Fp,
+  Float,
 };
 
 /// Virtual register.
@@ -100,8 +100,8 @@ struct VirtualRegister {
   VirtualRegisterID id;
   VirtualRegisterKind kind;
 
-  bool is_gp() const { return kind == VirtualRegisterKind::Gp; }
-  bool is_fp() const { return kind == VirtualRegisterKind::Fp; }
+  bool is_general() const { return kind == VirtualRegisterKind::General; }
+  bool is_float() const { return kind == VirtualRegisterKind::Float; }
 
   std::string to_string() const;
 };

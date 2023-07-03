@@ -240,8 +240,8 @@ namespace backend {
 
 using IROperandID = ir::OperandID;
 
-enum class GPRegister;
-enum class FPRegister;
+enum class GenealRegister;
+enum class FloatRegister;
 
 struct Register;
 
