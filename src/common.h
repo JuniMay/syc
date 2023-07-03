@@ -317,7 +317,7 @@ using OperandID = size_t;
 
 struct Global;
 
-using OperandKind = std::variant<Immediate, VirtualRegister, Register>;
+using OperandKind = std::variant<Immediate, VirtualRegister, Register, Global>;
 
 struct Operand;
 

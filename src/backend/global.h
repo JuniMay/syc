@@ -7,12 +7,18 @@ namespace syc {
 namespace backend {
 
 struct Global {
-  std::variant<int32_t, int64_t, uint32_t, uint64_t> value;
+  /// The value of the global variable.
+  /// list of data in words or the size of zero
+  std::variant<std::vector<uint32_t>, uint64_t> value;
+
+  /// The name of the global variable.
   std::string name;
 
-  std::string value_string() const;
-
+  /// The size of the global variable.
   size_t get_size() const;
+
+  /// Convert to declaration in the assembly code.
+  std::string to_string() const;
 };
 
 }  // namespace backend

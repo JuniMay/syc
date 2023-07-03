@@ -2,6 +2,7 @@
 #define SYC_BACKEND_CONTEXT_H_
 
 #include "common.h"
+#include "backend/global.h"
 
 namespace syc {
 namespace backend {
@@ -11,7 +12,7 @@ struct Context {
   std::map<InstructionID, InstructionPtr> instruction_table;
   std::map<BasicBlockID, BasicBlockPtr> basic_block_table;
 
-  std::vector<Global> global_list;
+  std::vector<OperandID> global_list;
   std::map<std::string, FunctionPtr> function_table;
 
   OperandID next_operand_id;

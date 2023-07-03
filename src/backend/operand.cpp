@@ -16,7 +16,9 @@ std::string Operand::to_string() const {
     overloaded{
       [](const Immediate& immediate) { return immediate.to_string(); },
       [](const Register& reg) { return reg.to_string(); },
-      [](const VirtualRegister& vreg) { return vreg.to_string(); }},
+      [](const VirtualRegister& vreg) { return vreg.to_string(); },
+      [](const Global& global) { return global.name; },
+    },
     kind
   );
 }

@@ -16,12 +16,12 @@ void Function::append_basic_block(BasicBlockPtr basic_block) {
   this->tail_basic_block->insert_prev(basic_block);
 }
 
-std::string Function::to_string()
-{
+std::string Function::to_string() {
   std::string result = "\t.globl " + this->name + "\n";
   result += "\t.type " + this->name + ", @function\n";
   result += this->name + ":\n";
-  
+
+  return result;
 }
 
 }  // namespace backend
