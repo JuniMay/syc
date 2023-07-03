@@ -33,25 +33,35 @@ struct CodegenContext {
 };
 
 void codegen(
-  ir::Context& ir_context,
+  IrContext& ir_context,
   AsmBuilder& builder,
   CodegenContext& codegen_context
 );
 
 void codegen_function(
   IrFunctionPtr ir_function,
+  IrContext& ir_context,
   AsmBuilder& builder,
   CodegenContext& codegen_context
 );
 
 void codegen_basic_block(
   IrBasicBlockPtr ir_basic_block,
+  IrContext& ir_context,
   AsmBuilder& builder,
   CodegenContext& codegen_context
 );
 
 void codegen_instruction(
   IrInstructionPtr ir_instruction,
+  IrContext& ir_context,
+  AsmBuilder& builder,
+  CodegenContext& codegen_context
+);
+
+AsmOperandID codegen_operand(
+  IrOperandID ir_operand,
+  IrContext& ir_context,
   AsmBuilder& builder,
   CodegenContext& codegen_context
 );

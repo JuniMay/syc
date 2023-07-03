@@ -3,7 +3,7 @@
 namespace syc {
 
 void codegen(
-  ir::Context& ir_context,
+  IrContext& ir_context,
   AsmBuilder& builder,
   CodegenContext& codegen_context
 ) {
@@ -106,12 +106,13 @@ void codegen(
     if (ir_function->is_declare) {
       continue;
     }
-    codegen_function(ir_function, builder, codegen_context);
+    codegen_function(ir_function, ir_context, builder, codegen_context);
   }
 }
 
 void codegen_function(
   IrFunctionPtr ir_function,
+  IrContext& ir_context,
   AsmBuilder& builder,
   CodegenContext& codegen_context
 ) {
@@ -120,13 +121,16 @@ void codegen_function(
 
   auto curr_ir_basic_block = ir_function->head_basic_block->next;
   while (curr_ir_basic_block != ir_function->tail_basic_block) {
-    codegen_basic_block(curr_ir_basic_block, builder, codegen_context);
+    codegen_basic_block(
+      curr_ir_basic_block, ir_context, builder, codegen_context
+    );
     curr_ir_basic_block = curr_ir_basic_block->next;
   }
 }
 
 void codegen_basic_block(
   IrBasicBlockPtr ir_basic_block,
+  IrContext& ir_context,
   AsmBuilder& builder,
   CodegenContext& codegen_context
 ) {
@@ -135,13 +139,16 @@ void codegen_basic_block(
 
   auto curr_ir_instruction = ir_basic_block->head_instruction->next;
   while (curr_ir_instruction != ir_basic_block->tail_instruction) {
-    codegen_instruction(curr_ir_instruction, builder, codegen_context);
+    codegen_instruction(
+      curr_ir_instruction, ir_context, builder, codegen_context
+    );
     curr_ir_instruction = curr_ir_instruction->next;
   }
 }
 
 void codegen_instruction(
   IrInstructionPtr ir_instruction,
+  IrContext& ir_context,
   AsmBuilder& builder,
   CodegenContext& codegen_context
 ) {
@@ -170,6 +177,56 @@ void codegen_instruction(
     },
     ir_instruction->kind
   );
+}
+
+AsmOperandID codegen_operand(
+  IrOperandID ir_operand_id,
+  IrContext& ir_context,
+  AsmBuilder& builder,
+  CodegenContext& codegen_context
+) {
+  if (codegen_context.operand_map.find(ir_operand_id) !=
+      codegen_context.operand_map.end()) {
+    return codegen_context.operand_map[ir_operand_id];
+  }
+
+  auto ir_operand = ir_context.operand_table[ir_operand_id];
+  auto& ir_operand_kind = ir_operand->kind;
+  auto ir_operand_type = ir_operand->type;
+
+  AsmOperandID asm_operand_id;
+
+  if (std::holds_alternative<ir::operand::ConstantPtr>(ir_operand_kind)) {
+    auto& ir_constant_kind =
+      std::get<ir::operand::ConstantPtr>(ir_operand_kind)->kind;
+    auto ir_constant_type =
+      std::get<ir::operand::ConstantPtr>(ir_operand_kind)->type;
+
+    if (int ir_value = *std::get_if<int>(&ir_constant_kind)) {
+      asm_operand_id = builder.fetch_immediate((int32_t)ir_value);
+    } else if (float ir_value = *std::get_if<float>(&ir_constant_kind)) {
+      asm_operand_id =
+        builder.fetch_immediate(*reinterpret_cast<uint32_t*>(&ir_value));
+    } else {
+      throw std::runtime_error(
+        "Invalid type for global variable initialization."
+      );
+    }
+  } else if (std::holds_alternative<ir::operand::Arbitrary>(ir_operand_kind)) {
+    if (std::holds_alternative<ir::type::Float>(*ir_operand_type)) {
+      asm_operand_id =
+        builder.fetch_virtual_register(backend::VirtualRegisterKind::Float);
+    } else {
+      asm_operand_id =
+        builder.fetch_virtual_register(backend::VirtualRegisterKind::General);
+    }
+
+    codegen_context.operand_map[ir_operand_id] = asm_operand_id;
+  } else {
+    throw std::runtime_error("Invalid operand kind.");
+  }
+
+  return asm_operand_id;
 }
 
 /// Perform register allocation.
