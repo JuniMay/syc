@@ -3,6 +3,9 @@
 namespace syc {
 namespace backend {
 
+Operand::Operand(OperandID id, OperandKind kind, Modifier modifier)
+  : id(id), kind(kind), modifier(modifier) {}
+
 void Operand::set_def(InstructionID def_id) {
   this->def_id = def_id;
 }
@@ -12,16 +15,31 @@ void Operand::add_use(InstructionID use_id) {
 }
 
 std::string Operand::to_string() const {
-  return std::visit(
+
+  std::string result = "";
+
+  if (modifier == Modifier::Lo) {
+    result += "\%lo(";
+  } else if (modifier == Modifier::Hi) {
+    result += "\%hi(";
+  }
+
+  std::visit(
     overloaded{
-      [](const Immediate& immediate) { return immediate.to_string(); },
-      [](const Register& reg) { return reg.to_string(); },
-      [](const VirtualRegister& vreg) { return vreg.to_string(); },
-      [](const Global& global) { return global.name; },
-      [](const LocalMemory& local) { return std::to_string(local.offset); },
+      [&result](const Immediate& immediate) { result += immediate.to_string(); },
+      [&result](const Register& reg) { result += reg.to_string(); },
+      [&result](const VirtualRegister& vreg) { result += vreg.to_string(); },
+      [&result](const Global& global) { result += global.name; },
+      [&result](const LocalMemory& local) { result += std::to_string(local.offset); },
     },
     kind
   );
+
+  if (modifier != Modifier::None) {
+    result += ")";
+  }
+
+  return result;
 }
 
 }  // namespace backend

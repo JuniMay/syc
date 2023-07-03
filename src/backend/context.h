@@ -31,9 +31,20 @@ struct Context {
     return next_virtual_register_id++;
   }
 
+  void register_operand(OperandPtr operand);
+
+  void register_basic_block(std::shared_ptr<BasicBlock> basic_block);
+
+  void register_instruction(InstructionPtr instruction);
+
+  void register_function(std::shared_ptr<Function> function);
+
   OperandPtr get_operand(OperandID id);
+
   InstructionPtr get_instruction(InstructionID id);
+
   BasicBlockPtr get_basic_block(BasicBlockID id);
+
   std::string to_string();
 };
 

@@ -28,7 +28,10 @@ struct Operand {
   OperandKind kind;
 
   /// The modifier of the operand.
+  /// Modifier can only be used for symbols (globals).
   Modifier modifier = Modifier::None;
+
+  Operand(OperandID id, OperandKind kind, Modifier modifier);
 
   std::optional<InstructionID> def_id;
   std::vector<InstructionID> use_id_list;
