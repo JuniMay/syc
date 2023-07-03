@@ -19,7 +19,3 @@ add_link_options(-fsanitize=address)
 
 # Compiler executable
 add_executable(syc ${SOURCES})
-
-# Unittest executable
-add_executable(syc_test ${SOURCES})
-target_compile_definitions(syc_test PUBLIC -DUNITTEST)
