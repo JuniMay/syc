@@ -18,7 +18,7 @@ struct Function {
 
   void append_basic_block(BasicBlockPtr basic_block);
 
-  std::string to_string();
+  std::string to_string(Context& context);
 };
 
 }  // namespace backend

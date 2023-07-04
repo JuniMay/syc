@@ -30,6 +30,8 @@ struct CodegenContext {
   std::map<IrOperandID, AsmOperandID> operand_map;
 
   CodegenContext() = default;
+
+  AsmOperandID get_asm_operand_id(IrOperandID ir_operand_id);
 };
 
 void codegen(
@@ -41,6 +43,18 @@ void codegen(
 void codegen_function(
   IrFunctionPtr ir_function,
   IrContext& ir_context,
+  AsmBuilder& builder,
+  CodegenContext& codegen_context
+);
+
+void codegen_function_prolouge(
+  std::string function_name,
+  AsmBuilder& builder,
+  CodegenContext& codegen_context
+);
+
+void codegen_function_epilouge(
+  std::string function_name,
   AsmBuilder& builder,
   CodegenContext& codegen_context
 );

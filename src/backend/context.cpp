@@ -65,7 +65,7 @@ std::string Context::to_string() {
   result += "\t.text\n";
 
   for (auto& func : this->function_table) {
-    result += func.second->to_string();
+    result += func.second->to_string(*this);
   }
 
   for (auto& operand_id : this->global_list) {

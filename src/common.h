@@ -239,7 +239,7 @@ using OperandPtr = std::shared_ptr<Operand>;
 
 namespace backend {
 
-enum class GenealRegister;
+enum class GeneralRegister;
 enum class FloatRegister;
 
 struct Register;

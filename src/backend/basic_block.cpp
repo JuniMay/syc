@@ -11,6 +11,10 @@ BasicBlock::BasicBlock(BasicBlockID id, std::string parent_function_name)
   this->head_instruction->insert_next(this->tail_instruction);
 }
 
+void BasicBlock::prepend_instruction(InstructionPtr instruction) {
+  this->head_instruction->insert_next(instruction);
+}
+
 void BasicBlock::append_instruction(InstructionPtr instruction) {
   this->tail_instruction->insert_prev(instruction);
 }
@@ -35,6 +39,19 @@ void BasicBlock::insert_prev(BasicBlockPtr basic_block) {
   }
 
   this->prev = basic_block;
+}
+
+std::string BasicBlock::to_string(Context& context) {
+  std::string result = this->get_label() + ":\n";
+
+  auto curr_instruction = this->head_instruction->next;
+
+  while (curr_instruction != this->tail_instruction) {
+    result += "\t" + curr_instruction->to_string(context) + "\n";
+    curr_instruction = curr_instruction->next;
+  }
+
+  return result;
 }
 
 BasicBlockPtr

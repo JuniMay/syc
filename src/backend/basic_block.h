@@ -22,10 +22,13 @@ struct BasicBlock : std::enable_shared_from_this<BasicBlock> {
 
   std::string get_label() const { return ".bb_" + std::to_string(id); }
 
+  void prepend_instruction(InstructionPtr instruction);
   void append_instruction(InstructionPtr instruction);
 
   void insert_next(BasicBlockPtr basic_block);
   void insert_prev(BasicBlockPtr basic_block);
+
+  std::string to_string(Context& context);
 };
 
 BasicBlockPtr
