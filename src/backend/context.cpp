@@ -17,7 +17,7 @@ void Context::register_operand(OperandPtr operand) {
   operand_table[operand->id] = operand;
 
   // If the operand is global, add it to the global list.
-  if (std::holds_alternative<Global>(operand->kind)) {
+  if (std::holds_alternative<Global>(operand->kind) && operand->modifier == Modifier::None) {
     global_list.push_back(operand->id);
   }
 }

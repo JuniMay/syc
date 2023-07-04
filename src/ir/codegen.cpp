@@ -348,10 +348,61 @@ void codegen_instruction(
           }
 
         } else if (auto asm_global = std::get_if<backend::Global>(&asm_ptr->kind)) {
+          // lui %hi of the address
+          auto asm_global_hi_id =
+            builder.fetch_operand(*asm_global, backend::Modifier::Hi);
+
+          auto vreg_id =
+            builder.fetch_virtual_register(backend::VirtualRegisterKind::General
+            );
+
+          auto lui_instruction =
+            builder.fetch_lui_instruction(vreg_id, asm_global_hi_id);
+
+          builder.append_instruction(lui_instruction);
+
+          // sw %lo of the address
+          auto asm_global_lo_id =
+            builder.fetch_operand(*asm_global, backend::Modifier::Lo);
+
+          if (is_float && !is_imm) {
+            auto fsw_instruction = builder.fetch_float_store_instruction(
+              backend::instruction::FloatStore::Op::FSW, vreg_id, asm_value_id,
+              asm_global_lo_id
+            );
+
+            builder.append_instruction(fsw_instruction);
+          } else {
+            auto sw_instruction = builder.fetch_store_instruction(
+              backend::instruction::Store::SW, vreg_id, asm_value_id,
+              asm_global_lo_id
+            );
+
+            builder.append_instruction(sw_instruction);
+          }
+
         } else if (auto asm_register = std::get_if<backend::Register>(&asm_ptr->kind)) {
+          if (is_float && !is_imm) {
+            auto fsw_instruction = builder.fetch_float_store_instruction(
+              backend::instruction::FloatStore::Op::FSW, asm_ptr_id,
+              asm_value_id, builder.fetch_immediate(0)
+            );
+
+            builder.append_instruction(fsw_instruction);
+          } else {
+            auto sw_instruction = builder.fetch_store_instruction(
+              backend::instruction::Store::SW, asm_ptr_id, asm_value_id,
+              builder.fetch_immediate(0)
+            );
+
+            builder.append_instruction(sw_instruction);
+          }
         } else {
           throw std::runtime_error("Invalid operand for store instruction.");
         }
+      },
+      [&](ir::instruction::Load& ir_load) {
+
       },
       [&](ir::instruction::Binary& ir_binary) {
 
