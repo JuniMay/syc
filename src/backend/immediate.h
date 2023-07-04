@@ -12,7 +12,7 @@ namespace backend {
 struct Immediate {
   std::variant<int32_t, int64_t, uint32_t, uint64_t> value;
 
-  std::string to_string() const;
+  std::string to_string(int width = 0) const;
 };
 
 }  // namespace backend

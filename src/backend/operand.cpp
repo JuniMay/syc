@@ -14,8 +14,7 @@ void Operand::add_use(InstructionID use_id) {
   use_id_list.push_back(use_id);
 }
 
-std::string Operand::to_string() const {
-
+std::string Operand::to_string(int width) const {
   std::string result = "";
 
   if (modifier == Modifier::Lo) {
@@ -26,11 +25,15 @@ std::string Operand::to_string() const {
 
   std::visit(
     overloaded{
-      [&result](const Immediate& immediate) { result += immediate.to_string(); },
+      [&result, width](const Immediate& immediate) {
+        result += immediate.to_string(width);
+      },
       [&result](const Register& reg) { result += reg.to_string(); },
       [&result](const VirtualRegister& vreg) { result += vreg.to_string(); },
       [&result](const Global& global) { result += global.name; },
-      [&result](const LocalMemory& local) { result += std::to_string(local.offset); },
+      [&result](const LocalMemory& local) {
+        result += std::to_string(local.offset);
+      },
     },
     kind
   );

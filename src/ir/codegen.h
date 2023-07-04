@@ -20,6 +20,7 @@ using IrBasicBlockPtr = ir::BasicBlockPtr;
 using IrFunctionPtr = ir::FunctionPtr;
 
 using AsmOperandID = backend::OperandID;
+using AsmOperandPtr = backend::OperandPtr;
 using AsmBuilder = backend::Builder;
 using AsmContext = backend::Context;
 using AsmInstructionPtr = backend::InstructionPtr;

@@ -44,7 +44,12 @@ void Context::register_function(FunctionPtr function) {
 }
 
 OperandPtr Context::get_operand(OperandID id) {
-  return operand_table.at(id);
+  try {
+    return operand_table.at(id);
+  } catch (std::out_of_range& e) {
+    std::cout << "Operand ID: " << id << std::endl;
+    throw e;
+  }
 }
 
 InstructionPtr Context::get_instruction(InstructionID id) {

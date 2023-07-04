@@ -276,30 +276,15 @@ void codegen_instruction(
 
           if (is_float) {
             float ir_constant_value = std::get<float>(ir_constant_kind);
-            uint32_t value = *reinterpret_cast<uint32_t*>(&ir_constant_value);
-            uint32_t upper_imm = value >> 12;
+            uint32_t imm = *reinterpret_cast<uint32_t*>(&ir_constant_value);
 
             auto vreg_id = builder.fetch_virtual_register(
               backend::VirtualRegisterKind::General
             );
-
-            auto lui_instruction = builder.fetch_lui_instruction(
-              vreg_id, builder.fetch_immediate(upper_imm)
+            auto li_instruction = builder.fetch_li_instruction(
+              vreg_id, builder.fetch_immediate(imm)
             );
-
-            builder.append_instruction(lui_instruction);
-
-            // rest 10 bits
-            uint32_t lower_imm = value & 0xfff;
-
-            if (lower_imm != 0) {
-              auto ori_instruction = builder.fetch_binary_imm_instruction(
-                backend::instruction::BinaryImm::Op::ORI, vreg_id, vreg_id,
-                builder.fetch_immediate(lower_imm)
-              );
-
-              builder.append_instruction(ori_instruction);
-            }
+            builder.append_instruction(li_instruction);
 
             asm_value_id = vreg_id;
           } else {
@@ -309,11 +294,9 @@ void codegen_instruction(
             auto vreg_id = builder.fetch_virtual_register(
               backend::VirtualRegisterKind::General
             );
-
             auto li_instruction = builder.fetch_li_instruction(
               vreg_id, builder.fetch_immediate(imm)
             );
-
             builder.append_instruction(li_instruction);
 
             asm_value_id = vreg_id;
@@ -402,7 +385,86 @@ void codegen_instruction(
         }
       },
       [&](ir::instruction::Load& ir_load) {
+        auto ir_dst_id = ir_load.dst_id;
+        auto ir_ptr_id = ir_load.ptr_id;
 
+        auto ir_dst = ir_context.get_operand(ir_dst_id);
+        auto asm_dst_id =
+          codegen_operand(ir_dst_id, ir_context, builder, codegen_context);
+        auto asm_ptr_id = codegen_context.get_asm_operand_id(ir_ptr_id);
+
+        auto asm_ptr = builder.context.get_operand(asm_ptr_id);
+
+        bool is_float = false;
+
+        if (std::holds_alternative<ir::type::Float>(*ir_dst->type)) {
+          is_float = true;
+        }
+
+        if (auto asm_global = std::get_if<backend::Global>(&asm_ptr->kind)) {
+          auto asm_global_hi_id =
+            builder.fetch_operand(*asm_global, backend::Modifier::Hi);
+
+          auto vreg_id =
+            builder.fetch_virtual_register(backend::VirtualRegisterKind::General
+            );
+
+          auto lui_instruction =
+            builder.fetch_lui_instruction(vreg_id, asm_global_hi_id);
+
+          builder.append_instruction(lui_instruction);
+
+          auto asm_global_lo_id =
+            builder.fetch_operand(*asm_global, backend::Modifier::Lo);
+
+          if (is_float) {
+            auto flw_instruction = builder.fetch_float_load_instruction(
+              backend::instruction::FloatLoad::Op::FLW, asm_dst_id, vreg_id,
+              asm_global_lo_id
+            );
+            builder.append_instruction(flw_instruction);
+          } else {
+            auto lw_instruction = builder.fetch_load_instruction(
+              backend::instruction::Load::LW, asm_dst_id, vreg_id,
+              asm_global_lo_id
+            );
+            builder.append_instruction(lw_instruction);
+          }
+
+          codegen_context.operand_map[ir_dst_id] = asm_dst_id;
+        } else if (auto asm_local_memory = std::get_if<backend::LocalMemory>(&asm_ptr->kind)) {
+          auto offset = asm_local_memory->offset;
+          auto sp_id = builder.fetch_register(backend::Register{
+            backend::GeneralRegister::Sp});
+
+          if (is_float) {
+            auto flw_instruction = builder.fetch_float_load_instruction(
+              backend::instruction::FloatLoad::Op::FLW, asm_dst_id, sp_id,
+              builder.fetch_immediate((int32_t)offset)
+            );
+            builder.append_instruction(flw_instruction);
+          } else {
+            auto lw_instruction = builder.fetch_load_instruction(
+              backend::instruction::Load::Op::LW, asm_dst_id, sp_id,
+              builder.fetch_immediate((int32_t)offset)
+            );
+            builder.append_instruction(lw_instruction);
+          }
+        } else if (auto asm_register = std::get_if<backend::Register>(&asm_ptr->kind)) {
+          if (is_float) {
+            auto flw_instruction = builder.fetch_float_load_instruction(
+              backend::instruction::FloatLoad::Op::FLW, asm_dst_id, asm_ptr_id,
+              builder.fetch_immediate((int32_t)0)
+            );
+            builder.append_instruction(flw_instruction);
+          } else {
+            auto lw_instruction = builder.fetch_load_instruction(
+              backend::instruction::Load::Op::LW, asm_dst_id, asm_ptr_id,
+              builder.fetch_immediate((int32_t)0)
+            );
+            builder.append_instruction(lw_instruction);
+          }
+        }
       },
       [&](ir::instruction::Binary& ir_binary) {
 
@@ -426,7 +488,7 @@ AsmOperandID codegen_operand(
     return codegen_context.operand_map[ir_operand_id];
   }
 
-  auto ir_operand = ir_context.operand_table[ir_operand_id];
+  auto ir_operand = ir_context.get_operand(ir_operand_id);
   auto& ir_operand_kind = ir_operand->kind;
   auto ir_operand_type = ir_operand->type;
 

@@ -263,7 +263,7 @@ std::string Instruction::to_string(Context& context) {
         }
 
         ss << " " << rd->to_string() << ", " << rs->to_string() << ", "
-           << imm->to_string();
+           << imm->to_string(3);
 
         return ss.str();
       },
@@ -273,7 +273,7 @@ std::string Instruction::to_string(Context& context) {
         auto rd = context.get_operand(instruction.rd_id);
         auto imm = context.get_operand(instruction.imm_id);
 
-        ss << "lui " << rd->to_string() << ", " << imm->to_string();
+        ss << "lui " << rd->to_string() << ", " << imm->to_string(5);
 
         return ss.str();
       },
@@ -338,8 +338,8 @@ std::string Instruction::to_string(Context& context) {
             break;
         }
 
-        ss << " " << rd->to_string() << ", " << imm << "(" << rs->to_string()
-           << ")";
+        ss << " " << rd->to_string() << ", " << imm->to_string() << "("
+           << rs->to_string() << ")";
 
         return ss.str();
       },
@@ -359,8 +359,8 @@ std::string Instruction::to_string(Context& context) {
             break;
         }
 
-        ss << " " << rs2->to_string() << ", " << imm << "(" << rs1->to_string()
-           << ")";
+        ss << " " << rs2->to_string() << ", " << imm->to_string() << "("
+           << rs1->to_string() << ")";
 
         return ss.str();
       },

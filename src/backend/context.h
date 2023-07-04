@@ -15,11 +15,11 @@ struct Context {
   std::vector<OperandID> global_list;
   std::map<std::string, FunctionPtr> function_table;
 
-  OperandID next_operand_id;
-  InstructionID next_instruction_id;
-  BasicBlockID next_basic_block_id;
+  OperandID next_operand_id = 0;
+  InstructionID next_instruction_id = 0;
+  BasicBlockID next_basic_block_id = 0;
 
-  VirtualRegisterID next_virtual_register_id;
+  VirtualRegisterID next_virtual_register_id = 0;
 
   OperandID get_next_operand_id() { return next_operand_id++; }
 
