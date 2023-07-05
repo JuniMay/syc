@@ -157,7 +157,7 @@ std::string Instruction::to_string(Context& context) {
             break;
         }
 
-        ss << " " << rd->to_string() << ", " << symbol->to_string() << " "
+        ss << " " << rd->to_string() << ", " << symbol->to_string() << ", "
            << rt->to_string();
 
         return ss.str();
@@ -175,7 +175,7 @@ std::string Instruction::to_string(Context& context) {
             break;
         }
 
-        ss << " " << rd->to_string() << ", " << symbol->to_string() << " "
+        ss << " " << rd->to_string() << ", " << symbol->to_string() << ", "
            << rt->to_string();
 
         return ss.str();
@@ -193,7 +193,7 @@ std::string Instruction::to_string(Context& context) {
             break;
         }
 
-        ss << " " << rd->to_string() << ", " << symbol->to_string() << " "
+        ss << " " << rd->to_string() << ", " << symbol->to_string() << ", "
            << rt->to_string();
 
         return ss.str();
