@@ -125,6 +125,7 @@ void codegen(
     if (ir_function->is_declare) {
       continue;
     }
+    // adjust stack frame size to be 16-byte aligned
     codegen_function_prolouge(ir_function_name, builder, codegen_context);
     codegen_function_epilouge(ir_function_name, builder, codegen_context);
   }
@@ -174,6 +175,13 @@ void codegen_function_prolouge(
 
   asm_function->stack_frame_size += 8;
   stack_frame_size += 8;
+
+  // adjust frame size to be 16-byte aligned
+  // Note that local variables are allocated from 0(sp) to higher address (lower
+  // in the stack), there might be gaps at the start of the stack frame. So ra
+  // is probably not stored at the start of the stack frame.
+  stack_frame_size = (stack_frame_size + 15) / 16 * 16;
+  asm_function->stack_frame_size = stack_frame_size;
 
   auto addi_instruction = builder.fetch_binary_imm_instruction(
     instruction::BinaryImm::Op::ADDI, sp_id, sp_id,
