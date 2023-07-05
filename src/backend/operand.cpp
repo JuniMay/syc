@@ -45,5 +45,9 @@ std::string Operand::to_string(int width) const {
   return result;
 }
 
+bool Operand::is_local_memory() const {
+  return std::holds_alternative<LocalMemory>(kind);
+}
+
 }  // namespace backend
 }  // namespace syc

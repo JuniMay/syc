@@ -14,7 +14,7 @@ struct LocalMemory {
   /// Offset from the stack pointer.
   /// About sp and fp, see this discussion:
   /// https://stackoverflow.com/questions/74650564/is-frame-pointer-necessary-for-riscv-assembly
-  size_t offset;
+  int offset;
 };
 
 enum class Modifier {
@@ -41,6 +41,8 @@ struct Operand {
   void add_use(InstructionID use_id);
 
   std::string to_string(int width=0) const;
+
+  bool is_local_memory() const;
 };
 
 }  // namespace backend

@@ -37,7 +37,7 @@ struct Builder {
 
   OperandID fetch_register(Register reg);
 
-  OperandID fetch_local_memory(size_t offset);
+  OperandID fetch_local_memory(int offset);
 
   BasicBlockPtr fetch_basic_block();
 

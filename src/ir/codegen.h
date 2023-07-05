@@ -74,12 +74,22 @@ void codegen_instruction(
   CodegenContext& codegen_context
 );
 
+/// Generate corresponding asm operan for ir operand.
+/// try_keep_imm: if the immediate is an i-type immediate, keep it as immediate,
+///   otherwise load it into a register.
+/// use_fmv: fmv floating-point bits from general register to a float register.
 AsmOperandID codegen_operand(
   IrOperandID ir_operand,
   IrContext& ir_context,
   AsmBuilder& builder,
-  CodegenContext& codegen_context
+  CodegenContext& codegen_context,
+  bool try_keep_imm = false,
+  bool use_fmv = false
 );
+
+bool check_utype_immediate(uint32_t value);
+
+bool check_itype_immediate(int32_t value);
 
 /// Perform register allocation.
 void asm_register_allocation(AsmContext& context);
