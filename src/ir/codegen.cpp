@@ -268,6 +268,7 @@ void codegen_instruction(
         );
 
         auto asm_value = builder.context.get_operand(asm_value_id);
+        auto asm_ptr = builder.context.get_operand(asm_ptr_id);
 
         bool is_float = false;
 
@@ -279,23 +280,52 @@ void codegen_instruction(
           is_float = asm_reg->is_float();
         }
 
+        bool is_global = asm_ptr->is_global();
+
         if (is_float) {
-          auto fsw_instruction = builder.fetch_float_store_instruction(
-            backend::instruction::FloatStore::Op::FSW, asm_ptr_id, asm_value_id,
-            builder.fetch_immediate(0)
-          );
-          builder.append_instruction(fsw_instruction);
+          if (is_global) {
+            auto fsw_instruction = builder.fetch_float_pseudo_store_instruction(
+              backend::instruction::FloatPseudoStore::FSW, asm_value_id,
+              asm_ptr_id,
+              builder.fetch_virtual_register(
+                backend::VirtualRegisterKind::General
+              )
+            );
+
+            builder.append_instruction(fsw_instruction);
+          } else {
+            auto fsw_instruction = builder.fetch_float_store_instruction(
+              backend::instruction::FloatStore::Op::FSW, asm_ptr_id,
+              asm_value_id, builder.fetch_immediate(0)
+            );
+            builder.append_instruction(fsw_instruction);
+          }
         } else {
-          auto sw_instruction = builder.fetch_store_instruction(
-            backend::instruction::Store::Op::SD, asm_ptr_id, asm_value_id,
-            builder.fetch_immediate(0)
-          );
-          builder.append_instruction(sw_instruction);
+          if (is_global) {
+            auto sw_instruction = builder.fetch_pseudo_store_instruction(
+              backend::instruction::PseudoStore::SW, asm_value_id, asm_ptr_id,
+              builder.fetch_virtual_register(
+                backend::VirtualRegisterKind::General
+              )
+            );
+            builder.append_instruction(sw_instruction);
+          } else {
+            auto sw_instruction = builder.fetch_store_instruction(
+              backend::instruction::Store::Op::SD, asm_ptr_id, asm_value_id,
+              builder.fetch_immediate(0)
+            );
+            builder.append_instruction(sw_instruction);
+          }
         }
       },
       [&](ir::instruction::Load& ir_load) {
         auto ir_dst_id = ir_load.dst_id;
         auto ir_ptr_id = ir_load.ptr_id;
+
+        auto ir_dst = ir_context.get_operand(ir_dst_id);
+
+        bool load_address =
+          std::holds_alternative<ir::type::Pointer>(*ir_dst->type);
 
         auto asm_dst_id = codegen_operand(
           ir_dst_id, ir_context, builder, codegen_context, false, false
@@ -305,8 +335,10 @@ void codegen_instruction(
         );
 
         auto asm_dst = builder.context.get_operand(asm_dst_id);
+        auto asm_ptr = builder.context.get_operand(asm_ptr_id);
 
         bool is_float = false;
+        bool is_global = asm_ptr->is_global();
 
         if (auto asm_reg = std::get_if<backend::Register>(&asm_dst->kind)) {
           is_float = asm_reg->is_float();
@@ -317,17 +349,40 @@ void codegen_instruction(
         }
 
         if (is_float) {
-          auto flw_instruction = builder.fetch_float_load_instruction(
-            backend::instruction::FloatLoad::Op::FLW, asm_dst_id, asm_ptr_id,
-            builder.fetch_immediate(0)
+          if (is_global) {
+            auto flw_instruction = builder.fetch_float_pseudo_load_instruction(
+              backend::instruction::FloatPseudoLoad::FLW, asm_dst_id,
+              asm_ptr_id,
+              builder.fetch_virtual_register(
+                backend::VirtualRegisterKind::General
+              )
+            );
+            builder.append_instruction(flw_instruction);
+          } else {
+            auto flw_instruction = builder.fetch_float_load_instruction(
+              backend::instruction::FloatLoad::Op::FLW, asm_dst_id, asm_ptr_id,
+              builder.fetch_immediate(0)
+            );
+            builder.append_instruction(flw_instruction);
+          }
+        } else if (load_address && is_global) {
+          auto la_instruction = builder.fetch_pseudo_load_instruction(
+            backend::instruction::PseudoLoad::LA, asm_dst_id, asm_ptr_id
           );
-          builder.append_instruction(flw_instruction);
+          builder.append_instruction(la_instruction);
         } else {
-          auto lw_instruction = builder.fetch_load_instruction(
-            backend::instruction::Load::Op::LW, asm_dst_id, asm_ptr_id,
-            builder.fetch_immediate(0)
-          );
-          builder.append_instruction(lw_instruction);
+          if (is_global) {
+            auto lw_instruction = builder.fetch_pseudo_load_instruction(
+              backend::instruction::PseudoLoad::LW, asm_dst_id, asm_ptr_id
+            );
+            builder.append_instruction(lw_instruction);
+          } else {
+            auto lw_instruction = builder.fetch_load_instruction(
+              backend::instruction::Load::Op::LW, asm_dst_id, asm_ptr_id,
+              builder.fetch_immediate(0)
+            );
+            builder.append_instruction(lw_instruction);
+          }
         }
       },
       [&](ir::instruction::Binary& ir_binary) {
@@ -618,30 +673,7 @@ AsmOperandID codegen_operand(
             codegen_context.operand_map.end()) {
           throw std::runtime_error("global variable is not initialized.");
         }
-
-        // Loading global address into register.
-        auto asm_global_id = codegen_context.operand_map[ir_operand_id];
-        auto asm_global = builder.context.get_operand(asm_global_id);
-
-        auto asm_global_hi_id =
-          builder.fetch_operand(asm_global->kind, backend::Modifier::Hi);
-        auto asm_global_lo_id =
-          builder.fetch_operand(asm_global->kind, backend::Modifier::Lo);
-
-        auto asm_temp_id =
-          builder.fetch_virtual_register(backend::VirtualRegisterKind::General);
-        auto lui_instruction =
-          builder.fetch_lui_instruction(asm_temp_id, asm_global_hi_id);
-        builder.append_instruction(lui_instruction);
-
-        asm_operand_id =
-          builder.fetch_virtual_register(backend::VirtualRegisterKind::General);
-        auto addi_instruction = builder.fetch_binary_imm_instruction(
-          backend::instruction::BinaryImm::Op::ADDI, asm_operand_id,
-          asm_temp_id, asm_global_lo_id
-        );
-
-        builder.append_instruction(addi_instruction);
+        asm_operand_id = codegen_context.operand_map.at(ir_operand_id);
       },
       [](auto& k) {
         // TODO: Parameter

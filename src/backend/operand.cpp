@@ -53,5 +53,17 @@ bool Operand::is_immediate() const {
   return std::holds_alternative<Immediate>(kind);
 }
 
+bool Operand::is_vreg() const {
+  return std::holds_alternative<VirtualRegister>(kind);
+}
+
+bool Operand::is_reg() const {
+  return std::holds_alternative<Register>(kind);
+}
+
+bool Operand::is_global() const {
+  return std::holds_alternative<Global>(kind);
+}
+
 }  // namespace backend
 }  // namespace syc

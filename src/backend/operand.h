@@ -45,6 +45,12 @@ struct Operand {
   bool is_local_memory() const;
 
   bool is_immediate() const;
+
+  bool is_vreg() const;
+
+  bool is_reg() const;
+
+  bool is_global() const;
 };
 
 }  // namespace backend

@@ -47,6 +47,51 @@ struct FloatLoad {
   OperandID imm_id;
 };
 
+struct PseudoLoad {
+  enum Op {
+    LA,
+    LW,
+  };
+
+  Op op;
+  OperandID rd_id;
+  /// This is usually global.
+  OperandID symbol_id;
+};
+
+struct PseudoStore {
+  enum Op {
+    SW,
+  };
+
+  Op op;
+  OperandID rd_id;
+  OperandID symbol_id;
+  OperandID rt_id;
+};
+
+struct FloatPseudoLoad {
+  enum Op {
+    FLW,
+  };
+
+  Op op;
+  OperandID rd_id;
+  OperandID symbol_id;
+  OperandID rt_id;
+};
+
+struct FloatPseudoStore {
+  enum Op {
+    FSW,
+  };
+
+  Op op;
+  OperandID rd_id;
+  OperandID symbol_id;
+  OperandID rt_id;
+};
+
 /// Store instruction
 /// Note that in S-type instruction, rs1 is the base register and rs2 is the
 /// source register.

@@ -69,6 +69,33 @@ struct Builder {
     OperandID imm_id
   );
 
+  InstructionPtr fetch_pseudo_load_instruction(
+    instruction::PseudoLoad::Op op,
+    OperandID rd_id,
+    OperandID symbol_id
+  );
+
+  InstructionPtr fetch_pseudo_store_instruction(
+    instruction::PseudoStore::Op op,
+    OperandID rd_id,
+    OperandID symbol_id,
+    OperandID rt_id
+  );
+
+  InstructionPtr fetch_float_pseudo_load_instruction(
+    instruction::FloatPseudoLoad::Op op,
+    OperandID rd_id,
+    OperandID symbol_id,
+    OperandID rt_id
+  );
+
+  InstructionPtr fetch_float_pseudo_store_instruction(
+    instruction::FloatPseudoStore::Op op,
+    OperandID rd_id,
+    OperandID symbol_id,
+    OperandID rt_id
+  );
+  
   InstructionPtr fetch_float_move_instruction(
     instruction::FloatMove::Fmt dst_fmt,
     instruction::FloatMove::Fmt src_fmt,

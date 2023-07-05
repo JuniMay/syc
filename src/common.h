@@ -268,6 +268,10 @@ namespace instruction {
 
 struct Load;
 struct FloatLoad;
+struct PseudoLoad;
+struct PseudoStore;
+struct FloatPseudoLoad;
+struct FloatPseudoStore;
 struct Store;
 struct FloatStore;
 struct FloatMove;
@@ -288,6 +292,10 @@ struct Dummy;
 using InstructionKind = std::variant<
   instruction::Load,
   instruction::FloatLoad,
+  instruction::PseudoLoad,
+  instruction::PseudoStore,
+  instruction::FloatPseudoLoad,
+  instruction::FloatPseudoStore,
   instruction::Store,
   instruction::FloatStore,
   instruction::FloatMove,

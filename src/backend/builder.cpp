@@ -133,6 +133,94 @@ InstructionPtr Builder::fetch_float_store_instruction(
   return instruction;
 }
 
+InstructionPtr Builder::fetch_pseudo_load_instruction(
+  instruction::PseudoLoad::Op op,
+  OperandID rd_id,
+  OperandID symbol_id
+) {
+  auto id = context.get_next_instruction_id();
+  auto kind = InstructionKind(instruction::PseudoLoad{op, rd_id, symbol_id});
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
+
+  context.register_instruction(instruction);
+
+  context.operand_table[rd_id]->set_def(id);
+
+  instruction->set_def(rd_id);
+
+  return instruction;
+}
+
+InstructionPtr Builder::fetch_pseudo_store_instruction(
+  instruction::PseudoStore::Op op,
+  OperandID rd_id,
+  OperandID symbol_id,
+  OperandID rt_id
+) {
+  auto id = context.get_next_instruction_id();
+  auto kind =
+    InstructionKind(instruction::PseudoStore{op, rd_id, symbol_id, rt_id});
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
+
+  context.register_instruction(instruction);
+
+  context.operand_table[rt_id]->add_use(id);
+  // rt is defined by auipc
+  context.operand_table[rt_id]->set_def(id);
+
+  instruction->add_use(rd_id);
+  instruction->set_def(rt_id);
+
+  return instruction;
+
+}
+
+InstructionPtr Builder::fetch_float_pseudo_load_instruction(
+  instruction::FloatPseudoLoad::Op op,
+  OperandID rd_id,
+  OperandID symbol_id,
+  OperandID rt_id
+) {
+  auto id = context.get_next_instruction_id();
+  auto kind = InstructionKind(
+    instruction::FloatPseudoLoad{op, rd_id, symbol_id, rt_id});
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
+
+  context.register_instruction(instruction);
+
+  context.operand_table[rd_id]->set_def(id);
+  // rt is defined by auipc
+  context.operand_table[rt_id]->set_def(id);
+
+  instruction->set_def(rd_id);
+  instruction->set_def(rt_id);
+
+  return instruction;
+}
+
+InstructionPtr Builder::fetch_float_pseudo_store_instruction(
+  instruction::FloatPseudoStore::Op op,
+  OperandID rd_id,
+  OperandID symbol_id,
+  OperandID rt_id
+) {
+  auto id = context.get_next_instruction_id();
+  auto kind = InstructionKind(
+    instruction::FloatPseudoStore{op, rd_id, symbol_id, rt_id});
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
+
+  context.register_instruction(instruction);
+
+  context.operand_table[rd_id]->add_use(id);
+  // rt is defined by auipc
+  context.operand_table[rt_id]->set_def(id);
+
+  instruction->add_use(rd_id);
+  instruction->set_def(rt_id);
+
+  return instruction;
+}
+
 InstructionPtr Builder::fetch_float_move_instruction(
   instruction::FloatMove::Fmt dst_fmt,
   instruction::FloatMove::Fmt src_fmt,

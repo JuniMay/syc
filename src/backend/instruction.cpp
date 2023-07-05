@@ -125,6 +125,79 @@ std::string Instruction::to_string(Context& context) {
 
         return ss.str();
       },
+      [&context](const PseudoLoad& instruction) {
+        std::stringstream ss;
+
+        auto rd = context.get_operand(instruction.rd_id);
+        auto symbol = context.get_operand(instruction.symbol_id);
+
+        switch (instruction.op) {
+          case PseudoLoad::LA:
+            ss << "la";
+            break;
+          case PseudoLoad::LW:
+            ss << "lw";
+            break;
+        }
+
+        ss << " " << rd->to_string() << ", " << symbol->to_string();
+
+        return ss.str();
+      },
+      [&context](const PseudoStore& instruction) {
+        std::stringstream ss;
+
+        auto rd = context.get_operand(instruction.rd_id);
+        auto symbol = context.get_operand(instruction.symbol_id);
+        auto rt = context.get_operand(instruction.rt_id);
+
+        switch (instruction.op) {
+          case PseudoStore::SW:
+            ss << "sw";
+            break;
+        }
+
+        ss << " " << rd->to_string() << ", " << symbol->to_string() << " "
+           << rt->to_string();
+
+        return ss.str();
+      },
+      [&context](const FloatPseudoLoad& instruction) {
+        std::stringstream ss;
+
+        auto rd = context.get_operand(instruction.rd_id);
+        auto symbol = context.get_operand(instruction.symbol_id);
+        auto rt = context.get_operand(instruction.rt_id);
+
+        switch (instruction.op) {
+          case FloatPseudoLoad::FLW:
+            ss << "flw";
+            break;
+        }
+
+        ss << " " << rd->to_string() << ", " << symbol->to_string() << " "
+           << rt->to_string();
+
+        return ss.str();
+      },
+      [&context](const FloatPseudoStore& instruction) {
+        std::stringstream ss;
+
+        auto rd = context.get_operand(instruction.rd_id);
+        auto symbol = context.get_operand(instruction.symbol_id);
+        auto rt = context.get_operand(instruction.rt_id);
+
+        switch (instruction.op) {
+          case FloatPseudoStore::FSW:
+            ss << "fsw";
+            break;
+        }
+
+        ss << " " << rd->to_string() << ", " << symbol->to_string() << " "
+           << rt->to_string();
+
+        return ss.str();
+      },
       [&context](const Binary& instruction) {
         std::stringstream ss;
 
