@@ -331,7 +331,150 @@ void codegen_instruction(
         }
       },
       [&](ir::instruction::Binary& ir_binary) {
+        auto ir_op = ir_binary.op;
 
+        auto ir_dst_id = ir_binary.dst_id;
+        auto ir_lhs_id = ir_binary.lhs_id;
+        auto ir_rhs_id = ir_binary.rhs_id;
+
+        auto asm_dst_id = codegen_operand(
+          ir_dst_id, ir_context, builder, codegen_context, false, false
+        );
+
+        auto asm_lhs_id = codegen_operand(
+          ir_lhs_id, ir_context, builder, codegen_context, false, true
+        );
+
+        switch (ir_op) {
+          case ir::instruction::BinaryOp::Add: {
+            auto asm_rhs_id = codegen_operand(
+              ir_rhs_id, ir_context, builder, codegen_context, true, true
+            );
+
+            bool is_rhs_imm =
+              builder.context.get_operand(asm_rhs_id)->is_immediate();
+
+            if (is_rhs_imm) {
+              auto addiw_instruction = builder.fetch_binary_imm_instruction(
+                backend::instruction::BinaryImm::Op::ADDIW, asm_dst_id,
+                asm_lhs_id, asm_rhs_id
+              );
+              builder.append_instruction(addiw_instruction);
+            } else {
+              auto addw_instruction = builder.fetch_binary_instruction(
+                backend::instruction::Binary::Op::ADDW, asm_dst_id, asm_lhs_id,
+                asm_rhs_id
+              );
+              builder.append_instruction(addw_instruction);
+            }
+            break;
+          }
+          case ir::instruction::BinaryOp::Sub: {
+            auto asm_rhs_id = codegen_operand(
+              ir_rhs_id, ir_context, builder, codegen_context, false, true
+            );
+
+            auto subw_instruction = builder.fetch_binary_instruction(
+              backend::instruction::Binary::Op::SUBW, asm_dst_id, asm_lhs_id,
+              asm_rhs_id
+            );
+            builder.append_instruction(subw_instruction);
+            break;
+          }
+          case ir::instruction::BinaryOp::Mul: {
+            auto asm_rhs_id = codegen_operand(
+              ir_rhs_id, ir_context, builder, codegen_context, false, true
+            );
+
+            auto mul_instruction = builder.fetch_binary_instruction(
+              backend::instruction::Binary::Op::MUL, asm_dst_id, asm_lhs_id,
+              asm_rhs_id
+            );
+            builder.append_instruction(mul_instruction);
+            break;
+          }
+          case ir::instruction::BinaryOp::SDiv: {
+            auto asm_rhs_id = codegen_operand(
+              ir_rhs_id, ir_context, builder, codegen_context, false, true
+            );
+
+            auto div_instruction = builder.fetch_binary_instruction(
+              backend::instruction::Binary::Op::DIV, asm_dst_id, asm_lhs_id,
+              asm_rhs_id
+            );
+            builder.append_instruction(div_instruction);
+            break;
+          }
+          case ir::instruction::BinaryOp::SRem: {
+            auto asm_rhs_id = codegen_operand(
+              ir_rhs_id, ir_context, builder, codegen_context, false, true
+            );
+
+            auto rem_instruction = builder.fetch_binary_instruction(
+              backend::instruction::Binary::Op::REM, asm_dst_id, asm_lhs_id,
+              asm_rhs_id
+            );
+            builder.append_instruction(rem_instruction);
+
+            break;
+          }
+          case ir::instruction::BinaryOp::FAdd: {
+            auto asm_rhs_id = codegen_operand(
+              ir_rhs_id, ir_context, builder, codegen_context, false, true
+            );
+
+            auto fadds_instruction = builder.fetch_float_binary_instruction(
+              backend::instruction::FloatBinary::FADD,
+              backend::instruction::FloatBinary::Fmt::S, asm_dst_id, asm_lhs_id,
+              asm_rhs_id
+            );
+            builder.append_instruction(fadds_instruction);
+
+            break;
+          }
+          case ir::instruction::BinaryOp::FSub: {
+            auto asm_rhs_id = codegen_operand(
+              ir_rhs_id, ir_context, builder, codegen_context, false, true
+            );
+
+            auto fsubs_instruction = builder.fetch_float_binary_instruction(
+              backend::instruction::FloatBinary::FSUB,
+              backend::instruction::FloatBinary::Fmt::S, asm_dst_id, asm_lhs_id,
+              asm_rhs_id
+            );
+            builder.append_instruction(fsubs_instruction);
+
+            break;
+          }
+          case ir::instruction::BinaryOp::FMul: {
+            auto asm_rhs_id = codegen_operand(
+              ir_rhs_id, ir_context, builder, codegen_context, false, true
+            );
+
+            auto fmuls_instruction = builder.fetch_float_binary_instruction(
+              backend::instruction::FloatBinary::FMUL,
+              backend::instruction::FloatBinary::Fmt::S, asm_dst_id, asm_lhs_id,
+              asm_rhs_id
+            );
+            builder.append_instruction(fmuls_instruction);
+
+            break;
+          }
+          case ir::instruction::BinaryOp::FDiv: {
+            auto asm_rhs_id = codegen_operand(
+              ir_rhs_id, ir_context, builder, codegen_context, false, true
+            );
+
+            auto fdivs_instruction = builder.fetch_float_binary_instruction(
+              backend::instruction::FloatBinary::FDIV,
+              backend::instruction::FloatBinary::Fmt::S, asm_dst_id, asm_lhs_id,
+              asm_rhs_id
+            );
+            builder.append_instruction(fdivs_instruction);
+
+            break;
+          }
+        }
       },
       [&](auto& ir_instruction) {
 
@@ -424,8 +567,9 @@ AsmOperandID codegen_operand(
             );
 
           if (check_utype_immediate(bits)) {
-            auto lui_instruction =
-              builder.fetch_lui_instruction(asm_temp_id, asm_imm_id);
+            auto lui_instruction = builder.fetch_lui_instruction(
+              asm_temp_id, builder.fetch_immediate((uint32_t)(bits >> 12))
+            );
             builder.append_instruction(lui_instruction);
           } else {
             auto li_instruction =

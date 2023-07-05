@@ -49,5 +49,9 @@ bool Operand::is_local_memory() const {
   return std::holds_alternative<LocalMemory>(kind);
 }
 
+bool Operand::is_immediate() const {
+  return std::holds_alternative<Immediate>(kind);
+}
+
 }  // namespace backend
 }  // namespace syc

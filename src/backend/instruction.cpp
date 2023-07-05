@@ -374,7 +374,7 @@ std::string Instruction::to_string(Context& context) {
             ss << ".h";
             break;
           case FloatMove::S:
-            ss << ".s";
+            ss << ".w";
             break;
           case FloatMove::D:
             ss << ".d";
@@ -389,7 +389,7 @@ std::string Instruction::to_string(Context& context) {
             ss << ".h";
             break;
           case FloatMove::S:
-            ss << ".s";
+            ss << ".w";
             break;
           case FloatMove::D:
             ss << ".d";

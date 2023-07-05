@@ -43,6 +43,8 @@ struct Operand {
   std::string to_string(int width=0) const;
 
   bool is_local_memory() const;
+
+  bool is_immediate() const;
 };
 
 }  // namespace backend
