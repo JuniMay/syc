@@ -11,6 +11,14 @@ BasicBlock::BasicBlock(BasicBlockID id, std::string parent_function_name)
   this->head_instruction->insert_next(this->tail_instruction);
 }
 
+void BasicBlock::add_pred(BasicBlockID pred_id) {
+  this->pred_list.push_back(pred_id);
+}
+
+void BasicBlock::add_succ(BasicBlockID succ_id) {
+  this->succ_list.push_back(succ_id);
+}
+
 void BasicBlock::prepend_instruction(InstructionPtr instruction) {
   this->head_instruction->insert_next(instruction);
 }

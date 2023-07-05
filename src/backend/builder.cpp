@@ -172,7 +172,6 @@ InstructionPtr Builder::fetch_pseudo_store_instruction(
   instruction->set_def(rt_id);
 
   return instruction;
-
 }
 
 InstructionPtr Builder::fetch_float_pseudo_load_instruction(
@@ -182,8 +181,8 @@ InstructionPtr Builder::fetch_float_pseudo_load_instruction(
   OperandID rt_id
 ) {
   auto id = context.get_next_instruction_id();
-  auto kind = InstructionKind(
-    instruction::FloatPseudoLoad{op, rd_id, symbol_id, rt_id});
+  auto kind =
+    InstructionKind(instruction::FloatPseudoLoad{op, rd_id, symbol_id, rt_id});
   auto instruction = create_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
@@ -205,8 +204,8 @@ InstructionPtr Builder::fetch_float_pseudo_store_instruction(
   OperandID rt_id
 ) {
   auto id = context.get_next_instruction_id();
-  auto kind = InstructionKind(
-    instruction::FloatPseudoStore{op, rd_id, symbol_id, rt_id});
+  auto kind =
+    InstructionKind(instruction::FloatPseudoStore{op, rd_id, symbol_id, rt_id});
   auto instruction = create_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
@@ -447,6 +446,13 @@ InstructionPtr Builder::fetch_branch_instruction(
 
 void Builder::append_instruction(InstructionPtr instruction) {
   curr_basic_block->append_instruction(instruction);
+  auto maybe_basic_block_id = instruction->get_basic_block_id_if_branch();
+  if (maybe_basic_block_id.has_value()) {
+    curr_basic_block->add_succ(maybe_basic_block_id.value());
+    context.basic_block_table[maybe_basic_block_id.value()]->add_pred(
+      curr_basic_block->id
+    );
+  }
 }
 
 void Builder::set_curr_basic_block(BasicBlockPtr basic_block) {

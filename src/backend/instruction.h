@@ -379,6 +379,8 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
 
   /// Convert the instruction to a string of assembly code.
   std::string to_string(Context& context);
+
+  std::optional<BasicBlockID> get_basic_block_id_if_branch() const;
 };
 
 InstructionPtr create_instruction(

@@ -18,7 +18,13 @@ struct BasicBlock : std::enable_shared_from_this<BasicBlock> {
   BasicBlockPtr next;
   BasicBlockPrevPtr prev;
 
+  std::vector<BasicBlockID> pred_list;
+  std::vector<BasicBlockID> succ_list;
+
   BasicBlock(BasicBlockID id, std::string parent_function_name);
+
+  void add_pred(BasicBlockID pred_id);
+  void add_succ(BasicBlockID succ_id);
 
   std::string get_label() const { return ".bb_" + std::to_string(id); }
 
