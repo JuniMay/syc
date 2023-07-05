@@ -63,6 +63,9 @@ InstructionPtr Builder::fetch_load_instruction(
   context.operand_table[rd_id]->set_def(id);
   context.operand_table[rs_id]->add_use(id);
 
+  instruction->set_def(rd_id);
+  instruction->add_use(rs_id);
+
   return instruction;
 }
 
@@ -81,6 +84,9 @@ InstructionPtr Builder::fetch_float_load_instruction(
   context.operand_table[rd_id]->set_def(id);
   context.operand_table[rs_id]->add_use(id);
 
+  instruction->set_def(rd_id);
+  instruction->add_use(rs_id);
+
   return instruction;
 }
 
@@ -98,6 +104,9 @@ InstructionPtr Builder::fetch_store_instruction(
 
   context.operand_table[rs1_id]->add_use(id);
   context.operand_table[rs2_id]->add_use(id);
+
+  instruction->add_use(rs1_id);
+  instruction->add_use(rs2_id);
 
   return instruction;
 }
@@ -118,6 +127,9 @@ InstructionPtr Builder::fetch_float_store_instruction(
   context.operand_table[rs1_id]->add_use(id);
   context.operand_table[rs2_id]->add_use(id);
 
+  instruction->add_use(rs1_id);
+  instruction->add_use(rs2_id);
+
   return instruction;
 }
 
@@ -136,6 +148,9 @@ InstructionPtr Builder::fetch_float_move_instruction(
 
   context.operand_table[rd_id]->set_def(id);
   context.operand_table[rs_id]->add_use(id);
+
+  instruction->set_def(rd_id);
+  instruction->add_use(rs_id);
 
   return instruction;
 }
@@ -156,6 +171,9 @@ InstructionPtr Builder::fetch_float_convert_instruction(
   context.operand_table[rd_id]->set_def(id);
   context.operand_table[rs_id]->add_use(id);
 
+  instruction->set_def(rd_id);
+  instruction->add_use(rs_id);
+
   return instruction;
 }
 
@@ -175,6 +193,10 @@ InstructionPtr Builder::fetch_binary_instruction(
   context.operand_table[rs1_id]->add_use(id);
   context.operand_table[rs2_id]->add_use(id);
 
+  instruction->set_def(rd_id);
+  instruction->add_use(rs1_id);
+  instruction->add_use(rs2_id);
+
   return instruction;
 }
 
@@ -192,6 +214,9 @@ InstructionPtr Builder::fetch_binary_imm_instruction(
 
   context.operand_table[rd_id]->set_def(id);
   context.operand_table[rs_id]->add_use(id);
+
+  instruction->set_def(rd_id);
+  instruction->add_use(rs_id);
 
   return instruction;
 }
@@ -213,6 +238,10 @@ InstructionPtr Builder::fetch_float_binary_instruction(
   context.operand_table[rd_id]->set_def(id);
   context.operand_table[rs1_id]->add_use(id);
   context.operand_table[rs2_id]->add_use(id);
+
+  instruction->set_def(rd_id);
+  instruction->add_use(rs1_id);
+  instruction->add_use(rs2_id);
 
   return instruction;
 }
@@ -237,6 +266,11 @@ InstructionPtr Builder::fetch_float_mul_add_instruction(
   context.operand_table[rs2_id]->add_use(id);
   context.operand_table[rs3_id]->add_use(id);
 
+  instruction->set_def(rd_id);
+  instruction->add_use(rs1_id);
+  instruction->add_use(rs2_id);
+  instruction->add_use(rs3_id);
+
   return instruction;
 }
 
@@ -255,6 +289,9 @@ InstructionPtr Builder::fetch_float_unary_instruction(
   context.operand_table[rd_id]->set_def(id);
   context.operand_table[rs_id]->add_use(id);
 
+  instruction->set_def(rd_id);
+  instruction->add_use(rs_id);
+
   return instruction;
 }
 
@@ -268,6 +305,8 @@ Builder::fetch_lui_instruction(OperandID rd_id, OperandID imm_id) {
 
   context.operand_table[rd_id]->set_def(id);
 
+  instruction->set_def(rd_id);
+
   return instruction;
 }
 
@@ -280,6 +319,8 @@ Builder::fetch_li_instruction(OperandID rd_id, OperandID imm_id) {
   context.register_instruction(instruction);
 
   context.operand_table[rd_id]->set_def(id);
+
+  instruction->set_def(rd_id);
 
   return instruction;
 }
@@ -309,6 +350,9 @@ InstructionPtr Builder::fetch_branch_instruction(
 
   context.operand_table[rs1_id]->add_use(id);
   context.operand_table[rs2_id]->add_use(id);
+
+  instruction->add_use(rs1_id);
+  instruction->add_use(rs2_id);
 
   return instruction;
 }

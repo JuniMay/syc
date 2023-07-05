@@ -33,7 +33,7 @@ struct Operand {
 
   Operand(OperandID id, OperandKind kind, Modifier modifier);
 
-  std::optional<InstructionID> def_id;
+  std::optional<InstructionID> maybe_def_id;
   std::vector<InstructionID> use_id_list;
 
   void set_def(InstructionID def_id);

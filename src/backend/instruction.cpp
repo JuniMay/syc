@@ -12,6 +12,14 @@ Instruction::Instruction(
 )
   : id(id), kind(kind), parent_block_id(parent_block_id), next(nullptr) {}
 
+void Instruction::set_def(OperandID def_id) {
+  this->maybe_def_id = def_id;
+}
+
+void Instruction::add_use(OperandID use_id) {
+  use_id_list.push_back(use_id);
+}
+
 void Instruction::insert_next(InstructionPtr instruction) {
   instruction->next = this->next;
   instruction->prev = this->shared_from_this();

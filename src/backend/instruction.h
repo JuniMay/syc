@@ -314,6 +314,12 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
   /// Previous instruction.
   InstructionPrevPtr prev;
 
+  std::optional<OperandID> maybe_def_id;
+  std::vector<OperandID> use_id_list;
+
+  void set_def(OperandID def_id);
+  void add_use(OperandID use_id);
+
   /// Constructor
   Instruction(
     InstructionID id,

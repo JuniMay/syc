@@ -7,7 +7,7 @@ Operand::Operand(OperandID id, OperandKind kind, Modifier modifier)
   : id(id), kind(kind), modifier(modifier) {}
 
 void Operand::set_def(InstructionID def_id) {
-  this->def_id = def_id;
+  this->maybe_def_id = def_id;
 }
 
 void Operand::add_use(InstructionID use_id) {
