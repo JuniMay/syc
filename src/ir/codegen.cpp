@@ -800,6 +800,51 @@ void codegen_instruction(
           }
         }
       },
+      [&](ir::instruction::Cast& cast) {
+        auto op = cast.op;
+        auto asm_dst = codegen_operand(
+          cast.dst_id, ir_context, builder, codegen_context, false, false
+        );
+        auto asm_src = codegen_operand(
+          cast.src_id, ir_context, builder, codegen_context, false, false
+        );
+
+        switch (op) {
+          case ir::instruction::CastOp::ZExt: {
+            // Just move
+            auto addi_instruction = builder.fetch_binary_imm_instruction(
+              backend::instruction::BinaryImm::Op::ADDI, asm_dst, asm_src,
+              builder.fetch_immediate(0)
+            );
+            builder.append_instruction(addi_instruction);
+            break;
+          }
+          case ir::instruction::CastOp::BitCast: {
+            auto addi_instruction = builder.fetch_binary_imm_instruction(
+              backend::instruction::BinaryImm::Op::ADDI, asm_dst, asm_src,
+              builder.fetch_immediate(0)
+            );
+            builder.append_instruction(addi_instruction);
+            break;
+          }
+          case ir::instruction::CastOp::FPToSI: {
+            auto fcvtws_instruction = builder.fetch_float_convert_instruction(
+              backend::instruction::FloatConvert::Fmt::W,
+              backend::instruction::FloatConvert::Fmt::S, asm_dst, asm_src
+            );
+            builder.append_instruction(fcvtws_instruction);
+            break;
+          }
+          case ir::instruction::CastOp::SIToFP: {
+            auto fcvtsw_instruction = builder.fetch_float_convert_instruction(
+              backend::instruction::FloatConvert::Fmt::S,
+              backend::instruction::FloatConvert::Fmt::W, asm_dst, asm_src
+            );
+            builder.append_instruction(fcvtsw_instruction);
+            break;
+          }
+        }
+      },
       [&](ir::instruction::Ret& ret) {
         auto ir_maybe_value_id = ret.maybe_value_id;
         if (ir_maybe_value_id.has_value()) {
