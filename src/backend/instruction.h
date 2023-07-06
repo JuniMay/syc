@@ -359,10 +359,10 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
   /// Previous instruction.
   InstructionPrevPtr prev;
 
-  std::optional<OperandID> maybe_def_id;
+  std::vector<OperandID> def_id_list;
   std::vector<OperandID> use_id_list;
 
-  void set_def(OperandID def_id);
+  void add_def(OperandID def_id);
   void add_use(OperandID use_id);
 
   /// Constructor
@@ -381,6 +381,8 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
   std::string to_string(Context& context);
 
   std::optional<BasicBlockID> get_basic_block_id_if_branch() const;
+
+  void replace_operand(OperandID old_operand_id, OperandID new_operand_id);
 };
 
 InstructionPtr create_instruction(

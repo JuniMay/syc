@@ -65,5 +65,15 @@ bool Operand::is_global() const {
   return std::holds_alternative<Global>(kind);
 }
 
+bool Operand::is_float() const {
+  if (is_reg()) {
+    return std::get<Register>(kind).is_float();
+  } else if (is_vreg()) {
+    return std::get<VirtualRegister>(kind).is_float();
+  } else {
+    return false;
+  }
+}
+
 }  // namespace backend
 }  // namespace syc

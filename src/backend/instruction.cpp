@@ -12,8 +12,8 @@ Instruction::Instruction(
 )
   : id(id), kind(kind), parent_block_id(parent_block_id), next(nullptr) {}
 
-void Instruction::set_def(OperandID def_id) {
-  this->maybe_def_id = def_id;
+void Instruction::add_def(OperandID def_id) {
+  def_id_list.push_back(def_id);
 }
 
 void Instruction::add_use(OperandID use_id) {
@@ -61,6 +61,200 @@ InstructionPtr create_dummy_instruction() {
   return create_instruction(
     std::numeric_limits<InstructionID>::max(), instruction::Dummy{},
     std::numeric_limits<BasicBlockID>::max()
+  );
+}
+
+void Instruction::replace_operand(
+  OperandID old_operand_id,
+  OperandID new_operand_id
+) {
+  using namespace instruction;
+  std::visit(
+    overloaded{
+      [&](Load& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.rs_id == old_operand_id) {
+          instruction.rs_id = new_operand_id;
+        }
+        if (instruction.imm_id == old_operand_id) {
+          instruction.imm_id = new_operand_id;
+        }
+      },
+      [&](FloatLoad& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.rs_id == old_operand_id) {
+          instruction.rs_id = new_operand_id;
+        }
+        if (instruction.imm_id == old_operand_id) {
+          instruction.imm_id = new_operand_id;
+        }
+      },
+      [&](PseudoLoad& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.symbol_id == old_operand_id) {
+          instruction.symbol_id = new_operand_id;
+        }
+      },
+      [&](FloatPseudoLoad& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.symbol_id == old_operand_id) {
+          instruction.symbol_id = new_operand_id;
+        }
+        if (instruction.rt_id == old_operand_id) {
+          instruction.rt_id = new_operand_id;
+        }
+      },
+      [&](PseudoStore& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.symbol_id == old_operand_id) {
+          instruction.symbol_id = new_operand_id;
+        }
+        if (instruction.rt_id == old_operand_id) {
+          instruction.rt_id = new_operand_id;
+        }
+      },
+      [&](FloatPseudoStore& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.symbol_id == old_operand_id) {
+          instruction.symbol_id = new_operand_id;
+        }
+        if (instruction.rt_id == old_operand_id) {
+          instruction.rt_id = new_operand_id;
+        }
+      },
+      [&](Store& instruction) {
+        if (instruction.rs1_id == old_operand_id) {
+          instruction.rs1_id = new_operand_id;
+        }
+        if (instruction.rs2_id == old_operand_id) {
+          instruction.rs2_id = new_operand_id;
+        }
+        if (instruction.imm_id == old_operand_id) {
+          instruction.imm_id = new_operand_id;
+        }
+      },
+      [&](FloatStore& instruction) {
+        if (instruction.rs1_id == old_operand_id) {
+          instruction.rs1_id = new_operand_id;
+        }
+        if (instruction.rs2_id == old_operand_id) {
+          instruction.rs2_id = new_operand_id;
+        }
+        if (instruction.imm_id == old_operand_id) {
+          instruction.imm_id = new_operand_id;
+        }
+      },
+      [&](FloatMove& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.rs_id == old_operand_id) {
+          instruction.rs_id = new_operand_id;
+        }
+      },
+      [&](FloatConvert& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.rs_id == old_operand_id) {
+          instruction.rs_id = new_operand_id;
+        }
+      },
+      [&](Binary& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.rs1_id == old_operand_id) {
+          instruction.rs1_id = new_operand_id;
+        }
+        if (instruction.rs2_id == old_operand_id) {
+          instruction.rs2_id = new_operand_id;
+        }
+      },
+      [&](BinaryImm& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.rs_id == old_operand_id) {
+          instruction.rs_id = new_operand_id;
+        }
+        if (instruction.imm_id == old_operand_id) {
+          instruction.imm_id = new_operand_id;
+        }
+      },
+      [&](FloatBinary& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.rs1_id == old_operand_id) {
+          instruction.rs1_id = new_operand_id;
+        }
+        if (instruction.rs2_id == old_operand_id) {
+          instruction.rs2_id = new_operand_id;
+        }
+      },
+      [&](FloatMulAdd& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.rs1_id == old_operand_id) {
+          instruction.rs1_id = new_operand_id;
+        }
+        if (instruction.rs2_id == old_operand_id) {
+          instruction.rs2_id = new_operand_id;
+        }
+        if (instruction.rs3_id == old_operand_id) {
+          instruction.rs3_id = new_operand_id;
+        }
+      },
+      [&](FloatUnary& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.rs_id == old_operand_id) {
+          instruction.rs_id = new_operand_id;
+        }
+      },
+      [&](Lui& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.imm_id == old_operand_id) {
+          instruction.imm_id = new_operand_id;
+        }
+      },
+      [&](Li& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.imm_id == old_operand_id) {
+          instruction.imm_id = new_operand_id;
+        }
+      },
+      [&](Branch& instruction) {
+        if (instruction.rs1_id == old_operand_id) {
+          instruction.rs1_id = new_operand_id;
+        }
+        if (instruction.rs2_id == old_operand_id) {
+          instruction.rs2_id = new_operand_id;
+        }
+      },
+      [&](auto& instruction) {
+        // Do nothing.
+      }},
+    kind
   );
 }
 

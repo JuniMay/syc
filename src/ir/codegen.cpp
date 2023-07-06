@@ -119,7 +119,7 @@ void codegen(
     codegen_function(ir_function, ir_context, builder, codegen_context);
   }
 
-  asm_register_allocation(builder.context);
+  asm_register_allocation(builder);
 
   for (auto& [ir_function_name, ir_function] : ir_context.function_table) {
     if (ir_function->is_declare) {
@@ -156,8 +156,6 @@ void codegen_function_prolouge(
 ) {
   using namespace backend;
 
-  // TODO: saved registers
-
   auto asm_function = builder.context.get_function(function_name);
   auto entry_block = asm_function->head_basic_block->next;
 
@@ -168,27 +166,52 @@ void codegen_function_prolouge(
 
   auto sp_id = builder.fetch_register(Register{GeneralRegister::Sp});
 
-  auto sd_instruction = builder.fetch_store_instruction(
-    instruction::Store::Op::SD, sp_id, ra_id,
-    builder.fetch_immediate((int32_t)stack_frame_size)
-  );
+  stack_frame_size +=
+    8 * (1 + asm_function->saved_general_register_list.size() +
+         asm_function->saved_float_register_list.size());
 
-  asm_function->stack_frame_size += 8;
-  stack_frame_size += 8;
-
-  // adjust frame size to be 16-byte aligned
-  // Note that local variables are allocated from 0(sp) to higher address (lower
-  // in the stack), there might be gaps at the start of the stack frame. So ra
-  // is probably not stored at the start of the stack frame.
-  stack_frame_size = (stack_frame_size + 15) / 16 * 16;
   asm_function->stack_frame_size = stack_frame_size;
 
-  auto addi_instruction = builder.fetch_binary_imm_instruction(
-    instruction::BinaryImm::Op::ADDI, sp_id, sp_id,
-    builder.fetch_immediate(-(int32_t)stack_frame_size)
+  // Adjust frame size to be 16-byte aligned
+  // There might be gaps between saved registers and local variables.
+  size_t aligned_stack_frame_size = (stack_frame_size + 15) / 16 * 16;
+
+  asm_function->align_frame_size =
+    aligned_stack_frame_size - asm_function->stack_frame_size;
+
+  size_t curr_frame_pos = aligned_stack_frame_size - 16;
+
+  for (auto reg : asm_function->saved_general_register_list) {
+    auto reg_id = builder.fetch_register(map_general_register(reg));
+    auto sd_instruction = builder.fetch_store_instruction(
+      instruction::Store::Op::SD, sp_id, reg_id,
+      builder.fetch_immediate((int32_t)curr_frame_pos)
+    );
+    entry_block->prepend_instruction(sd_instruction);
+    curr_frame_pos -= 8;
+  }
+
+  for (auto reg : asm_function->saved_float_register_list) {
+    auto reg_id = builder.fetch_register(map_float_register(reg));
+    auto fsd_instruction = builder.fetch_float_store_instruction(
+      instruction::FloatStore::Op::FSD, sp_id, reg_id,
+      builder.fetch_immediate((int32_t)curr_frame_pos)
+    );
+    entry_block->prepend_instruction(fsd_instruction);
+    curr_frame_pos -= 8;
+  }
+
+  auto sd_instruction = builder.fetch_store_instruction(
+    instruction::Store::Op::SD, sp_id, ra_id,
+    builder.fetch_immediate((int32_t)(aligned_stack_frame_size - 8))
   );
 
   entry_block->prepend_instruction(sd_instruction);
+
+  auto addi_instruction = builder.fetch_binary_imm_instruction(
+    instruction::BinaryImm::Op::ADDI, sp_id, sp_id,
+    builder.fetch_immediate(-(int32_t)aligned_stack_frame_size)
+  );
   entry_block->prepend_instruction(addi_instruction);
 }
 
@@ -205,20 +228,45 @@ void codegen_function_epilouge(
   auto exit_block = asm_function->tail_basic_block->prev.lock();
 
   auto stack_frame_size = asm_function->stack_frame_size;
+  auto align_frame_size = asm_function->align_frame_size;
 
   // restore ra
   auto ra_id = builder.fetch_register(Register{GeneralRegister::Ra});
 
   auto sp_id = builder.fetch_register(Register{GeneralRegister::Sp});
 
+  size_t aligned_stack_frame_size =
+    asm_function->stack_frame_size + asm_function->align_frame_size;
+  size_t curr_frame_pos = aligned_stack_frame_size - 16;
+
+  for (auto reg : asm_function->saved_general_register_list) {
+    auto reg_id = builder.fetch_register(map_general_register(reg));
+    auto ld_instruction = builder.fetch_load_instruction(
+      instruction::Load::Op::LD, reg_id, sp_id,
+      builder.fetch_immediate((int32_t)curr_frame_pos)
+    );
+    exit_block->prepend_instruction(ld_instruction);
+    curr_frame_pos -= 8;
+  }
+
+  for (auto reg : asm_function->saved_float_register_list) {
+    auto reg_id = builder.fetch_register(map_float_register(reg));
+    auto fsd_instruction = builder.fetch_float_load_instruction(
+      instruction::FloatLoad::Op::FLD, reg_id, sp_id,
+      builder.fetch_immediate((int32_t)curr_frame_pos)
+    );
+    exit_block->prepend_instruction(fsd_instruction);
+    curr_frame_pos -= 8;
+  }
+
   auto ld_instruction = builder.fetch_load_instruction(
     instruction::Load::Op::LD, ra_id, sp_id,
-    builder.fetch_immediate((int32_t)stack_frame_size - 8)
+    builder.fetch_immediate((int32_t)(stack_frame_size + align_frame_size - 8))
   );
 
   auto addi_instruction = builder.fetch_binary_imm_instruction(
     instruction::BinaryImm::Op::ADDI, sp_id, sp_id,
-    builder.fetch_immediate((int32_t)stack_frame_size)
+    builder.fetch_immediate((int32_t)(stack_frame_size + align_frame_size))
   );
 
   exit_block->prepend_instruction(addi_instruction);
@@ -319,7 +367,7 @@ void codegen_instruction(
             builder.append_instruction(sw_instruction);
           } else {
             auto sw_instruction = builder.fetch_store_instruction(
-              backend::instruction::Store::Op::SD, asm_ptr_id, asm_value_id,
+              backend::instruction::Store::Op::SW, asm_ptr_id, asm_value_id,
               builder.fetch_immediate(0)
             );
             builder.append_instruction(sw_instruction);
@@ -703,8 +751,11 @@ bool check_itype_immediate(int32_t value) {
 }
 
 /// Perform register allocation.
-void asm_register_allocation(AsmContext& context) {
-  // TODO
+void asm_register_allocation(AsmBuilder& builder) {
+  for (auto& [function_name, function] : builder.context.function_table) {
+    auto linear_scan_context = backend::LinearScanContext();
+    backend::linear_scan(function, builder, linear_scan_context);
+  }
 }
 
 /// Perform instruction scheduling.

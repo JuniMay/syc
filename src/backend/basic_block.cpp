@@ -5,7 +5,7 @@ namespace syc {
 namespace backend {
 
 BasicBlock::BasicBlock(BasicBlockID id, std::string parent_function_name)
-  : id(id), parent_function_name(parent_function_name) {
+  : id(id), parent_function_name(parent_function_name), next(nullptr) {
   this->head_instruction = create_dummy_instruction();
   this->tail_instruction = create_dummy_instruction();
   this->head_instruction->insert_next(this->tail_instruction);

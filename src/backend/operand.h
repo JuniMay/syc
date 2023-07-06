@@ -40,7 +40,7 @@ struct Operand {
 
   void add_use(InstructionID use_id);
 
-  std::string to_string(int width=0) const;
+  std::string to_string(int width = 0) const;
 
   bool is_local_memory() const;
 
@@ -51,6 +51,8 @@ struct Operand {
   bool is_reg() const;
 
   bool is_global() const;
+
+  bool is_float() const;
 };
 
 }  // namespace backend

@@ -10,6 +10,7 @@
 #include "ir/instruction.h"
 #include "ir/operand.h"
 #include "ir/type.h"
+#include "passes/linear_scan.h"
 
 namespace syc {
 
@@ -92,7 +93,7 @@ bool check_utype_immediate(uint32_t value);
 bool check_itype_immediate(int32_t value);
 
 /// Perform register allocation.
-void asm_register_allocation(AsmContext& context);
+void asm_register_allocation(AsmBuilder& builder);
 
 /// Perform instruction scheduling.
 void asm_instruction_scheduling(AsmContext& context);
