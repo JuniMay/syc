@@ -156,6 +156,8 @@ void codegen_function_prolouge(
 ) {
   using namespace backend;
 
+  // TODO: parameters
+
   auto asm_function = builder.context.get_function(function_name);
   auto entry_block = asm_function->head_basic_block->next;
 
@@ -299,7 +301,6 @@ void codegen_basic_block(
     );
     curr_ir_instruction = curr_ir_instruction->next;
   }
-
 }
 
 void codegen_instruction(
@@ -856,13 +857,14 @@ void codegen_instruction(
 
         auto ir_basic_block = ir_context.get_basic_block(ir_block_id);
 
-        codegen_basic_block(ir_basic_block, ir_context, builder,
-                            codegen_context);
+        codegen_basic_block(
+          ir_basic_block, ir_context, builder, codegen_context
+        );
 
         builder.set_curr_basic_block(saved_curr_basic_block);
-        
+
         auto asm_block_id = codegen_context.basic_block_map.at(ir_block_id);
-        
+
         auto j_instruction = builder.fetch_j_instruction(asm_block_id);
 
         builder.append_instruction(j_instruction);
@@ -876,10 +878,12 @@ void codegen_instruction(
         auto ir_then_basic_block = ir_context.get_basic_block(ir_then_block_id);
         auto ir_else_basic_block = ir_context.get_basic_block(ir_else_block_id);
 
-        codegen_basic_block(ir_else_basic_block, ir_context, builder,
-                            codegen_context);
-        codegen_basic_block(ir_then_basic_block, ir_context, builder,
-                            codegen_context);
+        codegen_basic_block(
+          ir_else_basic_block, ir_context, builder, codegen_context
+        );
+        codegen_basic_block(
+          ir_then_basic_block, ir_context, builder, codegen_context
+        );
 
         builder.set_curr_basic_block(saved_curr_basic_block);
 
@@ -888,8 +892,7 @@ void codegen_instruction(
         );
 
         auto bnez_instruction = builder.fetch_branch_instruction(
-          backend::instruction::Branch::BNE,
-          asm_cond_id,
+          backend::instruction::Branch::BNE, asm_cond_id,
           builder.fetch_register(backend::Register{
             backend::GeneralRegister::Zero}),
           codegen_context.basic_block_map.at(ir_then_block_id)
@@ -907,7 +910,148 @@ void codegen_instruction(
         // Phi instruction should be eliminated in SSA construction.
       },
       [&](ir::instruction::Call& call) {
-        // TODO
+        int curr_general_reg = 0;
+        int curr_float_reg = 0;
+
+        std::vector<AsmOperandID> asm_arg_id_list;
+        std::vector<AsmOperandID> asm_stack_arg_id_list;
+
+        for (auto ir_arg_id : call.arg_id_list) {
+          auto asm_arg_id =
+            codegen_operand(ir_arg_id, ir_context, builder, codegen_context);
+
+          asm_arg_id_list.push_back(asm_arg_id);
+
+          auto asm_arg = builder.context.get_operand(asm_arg_id);
+
+          if (asm_arg->is_float()) {
+            if (curr_float_reg <= 7) {
+              auto asm_reg_id = builder.fetch_register(backend::Register{
+                (backend::FloatRegister)(
+                  (int)(backend::FloatRegister::Fa0) + curr_float_reg
+                )});
+
+              // Pseudo fmv.s
+              auto fsgnjs_instruction = builder.fetch_float_binary_instruction(
+                backend::instruction::FloatBinary::FSGNJ,
+                backend::instruction::FloatBinary::S, asm_reg_id, asm_arg_id,
+                asm_arg_id
+              );
+
+              builder.append_instruction(fsgnjs_instruction);
+            } else {
+              asm_stack_arg_id_list.push_back(asm_arg_id);
+            }
+          } else {
+            if (curr_general_reg <= 7) {
+              auto asm_reg_id = builder.fetch_register(backend::Register{
+                (backend::GeneralRegister)(
+                  (int)(backend::GeneralRegister::A0) + curr_general_reg
+                )});
+
+              // mv
+              auto addi_instruction = builder.fetch_binary_imm_instruction(
+                backend::instruction::BinaryImm::ADDI, asm_reg_id, asm_arg_id,
+                builder.fetch_immediate(0)
+              );
+
+              builder.append_instruction(addi_instruction);
+            } else {
+              asm_stack_arg_id_list.push_back(asm_arg_id);
+            }
+          }
+        }
+
+        int stack_size = 4 * asm_stack_arg_id_list.size();
+
+        if (stack_size > 0) {
+          auto addi_instruction = builder.fetch_binary_imm_instruction(
+            backend::instruction::BinaryImm::ADDI,
+            builder.fetch_register(backend::Register{
+              backend::GeneralRegister::Sp}),
+            builder.fetch_register(backend::Register{
+              backend::GeneralRegister::Sp}),
+            builder.fetch_immediate(-stack_size)
+          );
+
+          builder.append_instruction(addi_instruction);
+
+          int offset = stack_size - 4;
+
+          for (auto asm_arg_id : asm_stack_arg_id_list) {
+            auto asm_arg = builder.context.get_operand(asm_arg_id);
+
+            if (asm_arg->is_float()) {
+              auto fsw_instruction = builder.fetch_float_store_instruction(
+                backend::instruction::FloatStore::Op::FSW,
+                builder.fetch_register(backend::Register{
+                  backend::GeneralRegister::Sp}),
+                asm_arg_id, builder.fetch_immediate(offset)
+              );
+
+              builder.append_instruction(fsw_instruction);
+            } else {
+              auto sw_instruction = builder.fetch_store_instruction(
+                backend::instruction::Store::Op::SW,
+                builder.fetch_register(backend::Register{
+                  backend::GeneralRegister::Sp}),
+                asm_arg_id, builder.fetch_immediate(offset)
+              );
+
+              builder.append_instruction(sw_instruction);
+            }
+
+            offset -= 4;
+          }
+        }
+        auto call_instruction =
+          builder.fetch_call_instruction(call.function_name);
+
+        builder.append_instruction(call_instruction);
+
+        if (stack_size > 0) {
+          auto addi_instruction = builder.fetch_binary_imm_instruction(
+            backend::instruction::BinaryImm::ADDI,
+            builder.fetch_register(backend::Register{
+              backend::GeneralRegister::Sp}),
+            builder.fetch_register(backend::Register{
+              backend::GeneralRegister::Sp}),
+            builder.fetch_immediate(stack_size)
+          );
+
+          builder.append_instruction(addi_instruction);
+        }
+
+        if (call.maybe_dst_id.has_value()) {
+          auto asm_dst_id = codegen_operand(
+            call.maybe_dst_id.value(), ir_context, builder, codegen_context,
+            false, false
+          );
+
+          auto asm_dst = builder.context.get_operand(asm_dst_id);
+
+          if (asm_dst->is_float()) {
+            // Pseudo fmv.s
+            auto fsgnjs_instruction = builder.fetch_float_binary_instruction(
+              backend::instruction::FloatBinary::FSGNJ,
+              backend::instruction::FloatBinary::S, asm_dst_id,
+              builder.fetch_register(backend::Register{
+                backend::FloatRegister::Fa0}),
+              builder.fetch_register(backend::Register{
+                backend::FloatRegister::Fa0})
+
+            );
+            builder.append_instruction(fsgnjs_instruction);
+          } else {
+            auto addi_instruction = builder.fetch_binary_imm_instruction(
+              backend::instruction::BinaryImm::ADDI, asm_dst_id,
+              builder.fetch_register(backend::Register{
+                backend::GeneralRegister::A0}),
+              builder.fetch_immediate(0)
+            );
+            builder.append_instruction(addi_instruction);
+          }
+        }
       },
       [&](ir::instruction::GetElementPtr& gep) {
         // TODO
