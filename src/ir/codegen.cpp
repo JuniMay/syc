@@ -731,6 +731,75 @@ void codegen_instruction(
           }
         }
       },
+      [&](ir::instruction::FCmp& fcmp) {
+        auto cond = fcmp.cond;
+        auto asm_dst_id = codegen_operand(
+          fcmp.dst_id, ir_context, builder, codegen_context, false, false
+        );
+        auto asm_lhs_id = codegen_operand(
+          fcmp.lhs_id, ir_context, builder, codegen_context, false, true
+        );
+        auto asm_rhs_id = codegen_operand(
+          fcmp.rhs_id, ir_context, builder, codegen_context, false, true
+        );
+        switch (cond) {
+          case ir::instruction::FCmpCond::Oeq: {
+            auto feqs_instruction = builder.fetch_float_binary_instruction(
+              backend::instruction::FloatBinary::FEQ,
+              backend::instruction::FloatBinary::Fmt::S, asm_dst_id, asm_lhs_id,
+              asm_rhs_id
+            );
+
+            builder.append_instruction(feqs_instruction);
+            break;
+          }
+          case ir::instruction::FCmpCond::One: {
+            auto asm_tmp_id = builder.fetch_virtual_register(
+              backend::VirtualRegisterKind::General
+            );
+            auto feqs_instruction = builder.fetch_float_binary_instruction(
+              backend::instruction::FloatBinary::FEQ,
+              backend::instruction::FloatBinary::Fmt::S, asm_tmp_id, asm_lhs_id,
+              asm_rhs_id
+            );
+            
+            builder.append_instruction(feqs_instruction);
+
+            // Pseudo not
+            auto xori_instruction = builder.fetch_binary_imm_instruction(
+              backend::instruction::BinaryImm::XORI, asm_dst_id, asm_tmp_id,
+              builder.fetch_immediate(-1)
+            );
+
+            builder.append_instruction(xori_instruction);
+
+            break;
+          }
+          case ir::instruction::FCmpCond::Olt: {
+            auto flts_instruction = builder.fetch_float_binary_instruction(
+              backend::instruction::FloatBinary::FLT,
+              backend::instruction::FloatBinary::Fmt::S, asm_dst_id, asm_lhs_id,
+              asm_rhs_id
+            );
+
+            builder.append_instruction(flts_instruction);
+
+            break;
+          }
+          case ir::instruction::FCmpCond::Ole: {
+
+            auto fles_instruction = builder.fetch_float_binary_instruction(
+              backend::instruction::FloatBinary::FLE,
+              backend::instruction::FloatBinary::Fmt::S, asm_dst_id, asm_lhs_id,
+              asm_rhs_id
+            );
+
+            builder.append_instruction(fles_instruction);
+
+            break;
+          }
+        }
+      },
       [&](ir::instruction::Ret& ret) {
         auto ir_maybe_value_id = ret.maybe_value_id;
         if (ir_maybe_value_id.has_value()) {
