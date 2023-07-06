@@ -46,7 +46,7 @@ def parse_args():
     parser.add_argument('--src-dir', default='./src')
     parser.add_argument('--output-dir', default='./output')
     parser.add_argument('--flatten-dir', default='./flattened')
-    parser.add_argument('--testcase-dir', default='./tests')
+    parser.add_argument('--testcase-dir', default='./tests/functional')
     parser.add_argument('--runtime-lib-dir', default='./sysy-runtime-lib')
 
     parser.add_argument('--executable-path', default='./syc')
@@ -180,7 +180,8 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         ast_path = os.path.join(output_dir, f'{basename}.ast')
         ir_path = os.path.join(output_dir, f'{basename}.ll')
         asm_path = os.path.join(output_dir, f'{basename}.s')
-        obj_from_ir_path = os.path.join(output_dir, f'{basename}.o')
+        obj_from_ir_path = os.path.join(output_dir, f'{basename}.ir.o')
+        obj_from_asm_path = os.path.join(output_dir, f'{basename}.asm.o')
         out_path = os.path.join(output_dir, f'{basename}.out')
         exec_path = os.path.join(output_dir, f'{basename}')
 
@@ -238,8 +239,21 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         if exec_result['returncode'] is None:
             print(f'[  ERROR  ] (ir->obj) {testcase}')
             continue
+        
+        command = (f'clang -fPIC -c --target=riscv64 -mabi=lp64d {asm_path} '
+                   f'-o {obj_from_asm_path}')
 
-        command = (f'riscv64-linux-gnu-gcc -march=rv64gc {obj_from_ir_path}'
+        exec_result = execute(command, exec_timeout)
+        log(log_file, command, exec_result)
+
+        if exec_result['returncode'] is None:
+            print(f'[  ERROR  ] (asm->obj) {testcase}')
+            continue
+
+        # command = (f'riscv64-linux-gnu-gcc -march=rv64gc {obj_from_ir_path}'
+        #            f' -L{runtime_lib_dir} -lsylib -o {exec_path}')
+        
+        command = (f'riscv64-linux-gnu-gcc -march=rv64gc {obj_from_asm_path}'
                    f' -L{runtime_lib_dir} -lsylib -o {exec_path}')
 
         exec_result = execute(command, exec_timeout)

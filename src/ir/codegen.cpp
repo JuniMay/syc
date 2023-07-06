@@ -590,6 +590,147 @@ void codegen_instruction(
           }
         }
       },
+      [&](ir::instruction::ICmp& icmp) {
+        auto cond = icmp.cond;
+        auto asm_dst_id = codegen_operand(
+          icmp.dst_id, ir_context, builder, codegen_context, false, false
+        );
+
+        switch (cond) {
+          case ir::instruction::ICmpCond::Eq: {
+            auto asm_lhs_id = codegen_operand(
+              icmp.lhs_id, ir_context, builder, codegen_context, false, false
+            );
+            auto asm_rhs_id = codegen_operand(
+              icmp.rhs_id, ir_context, builder, codegen_context, false, false
+            );
+
+            auto asm_tmp_id = builder.fetch_virtual_register(
+              backend::VirtualRegisterKind::General
+            );
+
+            auto asm_rhs = builder.context.get_operand(asm_rhs_id);
+
+            auto sub_instruction = builder.fetch_binary_instruction(
+              backend::instruction::Binary::Op::SUB, asm_tmp_id, asm_lhs_id,
+              asm_rhs_id
+            );
+
+            builder.append_instruction(sub_instruction);
+
+            // Pseudo seqz
+            auto sltiu_instruction = builder.fetch_binary_imm_instruction(
+              backend::instruction::BinaryImm::SLTIU, asm_dst_id, asm_tmp_id,
+              builder.fetch_immediate(1)
+            );
+
+            builder.append_instruction(sltiu_instruction);
+
+            break;
+          }
+          case ir::instruction::ICmpCond::Ne: {
+            auto asm_lhs_id = codegen_operand(
+              icmp.lhs_id, ir_context, builder, codegen_context, false, false
+            );
+            auto asm_rhs_id = codegen_operand(
+              icmp.rhs_id, ir_context, builder, codegen_context, false, false
+            );
+
+            auto asm_tmp_id = builder.fetch_virtual_register(
+              backend::VirtualRegisterKind::General
+            );
+
+            auto asm_rhs = builder.context.get_operand(asm_rhs_id);
+
+            auto sub_instruction = builder.fetch_binary_instruction(
+              backend::instruction::Binary::Op::SUB, asm_tmp_id, asm_lhs_id,
+              asm_rhs_id
+            );
+
+            builder.append_instruction(sub_instruction);
+
+            // Pseudo snez
+            auto sltu_instruction = builder.fetch_binary_instruction(
+              backend::instruction::Binary::Op::SLTU, asm_dst_id,
+              builder.fetch_register(backend::Register{
+                backend::GeneralRegister::Zero}),
+              asm_tmp_id
+            );
+
+            builder.append_instruction(sltu_instruction);
+
+            break;
+          }
+          case ir::instruction::ICmpCond::Slt: {
+                        auto asm_lhs_id = codegen_operand(
+              icmp.lhs_id, ir_context, builder, codegen_context, false, false
+            );
+            auto asm_rhs_id = codegen_operand(
+              icmp.rhs_id, ir_context, builder, codegen_context, true, false
+            );
+
+            auto asm_rhs = builder.context.get_operand(asm_rhs_id);
+
+            if (asm_rhs->is_immediate()) {
+              auto slti_instruction = builder.fetch_binary_imm_instruction(
+                backend::instruction::BinaryImm::SLTI, asm_dst_id, asm_lhs_id,
+                asm_rhs_id
+              );
+
+              builder.append_instruction(slti_instruction);
+            } else {
+              auto slt_instruction = builder.fetch_binary_instruction(
+                backend::instruction::Binary::Op::SLT, asm_dst_id, asm_lhs_id,
+                asm_rhs_id
+              );
+
+              builder.append_instruction(slt_instruction);
+            }
+
+            break;
+          }
+          case ir::instruction::ICmpCond::Sle: {
+            // lhs <= rhs <=> !(lhs > rhs) <=> !(rhs < lhs)
+            auto asm_lhs_id = codegen_operand(
+              icmp.lhs_id, ir_context, builder, codegen_context, false, false
+            );
+            auto asm_rhs_id = codegen_operand(
+              icmp.rhs_id, ir_context, builder, codegen_context, true, false
+            );
+            auto asm_tmp_id = builder.fetch_virtual_register(
+              backend::VirtualRegisterKind::General
+            );
+
+            auto asm_rhs = builder.context.get_operand(asm_rhs_id);
+
+            if (asm_rhs->is_immediate()) {
+              auto slti_instruction = builder.fetch_binary_imm_instruction(
+                backend::instruction::BinaryImm::SLTI, asm_tmp_id, asm_rhs_id,
+                asm_lhs_id
+              );
+
+              builder.append_instruction(slti_instruction);
+            } else {
+              auto slt_instruction = builder.fetch_binary_instruction(
+                backend::instruction::Binary::Op::SLT, asm_tmp_id, asm_rhs_id,
+                asm_lhs_id
+              );
+
+              builder.append_instruction(slt_instruction);
+            }
+
+            // Pseudo not
+            auto xori_instruction = builder.fetch_binary_imm_instruction(
+              backend::instruction::BinaryImm::XORI, asm_dst_id, asm_tmp_id,
+              builder.fetch_immediate(-1)
+            );
+
+            builder.append_instruction(xori_instruction);
+
+            break;
+          }
+        }
+      },
       [&](ir::instruction::Ret& ret) {
         auto ir_maybe_value_id = ret.maybe_value_id;
         if (ir_maybe_value_id.has_value()) {
