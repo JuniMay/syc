@@ -15,6 +15,7 @@
 namespace syc {
 
 using IrOperandID = ir::OperandID;
+using IrBasicBlockID = ir::BasicBlockID;
 using IrContext = ir::Context;
 using IrInstructionPtr = ir::InstructionPtr;
 using IrBasicBlockPtr = ir::BasicBlockPtr;
@@ -24,12 +25,14 @@ using AsmOperandID = backend::OperandID;
 using AsmOperandPtr = backend::OperandPtr;
 using AsmBuilder = backend::Builder;
 using AsmContext = backend::Context;
+using AsmBasicBlockID = backend::BasicBlockID;
 using AsmInstructionPtr = backend::InstructionPtr;
 using AsmBasicBlockPtr = backend::BasicBlockPtr;
 using AsmFunctionPtr = backend::FunctionPtr;
 
 struct CodegenContext {
   std::map<IrOperandID, AsmOperandID> operand_map;
+  std::map<IrBasicBlockID, AsmBasicBlockID> basic_block_map;
 
   CodegenContext() = default;
 

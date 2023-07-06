@@ -222,8 +222,6 @@ void codegen_function_epilouge(
 ) {
   using namespace backend;
 
-  // TODO: saved registers
-
   auto asm_function = builder.context.get_function(function_name);
   auto exit_block = asm_function->tail_basic_block->prev.lock();
 
@@ -282,7 +280,16 @@ void codegen_basic_block(
   AsmBuilder& builder,
   CodegenContext& codegen_context
 ) {
+  if (codegen_context.basic_block_map.count(ir_basic_block->id)) {
+    return;
+  }
+
   auto basic_block = builder.fetch_basic_block();
+
+  codegen_context.basic_block_map[ir_basic_block->id] = basic_block->id;
+
+  builder.curr_function->append_basic_block(basic_block);
+
   builder.set_curr_basic_block(basic_block);
 
   auto curr_ir_instruction = ir_basic_block->head_instruction->next;
@@ -293,7 +300,6 @@ void codegen_basic_block(
     curr_ir_instruction = curr_ir_instruction->next;
   }
 
-  builder.curr_function->append_basic_block(basic_block);
 }
 
 void codegen_instruction(
@@ -845,10 +851,57 @@ void codegen_instruction(
         }
       },
       [&](ir::instruction::Br& br) {
-        // TODO
+        auto saved_curr_basic_block = builder.curr_basic_block;
+        auto ir_block_id = br.block_id;
+
+        auto ir_basic_block = ir_context.get_basic_block(ir_block_id);
+
+        codegen_basic_block(ir_basic_block, ir_context, builder,
+                            codegen_context);
+
+        builder.set_curr_basic_block(saved_curr_basic_block);
+        
+        auto asm_block_id = codegen_context.basic_block_map.at(ir_block_id);
+        
+        auto j_instruction = builder.fetch_j_instruction(asm_block_id);
+
+        builder.append_instruction(j_instruction);
       },
       [&](ir::instruction::CondBr& condbr) {
-        // TODO
+        auto saved_curr_basic_block = builder.curr_basic_block;
+
+        auto ir_then_block_id = condbr.then_block_id;
+        auto ir_else_block_id = condbr.else_block_id;
+
+        auto ir_then_basic_block = ir_context.get_basic_block(ir_then_block_id);
+        auto ir_else_basic_block = ir_context.get_basic_block(ir_else_block_id);
+
+        codegen_basic_block(ir_else_basic_block, ir_context, builder,
+                            codegen_context);
+        codegen_basic_block(ir_then_basic_block, ir_context, builder,
+                            codegen_context);
+
+        builder.set_curr_basic_block(saved_curr_basic_block);
+
+        auto asm_cond_id = codegen_operand(
+          condbr.cond_id, ir_context, builder, codegen_context, false, false
+        );
+
+        auto bnez_instruction = builder.fetch_branch_instruction(
+          backend::instruction::Branch::BNE,
+          asm_cond_id,
+          builder.fetch_register(backend::Register{
+            backend::GeneralRegister::Zero}),
+          codegen_context.basic_block_map.at(ir_then_block_id)
+        );
+
+        builder.append_instruction(bnez_instruction);
+
+        auto j_instruction = builder.fetch_j_instruction(
+          codegen_context.basic_block_map.at(ir_else_block_id)
+        );
+
+        builder.append_instruction(j_instruction);
       },
       [&](ir::instruction::Phi& phi) {
         // Phi instruction should be eliminated in SSA construction.
