@@ -662,7 +662,7 @@ void codegen_instruction(
             break;
           }
           case ir::instruction::ICmpCond::Slt: {
-                        auto asm_lhs_id = codegen_operand(
+            auto asm_lhs_id = codegen_operand(
               icmp.lhs_id, ir_context, builder, codegen_context, false, false
             );
             auto asm_rhs_id = codegen_operand(
@@ -762,7 +762,7 @@ void codegen_instruction(
               backend::instruction::FloatBinary::Fmt::S, asm_tmp_id, asm_lhs_id,
               asm_rhs_id
             );
-            
+
             builder.append_instruction(feqs_instruction);
 
             // Pseudo not
@@ -787,7 +787,6 @@ void codegen_instruction(
             break;
           }
           case ir::instruction::FCmpCond::Ole: {
-
             auto fles_instruction = builder.fetch_float_binary_instruction(
               backend::instruction::FloatBinary::FLE,
               backend::instruction::FloatBinary::Fmt::S, asm_dst_id, asm_lhs_id,
@@ -844,6 +843,21 @@ void codegen_instruction(
             break;
           }
         }
+      },
+      [&](ir::instruction::Br& br) {
+        // TODO
+      },
+      [&](ir::instruction::CondBr& condbr) {
+        // TODO
+      },
+      [&](ir::instruction::Phi& phi) {
+        // Phi instruction should be eliminated in SSA construction.
+      },
+      [&](ir::instruction::Call& call) {
+        // TODO
+      },
+      [&](ir::instruction::GetElementPtr& gep) {
+        // TODO
       },
       [&](ir::instruction::Ret& ret) {
         auto ir_maybe_value_id = ret.maybe_value_id;

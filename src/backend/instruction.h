@@ -343,6 +343,10 @@ struct Branch {
   BasicBlockID block_id;
 };
 
+struct J {
+  BasicBlockID block_id;
+};
+
 struct Dummy {};
 
 }  // namespace instruction

@@ -154,6 +154,8 @@ struct Builder {
 
   InstructionPtr fetch_li_instruction(OperandID rd_id, OperandID imm_id);
 
+  InstructionPtr fetch_j_instruction(BasicBlockID block_id);
+
   InstructionPtr fetch_call_instruction(std::string function_name);
 
   InstructionPtr fetch_branch_instruction(

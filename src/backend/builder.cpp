@@ -444,6 +444,16 @@ InstructionPtr Builder::fetch_branch_instruction(
   return instruction;
 }
 
+InstructionPtr Builder::fetch_j_instruction(BasicBlockID block_id) {
+  auto id = context.get_next_instruction_id();
+  auto kind = InstructionKind(instruction::J{block_id});
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
+
+  context.register_instruction(instruction);
+
+  return instruction;
+}
+
 InstructionPtr Builder::fetch_ret_instruction() {
   auto id = context.get_next_instruction_id();
   auto kind = InstructionKind(instruction::Ret{});

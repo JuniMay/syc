@@ -874,6 +874,10 @@ std::string Instruction::to_string(Context& context) {
 
         return ss.str();
       },
+      [&context](const J& instruction) -> std::string {
+        return "j " +
+               context.get_basic_block(instruction.block_id)->get_label();
+      },
       [&context](const Ret& instruction) -> std::string { return "ret"; },
       [&context](const auto& instruction) -> std::string { return ""; },
     },
