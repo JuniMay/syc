@@ -142,6 +142,15 @@ void codegen_function(
 
   auto curr_ir_basic_block = ir_function->head_basic_block->next;
   while (curr_ir_basic_block != ir_function->tail_basic_block) {
+    auto asm_basic_block = builder.fetch_basic_block();
+    builder.curr_function->append_basic_block(asm_basic_block);
+    codegen_context.basic_block_map[curr_ir_basic_block->id] =
+      asm_basic_block->id;
+    curr_ir_basic_block = curr_ir_basic_block->next;
+  }
+
+  curr_ir_basic_block = ir_function->head_basic_block->next;
+  while (curr_ir_basic_block != ir_function->tail_basic_block) {
     codegen_basic_block(
       curr_ir_basic_block, ir_context, builder, codegen_context
     );
@@ -282,16 +291,8 @@ void codegen_basic_block(
   AsmBuilder& builder,
   CodegenContext& codegen_context
 ) {
-  if (codegen_context.basic_block_map.count(ir_basic_block->id)) {
-    return;
-  }
-
-  auto basic_block = builder.fetch_basic_block();
-
-  codegen_context.basic_block_map[ir_basic_block->id] = basic_block->id;
-
-  builder.curr_function->append_basic_block(basic_block);
-
+  auto asm_block_id = codegen_context.basic_block_map[ir_basic_block->id];
+  auto basic_block = builder.context.get_basic_block(asm_block_id);
   builder.set_curr_basic_block(basic_block);
 
   auto curr_ir_instruction = ir_basic_block->head_instruction->next;
@@ -726,13 +727,13 @@ void codegen_instruction(
               builder.append_instruction(slt_instruction);
             }
 
-            // Pseudo not
-            auto xori_instruction = builder.fetch_binary_imm_instruction(
-              backend::instruction::BinaryImm::XORI, asm_dst_id, asm_tmp_id,
-              builder.fetch_immediate(-1)
+            // Pseudo seqz
+            auto sltiu_instruction = builder.fetch_binary_imm_instruction(
+              backend::instruction::BinaryImm::SLTIU,
+              asm_dst_id, asm_tmp_id, builder.fetch_immediate(1)
             );
 
-            builder.append_instruction(xori_instruction);
+            builder.append_instruction(sltiu_instruction);
 
             break;
           }
@@ -855,25 +856,6 @@ void codegen_instruction(
         auto saved_curr_basic_block = builder.curr_basic_block;
         auto ir_block_id = br.block_id;
 
-        auto ir_basic_block_iter =
-          ir_context.get_basic_block(ir_instruction->parent_block_id);
-        auto ir_tail_basic_block =
-          ir_context.get_function(ir_basic_block_iter->parent_function_name)
-            ->tail_basic_block;
-        while (ir_basic_block_iter->id != ir_block_id &&
-               ir_basic_block_iter != ir_tail_basic_block) {
-          codegen_basic_block(
-            ir_basic_block_iter, ir_context, builder, codegen_context
-          );
-          ir_basic_block_iter = ir_basic_block_iter->next;
-        }
-
-        codegen_basic_block(
-          ir_basic_block_iter, ir_context, builder, codegen_context
-        );
-
-        builder.set_curr_basic_block(saved_curr_basic_block);
-
         auto asm_block_id = codegen_context.basic_block_map.at(ir_block_id);
 
         auto j_instruction = builder.fetch_j_instruction(asm_block_id);
@@ -888,39 +870,6 @@ void codegen_instruction(
 
         auto ir_then_basic_block = ir_context.get_basic_block(ir_then_block_id);
         auto ir_else_basic_block = ir_context.get_basic_block(ir_else_block_id);
-
-        auto ir_basic_block_iter =
-          ir_context.get_basic_block(ir_instruction->parent_block_id);
-        auto ir_tail_basic_block =
-          ir_context.get_function(ir_basic_block_iter->parent_function_name)
-            ->tail_basic_block;
-        while (ir_basic_block_iter->id != ir_else_block_id &&
-               ir_basic_block_iter != ir_tail_basic_block) {
-          codegen_basic_block(
-            ir_basic_block_iter, ir_context, builder, codegen_context
-          );
-          ir_basic_block_iter = ir_basic_block_iter->next;
-        }
-
-        codegen_basic_block(
-          ir_basic_block_iter, ir_context, builder, codegen_context
-        );
-
-        ir_basic_block_iter =
-          ir_context.get_basic_block(ir_instruction->parent_block_id);
-        while (ir_basic_block_iter->id != ir_then_block_id &&
-               ir_basic_block_iter != ir_tail_basic_block) {
-          codegen_basic_block(
-            ir_basic_block_iter, ir_context, builder, codegen_context
-          );
-          ir_basic_block_iter = ir_basic_block_iter->next;
-        }
-
-        codegen_basic_block(
-          ir_basic_block_iter, ir_context, builder, codegen_context
-        );
-
-        builder.set_curr_basic_block(saved_curr_basic_block);
 
         auto asm_cond_id = codegen_operand(
           condbr.cond_id, ir_context, builder, codegen_context, false, false
@@ -1184,12 +1133,14 @@ AsmOperandID codegen_operand(
         } else if (is_float) {
           asm_operand_id =
             builder.fetch_virtual_register(backend::VirtualRegisterKind::Float);
+
+          codegen_context.operand_map[ir_operand_id] = asm_operand_id;
         } else {
           asm_operand_id =
             builder.fetch_virtual_register(backend::VirtualRegisterKind::General
             );
+          codegen_context.operand_map[ir_operand_id] = asm_operand_id;
         }
-        codegen_context.operand_map[ir_operand_id] = asm_operand_id;
       },
       [&](ir::operand::ConstantPtr ir_constant) {
         if (is_float) {
