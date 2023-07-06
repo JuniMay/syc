@@ -855,10 +855,21 @@ void codegen_instruction(
         auto saved_curr_basic_block = builder.curr_basic_block;
         auto ir_block_id = br.block_id;
 
-        auto ir_basic_block = ir_context.get_basic_block(ir_block_id);
+        auto ir_basic_block_iter =
+          ir_context.get_basic_block(ir_instruction->parent_block_id);
+        auto ir_tail_basic_block =
+          ir_context.get_function(ir_basic_block_iter->parent_function_name)
+            ->tail_basic_block;
+        while (ir_basic_block_iter->id != ir_block_id &&
+               ir_basic_block_iter != ir_tail_basic_block) {
+          codegen_basic_block(
+            ir_basic_block_iter, ir_context, builder, codegen_context
+          );
+          ir_basic_block_iter = ir_basic_block_iter->next;
+        }
 
         codegen_basic_block(
-          ir_basic_block, ir_context, builder, codegen_context
+          ir_basic_block_iter, ir_context, builder, codegen_context
         );
 
         builder.set_curr_basic_block(saved_curr_basic_block);
@@ -878,11 +889,35 @@ void codegen_instruction(
         auto ir_then_basic_block = ir_context.get_basic_block(ir_then_block_id);
         auto ir_else_basic_block = ir_context.get_basic_block(ir_else_block_id);
 
+        auto ir_basic_block_iter =
+          ir_context.get_basic_block(ir_instruction->parent_block_id);
+        auto ir_tail_basic_block =
+          ir_context.get_function(ir_basic_block_iter->parent_function_name)
+            ->tail_basic_block;
+        while (ir_basic_block_iter->id != ir_else_block_id &&
+               ir_basic_block_iter != ir_tail_basic_block) {
+          codegen_basic_block(
+            ir_basic_block_iter, ir_context, builder, codegen_context
+          );
+          ir_basic_block_iter = ir_basic_block_iter->next;
+        }
+
         codegen_basic_block(
-          ir_else_basic_block, ir_context, builder, codegen_context
+          ir_basic_block_iter, ir_context, builder, codegen_context
         );
+
+        ir_basic_block_iter =
+          ir_context.get_basic_block(ir_instruction->parent_block_id);
+        while (ir_basic_block_iter->id != ir_then_block_id &&
+               ir_basic_block_iter != ir_tail_basic_block) {
+          codegen_basic_block(
+            ir_basic_block_iter, ir_context, builder, codegen_context
+          );
+          ir_basic_block_iter = ir_basic_block_iter->next;
+        }
+
         codegen_basic_block(
-          ir_then_basic_block, ir_context, builder, codegen_context
+          ir_basic_block_iter, ir_context, builder, codegen_context
         );
 
         builder.set_curr_basic_block(saved_curr_basic_block);
