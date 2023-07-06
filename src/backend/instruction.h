@@ -319,6 +319,8 @@ struct Li {
   OperandID imm_id;
 };
 
+struct Ret {};
+
 /// Call function (pseudo instruction)
 struct Call {
   /// Function name

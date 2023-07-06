@@ -95,7 +95,7 @@ struct Builder {
     OperandID symbol_id,
     OperandID rt_id
   );
-  
+
   InstructionPtr fetch_float_move_instruction(
     instruction::FloatMove::Fmt dst_fmt,
     instruction::FloatMove::Fmt src_fmt,
@@ -147,6 +147,8 @@ struct Builder {
     OperandID rd_id,
     OperandID rs_id
   );
+
+  InstructionPtr fetch_ret_instruction();
 
   InstructionPtr fetch_lui_instruction(OperandID rd_id, OperandID imm_id);
 

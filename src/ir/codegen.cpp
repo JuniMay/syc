@@ -230,34 +230,13 @@ void codegen_function_epilouge(
   auto stack_frame_size = asm_function->stack_frame_size;
   auto align_frame_size = asm_function->align_frame_size;
 
+  // ret
+  auto last_instruction = exit_block->tail_instruction->prev.lock();
+
   // restore ra
   auto ra_id = builder.fetch_register(Register{GeneralRegister::Ra});
 
   auto sp_id = builder.fetch_register(Register{GeneralRegister::Sp});
-
-  size_t aligned_stack_frame_size =
-    asm_function->stack_frame_size + asm_function->align_frame_size;
-  size_t curr_frame_pos = aligned_stack_frame_size - 16;
-
-  for (auto reg : asm_function->saved_general_register_list) {
-    auto reg_id = builder.fetch_register(map_general_register(reg));
-    auto ld_instruction = builder.fetch_load_instruction(
-      instruction::Load::Op::LD, reg_id, sp_id,
-      builder.fetch_immediate((int32_t)curr_frame_pos)
-    );
-    exit_block->prepend_instruction(ld_instruction);
-    curr_frame_pos -= 8;
-  }
-
-  for (auto reg : asm_function->saved_float_register_list) {
-    auto reg_id = builder.fetch_register(map_float_register(reg));
-    auto fsd_instruction = builder.fetch_float_load_instruction(
-      instruction::FloatLoad::Op::FLD, reg_id, sp_id,
-      builder.fetch_immediate((int32_t)curr_frame_pos)
-    );
-    exit_block->prepend_instruction(fsd_instruction);
-    curr_frame_pos -= 8;
-  }
 
   auto ld_instruction = builder.fetch_load_instruction(
     instruction::Load::Op::LD, ra_id, sp_id,
@@ -269,8 +248,32 @@ void codegen_function_epilouge(
     builder.fetch_immediate((int32_t)(stack_frame_size + align_frame_size))
   );
 
-  exit_block->prepend_instruction(addi_instruction);
-  exit_block->prepend_instruction(ld_instruction);
+  size_t aligned_stack_frame_size =
+    asm_function->stack_frame_size + asm_function->align_frame_size;
+  size_t curr_frame_pos = aligned_stack_frame_size - 16;
+
+  for (auto reg : asm_function->saved_general_register_list) {
+    auto reg_id = builder.fetch_register(map_general_register(reg));
+    auto ld_instruction = builder.fetch_load_instruction(
+      instruction::Load::Op::LD, reg_id, sp_id,
+      builder.fetch_immediate((int32_t)curr_frame_pos)
+    );
+    last_instruction->insert_prev(ld_instruction);
+    curr_frame_pos -= 8;
+  }
+
+  for (auto reg : asm_function->saved_float_register_list) {
+    auto reg_id = builder.fetch_register(map_float_register(reg));
+    auto fsd_instruction = builder.fetch_float_load_instruction(
+      instruction::FloatLoad::Op::FLD, reg_id, sp_id,
+      builder.fetch_immediate((int32_t)curr_frame_pos)
+    );
+    last_instruction->insert_prev(fsd_instruction);
+    curr_frame_pos -= 8;
+  }
+
+  last_instruction->insert_prev(ld_instruction);
+  last_instruction->insert_prev(addi_instruction);
 }
 
 void codegen_basic_block(
@@ -586,6 +589,26 @@ void codegen_instruction(
             break;
           }
         }
+      },
+      [&](ir::instruction::Ret& ret) {
+        auto ir_maybe_value_id = ret.maybe_value_id;
+        if (ir_maybe_value_id.has_value()) {
+          auto asm_value_id = codegen_operand(
+            ir_maybe_value_id.value(), ir_context, builder, codegen_context,
+            false, false
+          );
+          auto a0_id = builder.fetch_register(backend::Register{
+            backend::GeneralRegister::A0});
+
+          auto mv_instruction = builder.fetch_binary_imm_instruction(
+            backend::instruction::BinaryImm::Op::ADDI, a0_id, asm_value_id,
+            builder.fetch_immediate(0)
+          );
+
+          builder.append_instruction(mv_instruction);
+        }
+        auto ret_instruction = builder.fetch_ret_instruction();
+        builder.append_instruction(ret_instruction);
       },
       [&](auto& ir_instruction) {
 

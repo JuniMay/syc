@@ -874,7 +874,9 @@ std::string Instruction::to_string(Context& context) {
 
         return ss.str();
       },
-      [&context](const auto& instruction) -> std::string { return ""; }},
+      [&context](const Ret& instruction) -> std::string { return "ret"; },
+      [&context](const auto& instruction) -> std::string { return ""; },
+    },
     kind
   );
 }

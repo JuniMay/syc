@@ -286,6 +286,7 @@ struct Lui;
 struct Li;
 struct Call;
 struct Branch;
+struct Ret;
 struct Dummy;
 
 }  // namespace instruction
@@ -310,6 +311,7 @@ using InstructionKind = std::variant<
   instruction::Li,
   instruction::Call,
   instruction::Branch,
+  instruction::Ret,
   instruction::Dummy>;
 
 using InstructionID = size_t;
