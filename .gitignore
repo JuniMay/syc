@@ -1,0 +1,14 @@
+/.vscode/
+/src/frontend/generated/
+/flattened/
+/tests/
+/tests_output/
+/.cache/
+/build/
+/sysy-runtime-lib
+/output
+
+/syc
+*.ll
+*.asm
+.DS_Store
