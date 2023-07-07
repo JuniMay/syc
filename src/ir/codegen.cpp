@@ -372,6 +372,11 @@ void codegen_instruction(
         auto ir_allocated_size = ir::get_size(ir_allocated_type);
 
         auto curr_frame_size = builder.curr_function->stack_frame_size;
+
+        if (ir_allocated_size == 1) {
+          ir_allocated_size = 32;
+        }
+        
         auto asm_allocated_size = ir_allocated_size / 8;
         auto asm_local_memory_id = builder.fetch_local_memory(curr_frame_size);
         builder.curr_function->stack_frame_size += asm_allocated_size;
@@ -1108,9 +1113,9 @@ void codegen_instruction(
         auto asm_ptr = builder.context.get_operand(asm_ptr_id);
 
         if (asm_ptr->is_global()) {
-          auto asm_tmp_id = builder.fetch_virtual_register(
-            backend::VirtualRegisterKind::General
-          );
+          auto asm_tmp_id =
+            builder.fetch_virtual_register(backend::VirtualRegisterKind::General
+            );
           // Pseudo la
           auto la_instruction = builder.fetch_pseudo_load_instruction(
             backend::instruction::PseudoLoad::LA, asm_tmp_id, asm_ptr_id
