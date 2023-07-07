@@ -155,8 +155,11 @@ struct Expr {
   bool is_initializer_list() const;
 
   std::optional<expr::Binary> as_binary() const;
+
+  bool operator==(const Expr& other) const;
 };
 
+std::pair<int, ExprPtr> as_integer_mul(ExprPtr expr);
 namespace stmt {
 
 struct Blank {};

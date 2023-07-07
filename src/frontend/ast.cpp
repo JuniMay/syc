@@ -8,6 +8,46 @@ namespace frontend {
 
 namespace ast {
 
+bool Expr::operator==(const Expr& other) const {
+  return this->to_string() == other.to_string();
+}
+
+std::pair<int, ExprPtr> as_integer_mul(ExprPtr expr) {
+  auto maybe_binary = expr->as_binary();
+
+  if (!maybe_binary.has_value()) {
+    return {1, expr};
+  }
+
+  auto binary = maybe_binary.value();
+
+  auto op = binary.op;
+
+  if (op != BinaryOp::Mul) {
+    return {1, expr};
+  }
+
+  auto lhs = binary.lhs;
+  auto rhs = binary.rhs;
+
+  // constant * rhs
+  auto maybe_lhs_value = lhs->get_comptime_value();
+
+  if (!maybe_lhs_value.has_value()) {
+    return {1, expr};
+  }
+
+  auto lhs_value = maybe_lhs_value.value();
+
+  if (!lhs_value->type->is_int()) {
+    return {1, expr};
+  }
+
+  auto lhs_int = std::get<int>(lhs_value->kind);
+
+  return {lhs_int, rhs};
+}
+
 void expr::InitializerList::add_expr(ExprPtr expr) {
   this->init_list.push_back(expr);
 }
@@ -368,6 +408,26 @@ create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver) {
     throw std::runtime_error(
       "Error: something went wrong when checking type for binary expression."
     );
+  }
+
+  if (op == BinaryOp::Add) {
+    auto integer_mul_lhs = as_integer_mul(lhs);
+    auto integer_mul_rhs = as_integer_mul(rhs);
+
+    auto lhs_int = integer_mul_lhs.first;
+    auto rhs_int = integer_mul_rhs.first;
+    auto lhs_expr = integer_mul_lhs.second;
+    auto rhs_expr = integer_mul_rhs.second;
+
+    std::cout << "ADD EXPR!" << std::endl;
+
+    if (lhs_expr->to_string() == rhs_expr->to_string()) {
+      std::cout << "ADD EXPR SAME!" << std::endl;
+      auto new_int = create_comptime_value(lhs_int + rhs_int, type.value());
+      return create_binary_expr(
+        BinaryOp::Mul, create_constant_expr(new_int), lhs_expr, driver
+      );
+    }
   }
 
   auto symbol_entry = create_symbol_entry(
