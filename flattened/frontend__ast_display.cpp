@@ -64,7 +64,7 @@ std::string Expr::to_string() const {
             buf << "Index";
             break;
         }
-        buf << " " << kind.symbol->name << std::endl;
+        buf << /*" " << kind.symbol->name << */ std::endl;
         buf << indent_str(kind.lhs->to_string(), "\t") << std::endl;
         buf << indent_str(kind.rhs->to_string(), "\t") << std::endl;
       },
