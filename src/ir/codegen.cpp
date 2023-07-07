@@ -376,7 +376,7 @@ void codegen_instruction(
         if (ir_allocated_size == 1) {
           ir_allocated_size = 32;
         }
-        
+
         auto asm_allocated_size = ir_allocated_size / 8;
         auto asm_local_memory_id = builder.fetch_local_memory(curr_frame_size);
         builder.curr_function->stack_frame_size += asm_allocated_size;
@@ -386,6 +386,9 @@ void codegen_instruction(
       [&](ir::instruction::Store& ir_store) {
         auto ir_value_id = ir_store.value_id;
         auto ir_ptr_id = ir_store.ptr_id;
+
+        auto ir_value = ir_context.get_operand(ir_value_id);
+        auto ir_ptr = ir_context.get_operand(ir_ptr_id);
 
         auto asm_value_id = codegen_operand(
           ir_value_id, ir_context, builder, codegen_context, false, false
@@ -437,11 +440,19 @@ void codegen_instruction(
             );
             builder.append_instruction(sw_instruction);
           } else {
-            auto sw_instruction = builder.fetch_store_instruction(
-              backend::instruction::Store::Op::SW, asm_ptr_id, asm_value_id,
-              builder.fetch_immediate(0)
-            );
-            builder.append_instruction(sw_instruction);
+            if (ir::get_size(ir_value->type) == 64) {
+              auto sd_instruction = builder.fetch_store_instruction(
+                backend::instruction::Store::Op::SD, asm_ptr_id, asm_value_id,
+                builder.fetch_immediate(0)
+              );
+              builder.append_instruction(sd_instruction);
+            } else {
+              auto sw_instruction = builder.fetch_store_instruction(
+                backend::instruction::Store::Op::SW, asm_ptr_id, asm_value_id,
+                builder.fetch_immediate(0)
+              );
+              builder.append_instruction(sw_instruction);
+            }
           }
         }
       },
@@ -504,11 +515,19 @@ void codegen_instruction(
             );
             builder.append_instruction(lw_instruction);
           } else {
-            auto lw_instruction = builder.fetch_load_instruction(
-              backend::instruction::Load::Op::LW, asm_dst_id, asm_ptr_id,
-              builder.fetch_immediate(0)
-            );
-            builder.append_instruction(lw_instruction);
+            if (ir::get_size(ir_dst->type) == 64) {
+              auto ld_instruction = builder.fetch_load_instruction(
+                backend::instruction::Load::Op::LD, asm_dst_id, asm_ptr_id,
+                builder.fetch_immediate(0)
+              );
+              builder.append_instruction(ld_instruction);
+            } else {
+              auto lw_instruction = builder.fetch_load_instruction(
+                backend::instruction::Load::Op::LW, asm_dst_id, asm_ptr_id,
+                builder.fetch_immediate(0)
+              );
+              builder.append_instruction(lw_instruction);
+            }
           }
         }
       },
@@ -763,29 +782,18 @@ void codegen_instruction(
               icmp.lhs_id, ir_context, builder, codegen_context, false, false
             );
             auto asm_rhs_id = codegen_operand(
-              icmp.rhs_id, ir_context, builder, codegen_context, true, false
+              icmp.rhs_id, ir_context, builder, codegen_context, false, false
             );
             auto asm_tmp_id = builder.fetch_virtual_register(
               backend::VirtualRegisterKind::General
             );
 
-            auto asm_rhs = builder.context.get_operand(asm_rhs_id);
+            auto slt_instruction = builder.fetch_binary_instruction(
+              backend::instruction::Binary::Op::SLT, asm_tmp_id, asm_rhs_id,
+              asm_lhs_id
+            );
 
-            if (asm_rhs->is_immediate()) {
-              auto slti_instruction = builder.fetch_binary_imm_instruction(
-                backend::instruction::BinaryImm::SLTI, asm_tmp_id, asm_rhs_id,
-                asm_lhs_id
-              );
-
-              builder.append_instruction(slti_instruction);
-            } else {
-              auto slt_instruction = builder.fetch_binary_instruction(
-                backend::instruction::Binary::Op::SLT, asm_tmp_id, asm_rhs_id,
-                asm_lhs_id
-              );
-
-              builder.append_instruction(slt_instruction);
-            }
+            builder.append_instruction(slt_instruction);
 
             // Pseudo seqz
             auto sltiu_instruction = builder.fetch_binary_imm_instruction(
