@@ -46,7 +46,7 @@ def parse_args():
     parser.add_argument('--src-dir', default='./src')
     parser.add_argument('--output-dir', default='./output')
     parser.add_argument('--flatten-dir', default='./flattened')
-    parser.add_argument('--testcase-dir', default='./tests/functional')
+    parser.add_argument('--testcase-dir', default='./tests/hidden_functional')
     parser.add_argument('--runtime-lib-dir', default='./sysy-runtime-lib')
 
     parser.add_argument('--executable-path', default='./syc')
@@ -54,7 +54,7 @@ def parse_args():
     parser.add_argument('--no-compile', action='store_true', default=False)
     parser.add_argument('--no-flatten', action='store_true', default=False)
     parser.add_argument('--no-test', action='store_true', default=False)
-    
+
     parser.add_argument('--llm', action='store_true', default=False)
 
     return parser.parse_args()
@@ -181,7 +181,6 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         ir_path = os.path.join(output_dir, f'{basename}.ll')
         asm_path = os.path.join(output_dir, f'{basename}.s')
         obj_from_ir_path = os.path.join(output_dir, f'{basename}.ir.o')
-        obj_from_asm_path = os.path.join(output_dir, f'{basename}.asm.o')
         out_path = os.path.join(output_dir, f'{basename}.out')
         exec_path = os.path.join(output_dir, f'{basename}')
 
@@ -239,21 +238,11 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         if exec_result['returncode'] is None:
             print(f'[  ERROR  ] (ir->obj) {testcase}')
             continue
-        
-        command = (f'clang -fPIC -c --target=riscv64 -mabi=lp64d {asm_path} '
-                   f'-o {obj_from_asm_path}')
-
-        exec_result = execute(command, exec_timeout)
-        log(log_file, command, exec_result)
-
-        if exec_result['returncode'] is None:
-            print(f'[  ERROR  ] (asm->obj) {testcase}')
-            continue
 
         # command = (f'riscv64-linux-gnu-gcc -march=rv64gc {obj_from_ir_path}'
         #            f' -L{runtime_lib_dir} -lsylib -o {exec_path}')
-        
-        command = (f'riscv64-linux-gnu-gcc -march=rv64gc {obj_from_asm_path}'
+
+        command = (f'riscv64-linux-gnu-gcc -march=rv64gc {asm_path}'
                    f' -L{runtime_lib_dir} -lsylib -o {exec_path}')
 
         exec_result = execute(command, exec_timeout)
@@ -291,6 +280,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
 
         log(log_file, command, exec_result)
 
+
 # put all files together in an .txt file with their relative path
 def flatten4llm(dir_path: str, flatten_dir_path: str):
     # 指定需要的文件扩展名
@@ -303,7 +293,7 @@ def flatten4llm(dir_path: str, flatten_dir_path: str):
             # 排除包含generated的路径
             if 'generated' in foldername:
                 continue
-            
+
             for filename in filenames:
                 # 使用endswith过滤文件
                 if any(filename.endswith(ext) for ext in extensions):
@@ -313,7 +303,8 @@ def flatten4llm(dir_path: str, flatten_dir_path: str):
                         try:
                             source_code = source_file.read()
                             # 在txt文件中写入文件的相对路径和源代码
-                            output_file.write(f'Path: {relative_path}\n{source_code}\n\n')
+                            output_file.write(
+                                f'Path: {relative_path}\n{source_code}\n\n')
                         except Exception as e:
                             print(f"Error reading file {relative_path}: {e}")
 
@@ -327,9 +318,9 @@ def main():
 
         if not os.path.exists(args.flatten_dir):
             os.makedirs(args.flatten_dir)
-        
+
         flatten4llm(args.src_dir, args.flatten_dir)
-        
+
         return
 
     if not args.no_flatten:

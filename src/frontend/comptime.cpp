@@ -143,33 +143,37 @@ ComptimeValuePtr comptime_compute_binary(
         float value = std::get<float>(lhs->kind) * std::get<float>(rhs->kind);
         return create_comptime_value(value, create_float_type());
       }
+      case BinaryOp::Div: {
+        float value = std::get<float>(lhs->kind) / std::get<float>(rhs->kind);
+        return create_comptime_value(value, create_float_type());
+      }
       case BinaryOp::Lt: {
-        bool value = std::get<int>(lhs->kind) < std::get<int>(rhs->kind);
+        bool value = std::get<float>(lhs->kind) < std::get<float>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       case BinaryOp::Gt: {
-        bool value = std::get<int>(lhs->kind) > std::get<int>(rhs->kind);
+        bool value = std::get<float>(lhs->kind) > std::get<float>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       case BinaryOp::Le: {
-        bool value = std::get<int>(lhs->kind) <= std::get<int>(rhs->kind);
+        bool value = std::get<float>(lhs->kind) <= std::get<float>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       case BinaryOp::Ge: {
-        bool value = std::get<int>(lhs->kind) >= std::get<int>(rhs->kind);
+        bool value = std::get<float>(lhs->kind) >= std::get<float>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       case BinaryOp::Eq: {
-        bool value = std::get<int>(lhs->kind) == std::get<int>(rhs->kind);
+        bool value = std::get<float>(lhs->kind) == std::get<float>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       case BinaryOp::Ne: {
-        bool value = std::get<int>(lhs->kind) != std::get<int>(rhs->kind);
+        bool value = std::get<float>(lhs->kind) != std::get<float>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       default: {
         throw std::runtime_error(
-          "Unsupported compile-time binary operation for type `int`."
+          "Unsupported compile-time binary operation for type `float`."
         );
       }
     }

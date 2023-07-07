@@ -419,10 +419,7 @@ create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver) {
     auto lhs_expr = integer_mul_lhs.second;
     auto rhs_expr = integer_mul_rhs.second;
 
-    std::cout << "ADD EXPR!" << std::endl;
-
     if (lhs_expr->to_string() == rhs_expr->to_string()) {
-      std::cout << "ADD EXPR SAME!" << std::endl;
       auto new_int = create_comptime_value(lhs_int + rhs_int, type.value());
       return create_binary_expr(
         BinaryOp::Mul, create_constant_expr(new_int), lhs_expr, driver
