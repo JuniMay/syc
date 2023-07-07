@@ -1098,7 +1098,82 @@ void codegen_instruction(
         }
       },
       [&](ir::instruction::GetElementPtr& gep) {
-        // TODO
+        auto asm_dst_id = codegen_operand(
+          gep.dst_id, ir_context, builder, codegen_context, false, false
+        );
+        auto asm_ptr_id = codegen_operand(
+          gep.ptr_id, ir_context, builder, codegen_context, false, false
+        );
+
+        auto asm_ptr = builder.context.get_operand(asm_ptr_id);
+
+        if (asm_ptr->is_global()) {
+          auto asm_tmp_id = builder.fetch_virtual_register(
+            backend::VirtualRegisterKind::General
+          );
+          // Pseudo la
+          auto la_instruction = builder.fetch_pseudo_load_instruction(
+            backend::instruction::PseudoLoad::LA, asm_tmp_id, asm_ptr_id
+          );
+          builder.append_instruction(la_instruction);
+
+          asm_ptr_id = asm_tmp_id;
+        }
+
+        auto ir_basis_type = gep.basis_type;
+
+        for (auto ir_operand_id : gep.index_id_list) {
+          auto asm_operand_id = codegen_operand(
+            ir_operand_id, ir_context, builder, codegen_context, false, false
+          );
+          auto size = ir::get_size(ir_basis_type);
+
+          auto asm_size_id =
+            builder.fetch_virtual_register(backend::VirtualRegisterKind::General
+            );
+          auto li_instruction = builder.fetch_li_instruction(
+            asm_size_id, builder.fetch_immediate((int32_t)(size / 8))
+          );
+          builder.append_instruction(li_instruction);
+
+          auto asm_mul_dst_id =
+            builder.fetch_virtual_register(backend::VirtualRegisterKind::General
+            );
+          auto mul_instruction = builder.fetch_binary_instruction(
+            backend::instruction::Binary::Op::MUL, asm_mul_dst_id,
+            asm_operand_id, asm_size_id
+          );
+
+          auto asm_add_dst_id =
+            builder.fetch_virtual_register(backend::VirtualRegisterKind::General
+            );
+          auto add_instruction = builder.fetch_binary_instruction(
+            backend::instruction::Binary::Op::ADD, asm_add_dst_id, asm_ptr_id,
+            asm_mul_dst_id
+          );
+
+          builder.append_instruction(mul_instruction);
+          builder.append_instruction(add_instruction);
+
+          asm_ptr_id = asm_add_dst_id;
+
+          if (std::holds_alternative<ir::type::Pointer>(*ir_basis_type)) {
+            ir_basis_type =
+              std::get<ir::type::Pointer>(*ir_basis_type).value_type;
+          } else if (std::holds_alternative<ir::type::Array>(*ir_basis_type)) {
+            ir_basis_type =
+              std::get<ir::type::Array>(*ir_basis_type).element_type;
+          } else {
+            break;
+          }
+        }
+
+        // mv
+        auto addi_instruction = builder.fetch_binary_imm_instruction(
+          backend::instruction::BinaryImm::Op::ADDI, asm_dst_id, asm_ptr_id,
+          builder.fetch_immediate(0)
+        );
+        builder.append_instruction(addi_instruction);
       },
       [&](ir::instruction::Ret& ret) {
         auto ir_maybe_value_id = ret.maybe_value_id;
@@ -1311,10 +1386,7 @@ AsmOperandID codegen_operand(
           throw std::runtime_error("Invalid parameter kind.");
         }
       },
-      [](auto& k) {
-        // TODO: Parameter
-        throw std::runtime_error("Invalid operand kind.");
-      },
+      [](auto& k) { throw std::runtime_error("Invalid operand kind."); },
     },
     ir_operand_kind
   );
