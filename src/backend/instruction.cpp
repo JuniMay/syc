@@ -745,7 +745,8 @@ std::string Instruction::to_string(Context& context) {
         auto rd = context.get_operand(instruction.rd_id);
         auto rs = context.get_operand(instruction.rs_id);
 
-        ss << " " << rd->to_string() << ", " << rs->to_string();
+        ss << " " << rd->to_string() << ", " << rs->to_string() << ", "
+           << "rtz";
 
         return ss.str();
       },

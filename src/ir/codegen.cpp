@@ -1002,13 +1002,13 @@ void codegen_instruction(
 
             builder.append_instruction(feqs_instruction);
 
-            // Pseudo not
-            auto xori_instruction = builder.fetch_binary_imm_instruction(
-              backend::instruction::BinaryImm::XORI, asm_dst_id, asm_tmp_id,
-              builder.fetch_immediate(-1)
+            // Pseudo seqz
+            auto sltiu_instruction = builder.fetch_binary_imm_instruction(
+              backend::instruction::BinaryImm::SLTIU, asm_dst_id, asm_tmp_id,
+              builder.fetch_immediate(1)
             );
 
-            builder.append_instruction(xori_instruction);
+            builder.append_instruction(sltiu_instruction);
 
             break;
           }
