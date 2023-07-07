@@ -7,6 +7,7 @@
 #include "backend/instruction.h"
 #include "backend/operand.h"
 #include "backend/register.h"
+#include "ir/codegen.h"
 #include "common.h"
 
 namespace syc {

@@ -345,57 +345,137 @@ void spill(
   if (operand->maybe_def_id.has_value()) {
     auto def_instruction =
       builder.context.get_instruction(operand->maybe_def_id.value());
-    OperandID tmp_register_id;
-    InstructionPtr store_instruction;
-
     auto sp_id = builder.fetch_register(Register{GeneralRegister::Sp});
 
     if (live_interval.is_float) {
-      tmp_register_id = builder.fetch_register(Register{FloatRegister::Ft0});
-      store_instruction = builder.fetch_float_store_instruction(
-        instruction::FloatStore::FSD, sp_id, tmp_register_id,
-        builder.fetch_immediate(offset)
-      );
+      if (check_itype_immediate(offset)) {
+        auto tmp_register_id =
+          builder.fetch_register(Register{FloatRegister::Ft0});
+        auto store_instruction = builder.fetch_float_store_instruction(
+          instruction::FloatStore::FSD, sp_id, tmp_register_id,
+          builder.fetch_immediate(offset)
+        );
+        def_instruction->replace_operand(operand_id, tmp_register_id);
+        def_instruction->insert_next(store_instruction);
+      } else {
+        auto t0_id = builder.fetch_register(Register{GeneralRegister::T0});
+        auto t1_id = builder.fetch_register(Register{GeneralRegister::T1});
+        auto t2_id = builder.fetch_register(Register{GeneralRegister::T2});
+
+        auto li_instruction =
+          builder.fetch_li_instruction(t0_id, builder.fetch_immediate(offset));
+        auto add_instruction = builder.fetch_binary_instruction(
+          instruction::Binary::ADD, t1_id, sp_id, t0_id
+        );
+        auto fsd_instruction = builder.fetch_float_store_instruction(
+          instruction::FloatStore::FSD, t1_id, t2_id, builder.fetch_immediate(0)
+        );
+
+        def_instruction->replace_operand(operand_id, t2_id);
+
+        def_instruction->insert_next(li_instruction);
+        li_instruction->insert_next(add_instruction);
+        add_instruction->insert_next(fsd_instruction);
+      }
     } else {
-      tmp_register_id = builder.fetch_register(Register{GeneralRegister::T0});
-      store_instruction = builder.fetch_store_instruction(
-        instruction::Store::SD, sp_id, tmp_register_id,
-        builder.fetch_immediate(offset)
-      );
+      if (check_itype_immediate(offset)) {
+        auto tmp_register_id =
+          builder.fetch_register(Register{GeneralRegister::T0});
+        auto store_instruction = builder.fetch_store_instruction(
+          instruction::Store::SD, sp_id, tmp_register_id,
+          builder.fetch_immediate(offset)
+        );
+        def_instruction->replace_operand(operand_id, tmp_register_id);
+        def_instruction->insert_next(store_instruction);
+      } else {
+        auto t0_id = builder.fetch_register(Register{GeneralRegister::T0});
+        auto t1_id = builder.fetch_register(Register{GeneralRegister::T1});
+        auto t2_id = builder.fetch_register(Register{GeneralRegister::T2});
+
+        auto li_instruction =
+          builder.fetch_li_instruction(t0_id, builder.fetch_immediate(offset));
+        auto add_instruction = builder.fetch_binary_instruction(
+          instruction::Binary::ADD, t1_id, sp_id, t0_id
+        );
+        auto sd_instruction = builder.fetch_store_instruction(
+          instruction::Store::SD, t1_id, t2_id, builder.fetch_immediate(0)
+        );
+
+        def_instruction->replace_operand(operand_id, t2_id);
+
+        def_instruction->insert_next(li_instruction);
+        li_instruction->insert_next(add_instruction);
+        add_instruction->insert_next(sd_instruction);
+      }
     }
-
-    def_instruction->replace_operand(operand_id, tmp_register_id);
-    def_instruction->insert_next(store_instruction);
-
-    builder.context.get_operand(tmp_register_id)
-      ->set_def(store_instruction->id);
   }
 
   for (auto use_instruction_id : operand->use_id_list) {
     auto use_instruction = builder.context.get_instruction(use_instruction_id);
-    OperandID tmp_register_id;
-    InstructionPtr load_instruction;
 
     auto sp_id = builder.fetch_register(Register{GeneralRegister::Sp});
 
     if (live_interval.is_float) {
-      tmp_register_id = builder.fetch_register(Register{FloatRegister::Ft0});
-      load_instruction = builder.fetch_float_load_instruction(
-        instruction::FloatLoad::FLD, sp_id, tmp_register_id,
-        builder.fetch_immediate(offset)
-      );
+      if (check_itype_immediate(offset)) {
+        auto tmp_register_id =
+          builder.fetch_register(Register{FloatRegister::Ft0});
+        auto load_instruction = builder.fetch_float_load_instruction(
+          instruction::FloatLoad::FLD, tmp_register_id, sp_id,
+          builder.fetch_immediate(offset)
+        );
+        use_instruction->replace_operand(operand_id, tmp_register_id);
+        use_instruction->insert_prev(load_instruction);
+      } else {
+        auto t0_id = builder.fetch_register(Register{GeneralRegister::T0});
+        auto t1_id = builder.fetch_register(Register{GeneralRegister::T1});
+        auto t2_id = builder.fetch_register(Register{GeneralRegister::T2});
+
+        auto li_instruction =
+          builder.fetch_li_instruction(t0_id, builder.fetch_immediate(offset));
+        auto add_instruction = builder.fetch_binary_instruction(
+          instruction::Binary::ADD, t1_id, sp_id, t0_id
+        );
+        auto fld_instruction = builder.fetch_float_load_instruction(
+          instruction::FloatLoad::FLD, t2_id, t1_id, builder.fetch_immediate(0)
+        );
+
+        use_instruction->replace_operand(operand_id, t2_id);
+
+        use_instruction->insert_prev(fld_instruction);
+        fld_instruction->insert_prev(add_instruction);
+        add_instruction->insert_prev(li_instruction);
+      }
     } else {
-      tmp_register_id = builder.fetch_register(Register{GeneralRegister::T0});
-      load_instruction = builder.fetch_load_instruction(
-        instruction::Load::LD, sp_id, tmp_register_id,
-        builder.fetch_immediate(offset)
-      );
+      if (check_itype_immediate(offset)) {
+        auto tmp_register_id =
+          builder.fetch_register(Register{GeneralRegister::T0});
+        auto load_instruction = builder.fetch_load_instruction(
+          instruction::Load::LD, tmp_register_id, sp_id,
+          builder.fetch_immediate(offset)
+        );
+        use_instruction->replace_operand(operand_id, tmp_register_id);
+        use_instruction->insert_prev(load_instruction);
+      } else {
+        auto t0_id = builder.fetch_register(Register{GeneralRegister::T0});
+        auto t1_id = builder.fetch_register(Register{GeneralRegister::T1});
+        auto t2_id = builder.fetch_register(Register{GeneralRegister::T2});
+
+        auto li_instruction =
+          builder.fetch_li_instruction(t0_id, builder.fetch_immediate(offset));
+        auto add_instruction = builder.fetch_binary_instruction(
+          instruction::Binary::ADD, t1_id, sp_id, t0_id
+        );
+        auto ld_instruction = builder.fetch_load_instruction(
+          instruction::Load::LD, t2_id, t1_id, builder.fetch_immediate(0)
+        );
+
+        use_instruction->replace_operand(operand_id, t2_id);
+
+        use_instruction->insert_prev(ld_instruction);
+        ld_instruction->insert_prev(add_instruction);
+        add_instruction->insert_prev(li_instruction);
+      }
     }
-
-    use_instruction->replace_operand(operand_id, tmp_register_id);
-    use_instruction->insert_prev(load_instruction);
-
-    builder.context.get_operand(tmp_register_id)->add_use(load_instruction->id);
   }
 }
 
