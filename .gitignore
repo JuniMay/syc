@@ -1,6 +1,5 @@
 /.vscode/
 /src/frontend/generated/
-/flattened/
 /tests/
 /tests_output/
 /.cache/
