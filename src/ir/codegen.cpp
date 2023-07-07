@@ -1455,15 +1455,33 @@ void codegen_instruction(
             ir_maybe_value_id.value(), ir_context, builder, codegen_context,
             false, false
           );
-          auto a0_id = builder.fetch_register(backend::Register{
-            backend::GeneralRegister::A0});
 
-          auto mv_instruction = builder.fetch_binary_imm_instruction(
-            backend::instruction::BinaryImm::Op::ADDI, a0_id, asm_value_id,
-            builder.fetch_immediate(0)
-          );
+          auto asm_value = builder.context.get_operand(asm_value_id);
 
-          builder.append_instruction(mv_instruction);
+          if (asm_value->is_float()) {
+            auto fa0_id = builder.fetch_register(backend::Register{
+              backend::FloatRegister::Fa0});
+
+            // fmv.s
+            auto fsgnjs_instruction = builder.fetch_float_binary_instruction(
+              backend::instruction::FloatBinary::FSGNJ,
+              backend::instruction::FloatBinary::S, fa0_id, asm_value_id,
+              asm_value_id
+            );
+
+            builder.append_instruction(fsgnjs_instruction);
+
+          } else {
+            auto a0_id = builder.fetch_register(backend::Register{
+              backend::GeneralRegister::A0});
+
+            auto mv_instruction = builder.fetch_binary_imm_instruction(
+              backend::instruction::BinaryImm::Op::ADDI, a0_id, asm_value_id,
+              builder.fetch_immediate(0)
+            );
+
+            builder.append_instruction(mv_instruction);
+          }
         }
         auto ret_instruction = builder.fetch_ret_instruction();
         builder.append_instruction(ret_instruction);
