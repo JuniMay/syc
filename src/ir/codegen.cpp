@@ -126,7 +126,9 @@ void codegen(
       continue;
     }
     // adjust stack frame size to be 16-byte aligned
-    codegen_function_prolouge(ir_function_name, builder, codegen_context);
+    codegen_function_prolouge(
+      ir_function_name, ir_context, builder, codegen_context
+    );
     codegen_function_epilouge(ir_function_name, builder, codegen_context);
   }
 }
@@ -149,6 +151,46 @@ void codegen_function(
     curr_ir_basic_block = curr_ir_basic_block->next;
   }
 
+  int curr_general_reg = 0;
+  int curr_float_reg = 0;
+
+  std::vector<IrOperandID> ir_stack_param_id_list;
+
+  for (auto ir_operand_id : ir_function->parameter_id_list) {
+    auto ir_operand = ir_context.get_operand(ir_operand_id);
+    auto ir_operand_type = ir_operand->type;
+
+    if (std::holds_alternative<ir::type::Float>(*ir_operand_type)) {
+      if (curr_float_reg <= 7) {
+        auto asm_reg =
+          builder.fetch_register(backend::Register{(backend::FloatRegister)(
+            (int)backend::FloatRegister::Fa0 + curr_float_reg
+          )});
+        codegen_context.operand_map[ir_operand_id] = asm_reg;
+        curr_float_reg++;
+      } else {
+        ir_stack_param_id_list.push_back(ir_operand_id);
+      }
+    } else {
+      if (curr_general_reg <= 7) {
+        auto asm_reg =
+          builder.fetch_register(backend::Register{(backend::GeneralRegister)(
+            (int)backend::GeneralRegister::A0 + curr_general_reg
+          )});
+        codegen_context.operand_map[ir_operand_id] = asm_reg;
+        curr_general_reg++;
+      } else {
+        ir_stack_param_id_list.push_back(ir_operand_id);
+      }
+    }
+  }
+  int offset = 0;
+  for (auto ir_operand_id : ir_stack_param_id_list) {
+    auto asm_local_memory_id = builder.fetch_local_memory(offset);
+    codegen_context.operand_map[ir_operand_id] = asm_local_memory_id;
+    offset += 8;
+  }
+
   curr_ir_basic_block = ir_function->head_basic_block->next;
   while (curr_ir_basic_block != ir_function->tail_basic_block) {
     codegen_basic_block(
@@ -160,14 +202,17 @@ void codegen_function(
 
 void codegen_function_prolouge(
   std::string function_name,
+  IrContext& ir_context,
   AsmBuilder& builder,
   CodegenContext& codegen_context
 ) {
   using namespace backend;
 
-  // TODO: parameters
+  auto ir_function = ir_context.get_function(function_name);
 
   auto asm_function = builder.context.get_function(function_name);
+  asm_function->saved_general_register_list.insert(0);
+
   auto entry_block = asm_function->head_basic_block->next;
 
   auto stack_frame_size = asm_function->stack_frame_size;
@@ -189,6 +234,16 @@ void codegen_function_prolouge(
 
   asm_function->align_frame_size =
     aligned_stack_frame_size - asm_function->stack_frame_size;
+
+  // addi s0, sp, aligned_frame_size
+  // this is for parameters that are passed through stack
+  auto addi_s0_instruction = builder.fetch_binary_imm_instruction(
+    instruction::BinaryImm::Op::ADDI,
+    builder.fetch_register(Register{GeneralRegister::S0}), sp_id,
+    builder.fetch_immediate((int32_t)aligned_stack_frame_size)
+  );
+
+  entry_block->prepend_instruction(addi_s0_instruction);
 
   size_t curr_frame_pos = aligned_stack_frame_size - 16;
 
@@ -729,8 +784,8 @@ void codegen_instruction(
 
             // Pseudo seqz
             auto sltiu_instruction = builder.fetch_binary_imm_instruction(
-              backend::instruction::BinaryImm::SLTIU,
-              asm_dst_id, asm_tmp_id, builder.fetch_immediate(1)
+              backend::instruction::BinaryImm::SLTIU, asm_dst_id, asm_tmp_id,
+              builder.fetch_immediate(1)
             );
 
             builder.append_instruction(sltiu_instruction);
@@ -923,6 +978,8 @@ void codegen_instruction(
               );
 
               builder.append_instruction(fsgnjs_instruction);
+
+              curr_float_reg++;
             } else {
               asm_stack_arg_id_list.push_back(asm_arg_id);
             }
@@ -940,13 +997,16 @@ void codegen_instruction(
               );
 
               builder.append_instruction(addi_instruction);
+
+              curr_general_reg++;
             } else {
               asm_stack_arg_id_list.push_back(asm_arg_id);
             }
           }
         }
 
-        int stack_size = 4 * asm_stack_arg_id_list.size();
+        int stack_size = 8 * asm_stack_arg_id_list.size();
+        int align_size = (stack_size + 15) / 16 * 16 - stack_size;
 
         if (stack_size > 0) {
           auto addi_instruction = builder.fetch_binary_imm_instruction(
@@ -955,37 +1015,37 @@ void codegen_instruction(
               backend::GeneralRegister::Sp}),
             builder.fetch_register(backend::Register{
               backend::GeneralRegister::Sp}),
-            builder.fetch_immediate(-stack_size)
+            builder.fetch_immediate(-(stack_size + align_size))
           );
 
           builder.append_instruction(addi_instruction);
 
-          int offset = stack_size - 4;
+          int offset = 0;
 
           for (auto asm_arg_id : asm_stack_arg_id_list) {
             auto asm_arg = builder.context.get_operand(asm_arg_id);
 
             if (asm_arg->is_float()) {
-              auto fsw_instruction = builder.fetch_float_store_instruction(
-                backend::instruction::FloatStore::Op::FSW,
+              auto fsd_instruction = builder.fetch_float_store_instruction(
+                backend::instruction::FloatStore::Op::FSD,
                 builder.fetch_register(backend::Register{
                   backend::GeneralRegister::Sp}),
                 asm_arg_id, builder.fetch_immediate(offset)
               );
 
-              builder.append_instruction(fsw_instruction);
+              builder.append_instruction(fsd_instruction);
             } else {
-              auto sw_instruction = builder.fetch_store_instruction(
-                backend::instruction::Store::Op::SW,
+              auto sd_instruction = builder.fetch_store_instruction(
+                backend::instruction::Store::Op::SD,
                 builder.fetch_register(backend::Register{
                   backend::GeneralRegister::Sp}),
                 asm_arg_id, builder.fetch_immediate(offset)
               );
 
-              builder.append_instruction(sw_instruction);
+              builder.append_instruction(sd_instruction);
             }
 
-            offset -= 4;
+            offset += 8;
           }
         }
         auto call_instruction =
@@ -1000,7 +1060,7 @@ void codegen_instruction(
               backend::GeneralRegister::Sp}),
             builder.fetch_register(backend::Register{
               backend::GeneralRegister::Sp}),
-            builder.fetch_immediate(stack_size)
+            builder.fetch_immediate(stack_size + align_size)
           );
 
           builder.append_instruction(addi_instruction);
@@ -1205,6 +1265,51 @@ AsmOperandID codegen_operand(
           throw std::runtime_error("global variable is not initialized.");
         }
         asm_operand_id = codegen_context.operand_map.at(ir_operand_id);
+      },
+      [&](ir::operand::Parameter& ir_parameter) {
+        if (!codegen_context.operand_map.count(ir_operand_id)) {
+          throw std::runtime_error("parameter is not initialized.");
+        }
+
+        auto ir_operand = ir_context.get_operand(ir_operand_id);
+
+        bool is_float =
+          std::holds_alternative<ir::type::Float>(*ir_operand->type);
+
+        auto asm_param_id = codegen_context.operand_map.at(ir_operand_id);
+        auto asm_param = builder.context.get_operand(asm_param_id);
+
+        if (asm_param->is_reg()) {
+          asm_operand_id = asm_param_id;
+        } else if (asm_param->is_local_memory()) {
+          int offset = std::get<backend::LocalMemory>(asm_param->kind).offset;
+
+          // parameters are index by fp
+          auto asm_fp_id = builder.fetch_register(backend::Register{
+            backend::GeneralRegister::S0});
+
+          if (is_float) {
+            asm_operand_id =
+              builder.fetch_virtual_register(backend::VirtualRegisterKind::Float
+              );
+            auto fld_instruction = builder.fetch_float_load_instruction(
+              backend::instruction::FloatLoad::Op::FLD, asm_operand_id,
+              asm_fp_id, builder.fetch_immediate(offset)
+            );
+            builder.append_instruction(fld_instruction);
+          } else {
+            asm_operand_id = builder.fetch_virtual_register(
+              backend::VirtualRegisterKind::General
+            );
+            auto ld_instruction = builder.fetch_load_instruction(
+              backend::instruction::Load::Op::LD, asm_operand_id, asm_fp_id,
+              builder.fetch_immediate(offset)
+            );
+            builder.append_instruction(ld_instruction);
+          }
+        } else {
+          throw std::runtime_error("Invalid parameter kind.");
+        }
       },
       [](auto& k) {
         // TODO: Parameter

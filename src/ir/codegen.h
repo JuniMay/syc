@@ -54,6 +54,7 @@ void codegen_function(
 
 void codegen_function_prolouge(
   std::string function_name,
+  IrContext& ir_context,
   AsmBuilder& builder,
   CodegenContext& codegen_context
 );

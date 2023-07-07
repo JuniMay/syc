@@ -12,6 +12,7 @@ namespace backend {
 /// Local memory place for variables.
 struct LocalMemory {
   /// Offset from the stack pointer.
+  /// If this is for parameter, then the offset is from the fp.
   /// About sp and fp, see this discussion:
   /// https://stackoverflow.com/questions/74650564/is-frame-pointer-necessary-for-riscv-assembly
   int offset;

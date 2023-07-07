@@ -137,8 +137,11 @@ void linear_scan(
       {}, LiveIntervalEndComparator{linear_scan_context.live_interval_map}
     );
 
-  for (int i = 0; i < 12; i++) {
+  for (int i = 1; i < 12; i++) {
     linear_scan_context.available_general_register_set.insert(i);
+  }
+
+  for (int i = 0; i < 12; i++) {
     linear_scan_context.available_float_register_set.insert(i);
   }
 
