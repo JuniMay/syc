@@ -40,8 +40,6 @@ This will generate the `syc` executable in the current directory.
 - [ ] Constant propagation
 - [ ] `memcpy` and `memset` for local arrays.
 - [ ] Peephole optimization for IR and assembly.
-  - [ ] Support multiple defs for ASM operands.
-  - [ ] Refactor spill and live interval analysis in linear scan.
   - `performance/instruction-combining`
   - IR: combine `load` and `store` with the same address.
   - IR: combine `add` and `sub` with constant.
