@@ -1130,8 +1130,9 @@ void codegen_instruction(
         std::vector<AsmOperandID> asm_stack_arg_id_list;
 
         for (auto ir_arg_id : call.arg_id_list) {
-          auto asm_arg_id =
-            codegen_operand(ir_arg_id, ir_context, builder, codegen_context);
+          auto asm_arg_id = codegen_operand(
+            ir_arg_id, ir_context, builder, codegen_context, false, true
+          );
 
           asm_arg_id_list.push_back(asm_arg_id);
 
