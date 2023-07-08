@@ -64,6 +64,8 @@ struct BasicBlock : std::enable_shared_from_this<BasicBlock> {
 
   /// If the block is used.
   bool has_use() const;
+
+  std::vector<BasicBlockID> get_succ() const;
 };
 
 /// Create a basic block.

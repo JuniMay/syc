@@ -43,6 +43,7 @@ def execute(command, timeout) -> Dict[str, Any]:
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--timeout', type=int, default=600)
+    parser.add_argument('--opt-level', type=int, default=0)
     parser.add_argument('--src-dir', default='./src')
     parser.add_argument('--output-dir', default='./output')
     parser.add_argument('--flatten-dir', default='./flattened')
@@ -150,7 +151,7 @@ def log(logfile, command, exec_result):
 
 
 def test(executable_path: str, testcase_dir: str, output_dir: str,
-         runtime_lib_dir: str, exec_timeout: int):
+         runtime_lib_dir: str, exec_timeout: int, opt_level: int):
     testcase_list = []
 
     def dfs(curr_dir: str):
@@ -197,6 +198,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
 
         command = (f'{executable_path} {testcase}.sy -S '
                    f'-o {asm_path} '
+                   f'-O{opt_level} '
                    f'--emit-tokens {tokens_path} '
                    f'--emit-ast {ast_path} '
                    f'--emit-ir {ir_path} ')
@@ -343,7 +345,7 @@ def main():
             os.makedirs(args.output_dir)
 
         test(args.executable_path, args.testcase_dir, args.output_dir,
-             args.runtime_lib_dir, args.timeout)
+             args.runtime_lib_dir, args.timeout, args.opt_level)
 
 
 if __name__ == '__main__':
