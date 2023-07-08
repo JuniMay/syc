@@ -25,5 +25,17 @@ std::string Immediate::to_string(int width) const {
   );
 }
 
+bool Immediate::is_zero() const {
+  return std::visit(
+    overloaded{
+      [](int32_t v) { return v == 0; },
+      [](int64_t v) { return v == 0; },
+      [](uint32_t v) { return v == 0; },
+      [](uint64_t v) { return v == 0; },
+    },
+    value
+  );
+}
+
 }  // namespace backend
 }  // namespace syc

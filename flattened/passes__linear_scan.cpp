@@ -286,18 +286,14 @@ void linear_scan(
       auto def_instruction =
         builder.context.get_instruction(operand->maybe_def_id.value());
 
-      def_instruction->replace_operand(operand_id, reg_id);
-
-      builder.context.get_operand(reg_id)->set_def(def_instruction->id);
+      def_instruction->replace_operand(operand_id, reg_id, builder.context);
     }
 
     for (auto use_instruction_id : operand->use_id_list) {
       auto use_instruction =
         builder.context.get_instruction(use_instruction_id);
 
-      use_instruction->replace_operand(operand_id, reg_id);
-
-      builder.context.get_operand(reg_id)->add_use(use_instruction->id);
+      use_instruction->replace_operand(operand_id, reg_id, builder.context);
     }
   }
 
@@ -313,18 +309,14 @@ void linear_scan(
       auto def_instruction =
         builder.context.get_instruction(operand->maybe_def_id.value());
 
-      def_instruction->replace_operand(operand_id, reg_id);
-
-      builder.context.get_operand(reg_id)->set_def(def_instruction->id);
+      def_instruction->replace_operand(operand_id, reg_id, builder.context);
     }
 
     for (auto use_instruction_id : operand->use_id_list) {
       auto use_instruction =
         builder.context.get_instruction(use_instruction_id);
 
-      use_instruction->replace_operand(operand_id, reg_id);
-
-      builder.context.get_operand(reg_id)->add_use(use_instruction->id);
+      use_instruction->replace_operand(operand_id, reg_id, builder.context);
     }
   }
 }
@@ -355,7 +347,9 @@ void spill(
           instruction::FloatStore::FSD, sp_id, tmp_register_id,
           builder.fetch_immediate((int32_t)offset)
         );
-        def_instruction->replace_operand(operand_id, tmp_register_id);
+        def_instruction->replace_operand(
+          operand_id, tmp_register_id, builder.context
+        );
         def_instruction->insert_next(store_instruction);
       } else {
         auto t0_id = builder.fetch_register(Register{GeneralRegister::T0});
@@ -371,7 +365,7 @@ void spill(
           instruction::FloatStore::FSD, t1_id, t2_id, builder.fetch_immediate(0)
         );
 
-        def_instruction->replace_operand(operand_id, t2_id);
+        def_instruction->replace_operand(operand_id, t2_id, builder.context);
 
         def_instruction->insert_next(li_instruction);
         li_instruction->insert_next(add_instruction);
@@ -385,7 +379,9 @@ void spill(
           instruction::Store::SD, sp_id, tmp_register_id,
           builder.fetch_immediate((int32_t)offset)
         );
-        def_instruction->replace_operand(operand_id, tmp_register_id);
+        def_instruction->replace_operand(
+          operand_id, tmp_register_id, builder.context
+        );
         def_instruction->insert_next(store_instruction);
       } else {
         auto t0_id = builder.fetch_register(Register{GeneralRegister::T0});
@@ -401,7 +397,7 @@ void spill(
           instruction::Store::SD, t1_id, t2_id, builder.fetch_immediate(0)
         );
 
-        def_instruction->replace_operand(operand_id, t2_id);
+        def_instruction->replace_operand(operand_id, t2_id, builder.context);
 
         def_instruction->insert_next(li_instruction);
         li_instruction->insert_next(add_instruction);
@@ -423,7 +419,9 @@ void spill(
           instruction::FloatLoad::FLD, tmp_register_id, sp_id,
           builder.fetch_immediate((int32_t)offset)
         );
-        use_instruction->replace_operand(operand_id, tmp_register_id);
+        use_instruction->replace_operand(
+          operand_id, tmp_register_id, builder.context
+        );
         use_instruction->insert_prev(load_instruction);
       } else {
         auto t0_id = builder.fetch_register(Register{GeneralRegister::T0});
@@ -439,7 +437,7 @@ void spill(
           instruction::FloatLoad::FLD, t2_id, t1_id, builder.fetch_immediate(0)
         );
 
-        use_instruction->replace_operand(operand_id, t2_id);
+        use_instruction->replace_operand(operand_id, t2_id, builder.context);
 
         use_instruction->insert_prev(fld_instruction);
         fld_instruction->insert_prev(add_instruction);
@@ -453,7 +451,9 @@ void spill(
           instruction::Load::LD, tmp_register_id, sp_id,
           builder.fetch_immediate((int32_t)offset)
         );
-        use_instruction->replace_operand(operand_id, tmp_register_id);
+        use_instruction->replace_operand(
+          operand_id, tmp_register_id, builder.context
+        );
         use_instruction->insert_prev(load_instruction);
       } else {
         auto t0_id = builder.fetch_register(Register{GeneralRegister::T0});
@@ -469,7 +469,7 @@ void spill(
           instruction::Load::LD, t2_id, t1_id, builder.fetch_immediate(0)
         );
 
-        use_instruction->replace_operand(operand_id, t2_id);
+        use_instruction->replace_operand(operand_id, t2_id, builder.context);
 
         use_instruction->insert_prev(ld_instruction);
         ld_instruction->insert_prev(add_instruction);
