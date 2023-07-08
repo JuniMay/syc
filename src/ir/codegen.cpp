@@ -1586,9 +1586,9 @@ AsmOperandID codegen_operand(
           }
         } else {
           int value = std::get<int>(ir_constant->kind);
-          auto asm_imm_id = builder.fetch_immediate((int32_t)value);
 
           if (check_itype_immediate(value) && try_keep_imm) {
+            auto asm_imm_id = builder.fetch_immediate((int32_t)value);
             asm_operand_id = asm_imm_id;
           } else {
             asm_operand_id = builder.fetch_virtual_register(
@@ -1596,10 +1596,12 @@ AsmOperandID codegen_operand(
             );
             uint32_t bits = *reinterpret_cast<uint32_t*>(&value);
             if (check_utype_immediate(bits)) {
-              auto lui_instruction =
-                builder.fetch_lui_instruction(asm_operand_id, asm_imm_id);
+              auto lui_instruction = builder.fetch_lui_instruction(
+                asm_operand_id, builder.fetch_immediate((uint32_t)(bits >> 12))
+              );
               builder.append_instruction(lui_instruction);
             } else {
+              auto asm_imm_id = builder.fetch_immediate((int32_t)value);
               auto li_instruction =
                 builder.fetch_li_instruction(asm_operand_id, asm_imm_id);
               builder.append_instruction(li_instruction);
