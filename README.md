@@ -28,7 +28,10 @@ This will generate the `syc` executable in the current directory.
 
 ## Todo List
 
+- [x] Try to use temporary register for temporary immediate loading.
+  - t0, t1, t2 is used in linear scan.
+  - t3 is used in codegen for temporary immediate loading and comparison.
+  - t4 is used in argument passing (temporarily store the new sp).
+  - t5, t6 and all temporary floating-point registers are not used yet.
 - [ ] Fix `hidden_functional/30_many_dimensions` (segmentation fault)
-- [ ] Fix `hidden_functional/37_dct` (ir might be wrong)
-- [ ] Try to use temporary register for temporary immediate loading.
-  - e.g. if an immediate is out of the range of I-type instruction, load it using temporary registers.
+- [ ] Fix `hidden_functional/38_light2d` (wrong answer)
