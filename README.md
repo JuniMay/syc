@@ -35,3 +35,21 @@ This will generate the `syc` executable in the current directory.
   - t5, t6 and all temporary floating-point registers are not used yet.
 - [ ] Fix `hidden_functional/30_many_dimensions` (segmentation fault)
 - [ ] Fix `hidden_functional/38_light2d` (wrong answer)
+- [ ] Constant folding in AST
+  - Note that logical and/or cannot be folded because of short-circuit evaluation.
+- [ ] Constant propagation
+- [ ] `memcpy` and `memset` for local arrays.
+- [ ] Peephole optimization for IR and assembly.
+  - `performance/instruction-combining`
+  - IR: combine `load` and `store` with the same address.
+  - IR: combine `add` and `sub` with constant.
+  - ASM: combine `fadd`/`fsub` and `fmul` into `fmadd`, `fmsub`, etc.
+  - ASM: remove back and forth moves.
+  - ASM: immediate for load and store instructions.
+- [ ] Dead code elimination
+  - IR & ASM: unused definitions
+  - IR & ASM: jump to next instruction (basic block)
+- [ ] Strength reduction
+  - IR: integer division to shift.
+- [ ] Loop invariant code motion
+  - `performance/hoist`: sum is added 100 times and divided by 100.
