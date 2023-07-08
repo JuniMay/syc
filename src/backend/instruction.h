@@ -388,7 +388,7 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
 
   std::optional<BasicBlockID> get_basic_block_id_if_branch() const;
 
-  void replace_operand(OperandID old_operand_id, OperandID new_operand_id);
+  void replace_operand(OperandID old_operand_id, OperandID new_operand_id, Context& context);
 };
 
 InstructionPtr create_instruction(

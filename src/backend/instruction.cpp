@@ -66,9 +66,34 @@ InstructionPtr create_dummy_instruction() {
 
 void Instruction::replace_operand(
   OperandID old_operand_id,
-  OperandID new_operand_id
+  OperandID new_operand_id,
+  Context& context
 ) {
   using namespace instruction;
+
+  if (old_operand_id == new_operand_id) {
+    return;
+  }
+
+  auto old_operand = context.get_operand(old_operand_id);
+  auto new_operand = context.get_operand(new_operand_id);
+
+  if (std::find(this->def_id_list.begin(), this->def_id_list.end(), old_operand_id) != this->def_id_list.end()) {
+    this->def_id_list.erase(std::find(
+      this->def_id_list.begin(), this->def_id_list.end(), old_operand_id
+    ));
+    this->def_id_list.push_back(new_operand_id);
+    old_operand->remove_def();
+  }
+
+  if (std::find(this->use_id_list.begin(), this->use_id_list.end(), old_operand_id) != this->use_id_list.end()) {
+    this->use_id_list.erase(std::find(
+      this->use_id_list.begin(), this->use_id_list.end(), old_operand_id
+    ));
+    this->use_id_list.push_back(new_operand_id);
+    old_operand->remove_use(this->id);
+  }
+
   std::visit(
     overloaded{
       [&](Load& instruction) {

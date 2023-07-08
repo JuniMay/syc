@@ -14,6 +14,17 @@ void Operand::add_use(InstructionID use_id) {
   use_id_list.push_back(use_id);
 }
 
+void Operand::remove_def() {
+  this->maybe_def_id = std::nullopt;
+}
+
+void Operand::remove_use(InstructionID use_id) {
+  auto it = std::find(use_id_list.begin(), use_id_list.end(), use_id);
+  if (it != use_id_list.end()) {
+    use_id_list.erase(it);
+  }
+}
+
 std::string Operand::to_string(int width) const {
   std::string result = "";
 

@@ -41,6 +41,10 @@ struct Operand {
 
   void add_use(InstructionID use_id);
 
+  void remove_def();
+
+  void remove_use(InstructionID use_id);
+
   std::string to_string(int width = 0) const;
 
   bool is_local_memory() const;
