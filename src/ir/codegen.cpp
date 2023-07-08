@@ -1230,22 +1230,25 @@ void codegen_instruction(
 
                 builder.append_instruction(fsd_instruction);
               } else {
-                auto asm_tmp_id = builder.fetch_virtual_register(
+                auto asm_tmp0_id = builder.fetch_virtual_register(
+                  backend::VirtualRegisterKind::General
+                );
+                auto asm_tmp1_id = builder.fetch_virtual_register(
                   backend::VirtualRegisterKind::General
                 );
                 auto li_instruction = builder.fetch_li_instruction(
-                  asm_tmp_id, builder.fetch_immediate(offset)
+                  asm_tmp0_id, builder.fetch_immediate(offset)
                 );
                 builder.append_instruction(li_instruction);
 
                 auto add_instruction = builder.fetch_binary_instruction(
-                  backend::instruction::Binary::Op::ADD, asm_tmp_id,
-                  asm_arg_stack_reg_id, asm_tmp_id
+                  backend::instruction::Binary::Op::ADD, asm_tmp1_id,
+                  asm_arg_stack_reg_id, asm_tmp0_id
                 );
                 builder.append_instruction(add_instruction);
 
                 auto fsd_instruction = builder.fetch_float_store_instruction(
-                  backend::instruction::FloatStore::Op::FSD, asm_tmp_id,
+                  backend::instruction::FloatStore::Op::FSD, asm_tmp1_id,
                   asm_arg_id, builder.fetch_immediate(0)
                 );
 
@@ -1261,22 +1264,25 @@ void codegen_instruction(
 
                 builder.append_instruction(sd_instruction);
               } else {
-                auto asm_tmp_id = builder.fetch_virtual_register(
+                auto asm_tmp0_id = builder.fetch_virtual_register(
+                  backend::VirtualRegisterKind::General
+                );
+                auto asm_tmp1_id = builder.fetch_virtual_register(
                   backend::VirtualRegisterKind::General
                 );
                 auto li_instruction = builder.fetch_li_instruction(
-                  asm_tmp_id, builder.fetch_immediate(offset)
+                  asm_tmp0_id, builder.fetch_immediate(offset)
                 );
                 builder.append_instruction(li_instruction);
 
                 auto add_instruction = builder.fetch_binary_instruction(
-                  backend::instruction::Binary::Op::ADD, asm_tmp_id,
-                  asm_arg_stack_reg_id, asm_tmp_id
+                  backend::instruction::Binary::Op::ADD, asm_tmp1_id,
+                  asm_arg_stack_reg_id, asm_tmp0_id
                 );
                 builder.append_instruction(add_instruction);
 
                 auto sd_instruction = builder.fetch_store_instruction(
-                  backend::instruction::Store::Op::SD, asm_tmp_id, asm_arg_id,
+                  backend::instruction::Store::Op::SD, asm_tmp1_id, asm_arg_id,
                   builder.fetch_immediate(0)
                 );
 
@@ -1650,23 +1656,76 @@ AsmOperandID codegen_operand(
             backend::GeneralRegister::S0});
 
           if (is_float) {
-            asm_operand_id =
-              builder.fetch_virtual_register(backend::VirtualRegisterKind::Float
+            if (check_itype_immediate(offset)) {
+              asm_operand_id = builder.fetch_virtual_register(
+                backend::VirtualRegisterKind::Float
               );
-            auto fld_instruction = builder.fetch_float_load_instruction(
-              backend::instruction::FloatLoad::Op::FLD, asm_operand_id,
-              asm_fp_id, builder.fetch_immediate(offset)
-            );
-            builder.append_instruction(fld_instruction);
+              auto fld_instruction = builder.fetch_float_load_instruction(
+                backend::instruction::FloatLoad::Op::FLD, asm_operand_id,
+                asm_fp_id, builder.fetch_immediate(offset)
+              );
+              builder.append_instruction(fld_instruction);
+            } else {
+              asm_operand_id = builder.fetch_virtual_register(
+                backend::VirtualRegisterKind::Float
+              );
+              auto asm_tmp0_id = builder.fetch_virtual_register(
+                backend::VirtualRegisterKind::General
+              );
+              auto asm_tmp1_id = builder.fetch_virtual_register(
+                backend::VirtualRegisterKind::General
+              );
+              auto li_instruction = builder.fetch_li_instruction(
+                asm_tmp0_id, builder.fetch_immediate(offset)
+              );
+              builder.append_instruction(li_instruction);
+              auto add_instruction = builder.fetch_binary_instruction(
+                backend::instruction::Binary::Op::ADD, asm_tmp1_id, asm_fp_id,
+                asm_tmp0_id
+              );
+              builder.append_instruction(add_instruction);
+              auto fld_instruction = builder.fetch_float_load_instruction(
+                backend::instruction::FloatLoad::Op::FLD, asm_operand_id,
+                asm_tmp1_id, builder.fetch_immediate(0)
+              );
+              builder.append_instruction(fld_instruction);
+            }
+
           } else {
-            asm_operand_id = builder.fetch_virtual_register(
-              backend::VirtualRegisterKind::General
-            );
-            auto ld_instruction = builder.fetch_load_instruction(
-              backend::instruction::Load::Op::LD, asm_operand_id, asm_fp_id,
-              builder.fetch_immediate(offset)
-            );
-            builder.append_instruction(ld_instruction);
+            if (check_itype_immediate(offset)) {
+              asm_operand_id = builder.fetch_virtual_register(
+                backend::VirtualRegisterKind::General
+              );
+              auto ld_instruction = builder.fetch_load_instruction(
+                backend::instruction::Load::Op::LD, asm_operand_id, asm_fp_id,
+                builder.fetch_immediate(offset)
+              );
+              builder.append_instruction(ld_instruction);
+            } else {
+              asm_operand_id = builder.fetch_virtual_register(
+                backend::VirtualRegisterKind::General
+              );
+              auto asm_tmp0_id = builder.fetch_virtual_register(
+                backend::VirtualRegisterKind::General
+              );
+              auto asm_tmp1_id = builder.fetch_virtual_register(
+                backend::VirtualRegisterKind::General
+              );
+              auto li_instruction = builder.fetch_li_instruction(
+                asm_tmp0_id, builder.fetch_immediate(offset)
+              );
+              builder.append_instruction(li_instruction);
+              auto add_instruction = builder.fetch_binary_instruction(
+                backend::instruction::Binary::Op::ADD, asm_tmp1_id, asm_fp_id,
+                asm_tmp0_id
+              );
+              builder.append_instruction(add_instruction);
+              auto ld_instruction = builder.fetch_load_instruction(
+                backend::instruction::Load::Op::LD, asm_operand_id, asm_tmp1_id,
+                builder.fetch_immediate(0)
+              );
+              builder.append_instruction(ld_instruction);
+            }
           }
         } else {
           throw std::runtime_error("Invalid parameter kind.");

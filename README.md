@@ -30,3 +30,5 @@ This will generate the `syc` executable in the current directory.
 
 - [ ] Fix `hidden_functional/30_many_dimensions` (segmentation fault)
 - [ ] Fix `hidden_functional/37_dct` (ir might be wrong)
+- [ ] Try to use temporary register for temporary immediate loading.
+  - e.g. if an immediate is out of the range of I-type instruction, load it using temporary registers.
