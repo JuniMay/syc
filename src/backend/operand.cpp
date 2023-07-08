@@ -86,5 +86,44 @@ bool Operand::is_float() const {
   }
 }
 
+bool Operand::operator==(const Operand& rhs) const {
+  if (this->is_vreg() && rhs.is_vreg()) {
+    return this->id == rhs.id;
+  } else if (this->is_reg() && rhs.is_reg()) {
+    const auto& lhs_reg = std::get<Register>(this->kind);
+    const auto& rhs_reg = std::get<Register>(rhs.kind);
+
+    if (lhs_reg.reg.index() != rhs_reg.reg.index()) {
+      return false;
+    }
+
+    if (lhs_reg.is_general()) {
+      return std::get<GeneralRegister>(lhs_reg.reg) ==
+             std::get<GeneralRegister>(rhs_reg.reg);
+    } else {
+      return std::get<FloatRegister>(lhs_reg.reg) ==
+             std::get<FloatRegister>(rhs_reg.reg);
+    }
+  } else {
+    return false;
+  }
+}
+
+bool Operand::is_zero() const {
+  if (is_immediate()) {
+    return std::get<Immediate>(kind).is_zero();
+  } else if (is_reg()) {
+    auto reg = std::get<Register>(kind);
+
+    if (reg.is_general()) {
+      return std::get<GeneralRegister>(reg.reg) == GeneralRegister::Zero;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+}
+
 }  // namespace backend
 }  // namespace syc

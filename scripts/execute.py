@@ -46,7 +46,7 @@ def parse_args():
     parser.add_argument('--src-dir', default='./src')
     parser.add_argument('--output-dir', default='./output')
     parser.add_argument('--flatten-dir', default='./flattened')
-    parser.add_argument('--testcase-dir', default='./tests/functional')
+    parser.add_argument('--testcase-dir', default='./tests')
     parser.add_argument('--runtime-lib-dir', default='./sysy-runtime-lib')
 
     parser.add_argument('--executable-path', default='./syc')

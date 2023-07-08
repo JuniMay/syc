@@ -58,6 +58,10 @@ struct Operand {
   bool is_global() const;
 
   bool is_float() const;
+
+  bool is_zero() const;
+
+  bool operator==(const Operand& rhs) const;
 };
 
 }  // namespace backend
