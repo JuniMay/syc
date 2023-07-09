@@ -7,6 +7,7 @@
 #include "ir/instruction.h"
 #include "backend/builder.h"
 #include "ir/codegen.h"
+#include "passes/unreach_elim.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -34,6 +35,10 @@ int main(int argc, char* argv[]) {
   auto ir_builder = ir::Builder();
 
   irgen(compunit, ir_builder);
+
+  if (options.optimization_level > 0) {
+    ir::unreach_elim(ir_builder);
+  }
 
   if (options.ir_file.has_value()) {
     std::ofstream ir_file(options.ir_file.value());
