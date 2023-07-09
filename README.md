@@ -30,7 +30,7 @@ This will generate the `syc` executable in the current directory.
 
 - [x] Try to use temporary register for temporary immediate loading.
   - t0, t1, t2 is used in linear scan.
-  - t3 is used in codegen for temporary immediate loading and comparison.
+  - t3 is used in codegen for temporary immediate loading, pseudo load/store and comparison.
   - t4 is used in argument passing (temporarily store the new sp).
   - t5, t6 and all temporary floating-point registers are not used yet.
 - [ ] Fix `hidden_functional/30_many_dimensions` (segmentation fault)
@@ -45,7 +45,7 @@ This will generate the `syc` executable in the current directory.
   - IR: combine `add` and `sub` with constant.
   - ASM: combine `fadd`/`fsub` and `fmul` into `fmadd`, `fmsub`, etc.
   - ASM: remove back and forth moves.
-  - ASM: immediate for load and store instructions.
+  - [x] ASM: immediate for load and store instructions.
 - [ ] Dead code elimination
   - IR & ASM: unused definitions
   - IR & ASM: jump to next instruction (basic block)

@@ -125,5 +125,19 @@ bool Operand::is_zero() const {
   }
 }
 
+bool Operand::is_sp() const {
+  if (is_reg()) {
+    auto reg = std::get<Register>(kind);
+
+    if (reg.is_general()) {
+      return std::get<GeneralRegister>(reg.reg) == GeneralRegister::Sp;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+}
+
 }  // namespace backend
 }  // namespace syc

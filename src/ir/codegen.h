@@ -10,7 +10,6 @@
 #include "ir/instruction.h"
 #include "ir/operand.h"
 #include "ir/type.h"
-#include "passes/linear_scan.h"
 
 namespace syc {
 

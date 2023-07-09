@@ -383,6 +383,8 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
   /// Insert instruction to the prev of the current instruction.
   void insert_prev(InstructionPtr instruction);
 
+  void remove(Context& context);
+
   /// Convert the instruction to a string of assembly code.
   std::string to_string(Context& context);
 
