@@ -84,6 +84,7 @@ void Instruction::replace_operand(
     ));
     this->def_id_list.push_back(new_operand_id);
     old_operand->remove_def();
+    new_operand->set_def(this->id);
   }
 
   if (std::find(this->use_id_list.begin(), this->use_id_list.end(), old_operand_id) != this->use_id_list.end()) {
@@ -92,6 +93,7 @@ void Instruction::replace_operand(
     ));
     this->use_id_list.push_back(new_operand_id);
     old_operand->remove_use(this->id);
+    new_operand->add_use(this->id);
   }
 
   std::visit(
@@ -281,6 +283,26 @@ void Instruction::replace_operand(
       }},
     kind
   );
+}
+
+void Instruction::remove(Context& context) {
+  for (auto def_id : this->def_id_list) {
+    auto def = context.get_operand(def_id);
+    def->remove_def();
+  }
+
+  for (auto use_id : this->use_id_list) {
+    auto use = context.get_operand(use_id);
+    use->remove_use(this->id);
+  }
+
+  if (auto prev = this->prev.lock()) {
+    prev->next = this->next;
+  }
+
+  if (this->next) {
+    this->next->prev = this->prev;
+  }
 }
 
 std::string Instruction::to_string(Context& context) {

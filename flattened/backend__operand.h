@@ -61,6 +61,8 @@ struct Operand {
 
   bool is_zero() const;
 
+  bool is_sp() const;
+
   bool operator==(const Operand& rhs) const;
 };
 

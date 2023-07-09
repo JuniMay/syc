@@ -1,4 +1,5 @@
 #include "ir__codegen.h"
+#include "passes__linear_scan.h"
 
 namespace syc {
 
@@ -118,7 +119,13 @@ void codegen(
     }
     codegen_function(ir_function, ir_context, builder, codegen_context);
   }
+}
 
+void codegen_rest(
+  IrContext& ir_context,
+  AsmBuilder& builder,
+  CodegenContext& codegen_context
+) {
   asm_register_allocation(builder);
 
   for (auto& [ir_function_name, ir_function] : ir_context.function_table) {
@@ -573,9 +580,8 @@ void codegen_instruction(
             auto fsw_instruction = builder.fetch_float_pseudo_store_instruction(
               backend::instruction::FloatPseudoStore::FSW, asm_value_id,
               asm_ptr_id,
-              builder.fetch_virtual_register(
-                backend::VirtualRegisterKind::General
-              )
+              builder.fetch_register(backend::Register{
+                backend::GeneralRegister::T3})
             );
 
             builder.append_instruction(fsw_instruction);
@@ -590,9 +596,8 @@ void codegen_instruction(
           if (is_global) {
             auto sw_instruction = builder.fetch_pseudo_store_instruction(
               backend::instruction::PseudoStore::SW, asm_value_id, asm_ptr_id,
-              builder.fetch_virtual_register(
-                backend::VirtualRegisterKind::General
-              )
+              builder.fetch_register(backend::Register{
+                backend::GeneralRegister::T3})
             );
             builder.append_instruction(sw_instruction);
           } else {
@@ -647,9 +652,8 @@ void codegen_instruction(
             auto flw_instruction = builder.fetch_float_pseudo_load_instruction(
               backend::instruction::FloatPseudoLoad::FLW, asm_dst_id,
               asm_ptr_id,
-              builder.fetch_virtual_register(
-                backend::VirtualRegisterKind::General
-              )
+              builder.fetch_register(backend::Register{
+                backend::GeneralRegister::T3})
             );
             builder.append_instruction(flw_instruction);
           } else {

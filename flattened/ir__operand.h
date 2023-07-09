@@ -28,6 +28,8 @@ struct Constant {
   TypePtr type;
 
   std::string to_string(bool with_type = false) const;
+
+  bool get_bool_value() const;
 };
 
 /// Parameter

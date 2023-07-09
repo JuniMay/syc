@@ -39,6 +39,26 @@ std::string operand::Constant::to_string(bool with_type) const {
   return buf.str();
 }
 
+bool operand::Constant::get_bool_value() const{
+  return std::visit(
+    overloaded{
+      [](int const_int){
+        return const_int != 0;
+      },
+      [](float const_float){
+        return const_float != 0.0;
+      },
+      [](ir::operand::ConstantPtr const_ptr){
+        return const_ptr->get_bool_value();
+      },
+      [](auto const_zero){ 
+        return false; 
+      }
+    },
+    kind
+  );
+}
+
 Operand::Operand(OperandID id, TypePtr type, OperandKind kind)
   : id(id), type(type), kind(kind), def_id(std::nullopt) {}
 

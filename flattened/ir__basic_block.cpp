@@ -68,7 +68,12 @@ std::string BasicBlock::to_string(Context& context) {
   std::string label = this->get_label();
   std::string result = label + ": ";
 
-  result += "; use count: " + std::to_string(this->use_id_list.size()) + "\n";
+  result += "; use count: " + std::to_string(this->use_id_list.size());
+  result += "; succ: ";
+  for (auto succ_id : this->get_succ()) {
+    result += std::to_string(succ_id) + ", ";
+  }
+  result += "\n";
 
   auto curr_instruction = this->head_instruction->next;
 
@@ -105,6 +110,31 @@ bool BasicBlock::has_terminator() const {
 
 bool BasicBlock::has_use() const {
   return !this->use_id_list.empty();
+}
+
+std::vector<BasicBlockID> BasicBlock::get_succ() const {
+  std::vector<BasicBlockID> result;
+  if(this->head_instruction->next == this->tail_instruction)
+    return result;
+  auto tail_instruction_ptr = this->tail_instruction->prev.lock();
+  if(tail_instruction_ptr)
+  {
+    std::visit(
+      overloaded {
+        [&](const ir::instruction::Br& kind) { 
+          result = std::vector<BasicBlockID> { kind.block_id };
+        },
+        [&](const ir::instruction::CondBr& kind) { 
+          result = std::vector<BasicBlockID> { kind.then_block_id, kind.else_block_id };  
+        },
+        [](const auto&) {
+          // Do nothing for other instruction kinds
+        }
+      },
+      tail_instruction_ptr->kind
+    );
+  }
+  return result;
 }
 
 }  // namespace ir

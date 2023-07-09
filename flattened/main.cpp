@@ -1,16 +1,19 @@
 
 #include <fstream>
 #include <iostream>
+#include "backend__builder.h"
 #include "frontend__driver.h"
 #include "frontend__irgen.h"
 #include "ir__builder.h"
-#include "ir__instruction.h"
-#include "backend__builder.h"
 #include "ir__codegen.h"
+#include "ir__instruction.h"
+#include "passes__asm_dce.h"
+#include "passes__asm_peephole.h"
+#include "passes__linear_scan.h"
+#include "passes__unreach_elim.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
-
   using namespace syc;
 
   auto options = parse_args(argc, argv);
@@ -35,6 +38,10 @@ int main(int argc, char* argv[]) {
 
   irgen(compunit, ir_builder);
 
+  if (options.optimization_level > 0) {
+    ir::unreach_elim(ir_builder);
+  }
+
   if (options.ir_file.has_value()) {
     std::ofstream ir_file(options.ir_file.value());
     ir_file << ir_builder.context.to_string();
@@ -50,11 +57,15 @@ int main(int argc, char* argv[]) {
 
   codegen(ir_builder.context, asm_builder, codegen_context);
 
+  backend::peephole(asm_builder);
+  backend::dce(asm_builder);
+
+  codegen_rest(ir_builder.context, asm_builder, codegen_context);
+
   if (options.output_file.has_value()) {
     std::ofstream output_file(options.output_file.value());
     output_file << asm_builder.context.to_string();
   }
 
   return 0;
-
 }

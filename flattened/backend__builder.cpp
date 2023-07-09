@@ -167,9 +167,11 @@ InstructionPtr Builder::fetch_pseudo_store_instruction(
   context.operand_table[rd_id]->add_use(id);
   // rt is defined by auipc
   context.operand_table[rt_id]->set_def(id);
+  context.operand_table[rt_id]->add_use(id);
 
   instruction->add_use(rd_id);
   instruction->add_def(rt_id);
+  instruction->add_use(rt_id);
 
   return instruction;
 }
@@ -190,9 +192,11 @@ InstructionPtr Builder::fetch_float_pseudo_load_instruction(
   context.operand_table[rd_id]->set_def(id);
   // rt is defined by auipc
   context.operand_table[rt_id]->set_def(id);
+  context.operand_table[rt_id]->add_use(id);
 
   instruction->add_def(rd_id);
   instruction->add_def(rt_id);
+  instruction->add_use(rt_id);
 
   return instruction;
 }
@@ -213,9 +217,11 @@ InstructionPtr Builder::fetch_float_pseudo_store_instruction(
   context.operand_table[rd_id]->add_use(id);
   // rt is defined by auipc
   context.operand_table[rt_id]->set_def(id);
+  context.operand_table[rt_id]->add_use(id);
 
   instruction->add_use(rd_id);
   instruction->add_def(rt_id);
+  instruction->add_use(rt_id);
 
   return instruction;
 }

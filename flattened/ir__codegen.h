@@ -10,7 +10,6 @@
 #include "ir__instruction.h"
 #include "ir__operand.h"
 #include "ir__type.h"
-#include "passes__linear_scan.h"
 
 namespace syc {
 
@@ -47,6 +46,12 @@ void codegen(
 
 void codegen_function(
   IrFunctionPtr ir_function,
+  IrContext& ir_context,
+  AsmBuilder& builder,
+  CodegenContext& codegen_context
+);
+
+void codegen_rest(
   IrContext& ir_context,
   AsmBuilder& builder,
   CodegenContext& codegen_context
