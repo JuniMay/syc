@@ -51,6 +51,12 @@ void codegen_function(
   CodegenContext& codegen_context
 );
 
+void codegen_rest(
+  IrContext& ir_context,
+  AsmBuilder& builder,
+  CodegenContext& codegen_context
+);
+
 void codegen_function_prolouge(
   std::string function_name,
   IrContext& ir_context,

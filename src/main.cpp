@@ -1,17 +1,19 @@
 
 #include <fstream>
 #include <iostream>
+#include "backend/builder.h"
 #include "frontend/driver.h"
 #include "frontend/irgen.h"
 #include "ir/builder.h"
-#include "ir/instruction.h"
-#include "backend/builder.h"
 #include "ir/codegen.h"
+#include "ir/instruction.h"
+#include "passes/asm_dce.h"
+#include "passes/asm_peephole.h"
+#include "passes/linear_scan.h"
 #include "passes/unreach_elim.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
-
   using namespace syc;
 
   auto options = parse_args(argc, argv);
@@ -55,11 +57,15 @@ int main(int argc, char* argv[]) {
 
   codegen(ir_builder.context, asm_builder, codegen_context);
 
+  backend::peephole(asm_builder);
+  backend::dce(asm_builder);
+
+  codegen_rest(ir_builder.context, asm_builder, codegen_context);
+
   if (options.output_file.has_value()) {
     std::ofstream output_file(options.output_file.value());
     output_file << asm_builder.context.to_string();
   }
 
   return 0;
-
 }

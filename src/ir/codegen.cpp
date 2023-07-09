@@ -1,6 +1,4 @@
 #include "ir/codegen.h"
-#include "passes/asm_dce.h"
-#include "passes/asm_peephole.h"
 #include "passes/linear_scan.h"
 
 namespace syc {
@@ -121,9 +119,13 @@ void codegen(
     }
     codegen_function(ir_function, ir_context, builder, codegen_context);
   }
+}
 
-  backend::peephole(builder);
-  backend::dce(builder);
+void codegen_rest(
+  IrContext& ir_context,
+  AsmBuilder& builder,
+  CodegenContext& codegen_context
+) {
   asm_register_allocation(builder);
 
   for (auto& [ir_function_name, ir_function] : ir_context.function_table) {
