@@ -792,8 +792,16 @@ std::string Instruction::to_string(Context& context) {
         auto rd = context.get_operand(instruction.rd_id);
         auto rs = context.get_operand(instruction.rs_id);
 
-        ss << " " << rd->to_string() << ", " << rs->to_string() << ", "
-           << "rtz";
+        ss << " " << rd->to_string() << ", " << rs->to_string();
+
+        if (instruction.dst_fmt == FloatConvert::W || 
+            instruction.dst_fmt == FloatConvert::WU ||
+            instruction.dst_fmt == FloatConvert::L ||
+            instruction.dst_fmt == FloatConvert::LU) {
+          ss << ", rtz";
+        } else {
+          // Rounding mode is not added if convert from int to float.
+        }
 
         return ss.str();
       },
