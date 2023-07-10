@@ -289,7 +289,9 @@ void linear_scan(
       def_instruction->replace_operand(operand_id, reg_id, builder.context);
     }
 
-    for (auto use_instruction_id : operand->use_id_list) {
+    auto use_id_list_copy = operand->use_id_list;
+
+    for (auto use_instruction_id : use_id_list_copy) {
       auto use_instruction =
         builder.context.get_instruction(use_instruction_id);
 
@@ -312,7 +314,9 @@ void linear_scan(
       def_instruction->replace_operand(operand_id, reg_id, builder.context);
     }
 
-    for (auto use_instruction_id : operand->use_id_list) {
+    auto use_id_list_copy = operand->use_id_list;
+
+    for (auto use_instruction_id : use_id_list_copy) {
       auto use_instruction =
         builder.context.get_instruction(use_instruction_id);
 
@@ -406,7 +410,9 @@ void spill(
     }
   }
 
-  for (auto use_instruction_id : operand->use_id_list) {
+  auto use_id_list_copy = operand->use_id_list;
+
+  for (auto use_instruction_id : use_id_list_copy) {
     auto use_instruction = builder.context.get_instruction(use_instruction_id);
 
     auto sp_id = builder.fetch_register(Register{GeneralRegister::Sp});
