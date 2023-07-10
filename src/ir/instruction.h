@@ -220,6 +220,18 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
   /// Previous instruction.
   InstructionPrevPtr prev;
 
+  std::optional<OperandID> maybe_def_id;
+  std::vector<OperandID> use_id_list;
+
+  void set_def(OperandID def_id);
+  void add_use(OperandID use_id);
+
+  void replace_operand(
+    OperandID old_operand_id,
+    OperandID new_operand_id,
+    Context& context
+  );
+
   /// Constructor
   Instruction(
     InstructionID id,
@@ -244,6 +256,21 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
 
   /// If this is a terminator instruction.
   bool is_terminator() const;
+
+  bool is_alloca() const;
+
+  bool is_store() const;
+
+  bool is_load() const;
+
+  bool is_phi() const;
+
+  bool is_br() const;
+
+  void add_phi_operand(
+    OperandID incoming_operand_id,
+    BasicBlockID incoming_block_id
+  );
 };
 
 /// Create an instruction.

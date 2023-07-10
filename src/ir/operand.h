@@ -54,7 +54,7 @@ struct Operand {
   /// Operand kind.
   OperandKind kind;
   /// ID of the instruction that defines this operand.
-  std::optional<InstructionID> def_id;
+  std::optional<InstructionID> maybe_def_id;
   /// IDs of the instructions that use this operand.
   std::vector<InstructionID> use_id_list;
 
@@ -72,6 +72,8 @@ struct Operand {
   void set_def(InstructionID def_id);
 
   void add_use(InstructionID use_id);
+
+  void remove_def();
 
   void remove_use(InstructionID use_id);
 };

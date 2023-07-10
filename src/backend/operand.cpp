@@ -19,10 +19,10 @@ void Operand::remove_def() {
 }
 
 void Operand::remove_use(InstructionID use_id) {
-  auto it = std::find(use_id_list.begin(), use_id_list.end(), use_id);
-  if (it != use_id_list.end()) {
-    use_id_list.erase(it);
-  }
+  this->use_id_list.erase(
+    std::remove(this->use_id_list.begin(), this->use_id_list.end(), use_id),
+    this->use_id_list.end()
+  );
 }
 
 std::string Operand::to_string(int width) const {
