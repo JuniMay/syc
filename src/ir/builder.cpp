@@ -344,7 +344,30 @@ InstructionPtr Builder::fetch_getelementptr_instruction(
 }
 
 void Builder::append_instruction(InstructionPtr instruction) {
+  if (curr_basic_block->has_terminator()) {
+    return;
+  }
+
   curr_basic_block->append_instruction(instruction);
+
+  if (std::holds_alternative<instruction::CondBr>(instruction->kind)) {
+    const auto& condbr = std::get<instruction::CondBr>(instruction->kind);
+
+    curr_basic_block->add_succ(condbr.then_block_id);
+    curr_basic_block->add_succ(condbr.else_block_id);
+
+    context.basic_block_table[condbr.then_block_id]->add_pred(
+      curr_basic_block->id
+    );
+    context.basic_block_table[condbr.else_block_id]->add_pred(
+      curr_basic_block->id
+    );
+  } else if (std::holds_alternative<instruction::Br>(instruction->kind)) {
+    const auto& br = std::get<instruction::Br>(instruction->kind);
+
+    curr_basic_block->add_succ(br.block_id);
+    context.basic_block_table[br.block_id]->add_pred(curr_basic_block->id);
+  }
 }
 
 /// Prepend an instruction to the current block.

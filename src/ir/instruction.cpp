@@ -44,26 +44,172 @@ void Instruction::insert_prev(InstructionPtr instruction) {
   this->prev = instruction;
 }
 
+void Instruction::set_def(OperandID def_id) {
+  this->maybe_def_id = def_id;
+}
+
+void Instruction::add_use(OperandID use_id) {
+  this->use_id_list.push_back(use_id);
+}
+
+void Instruction::replace_operand(
+  OperandID old_operand_id,
+  OperandID new_operand_id,
+  Context& context
+) {
+  if (this->maybe_def_id.has_value() && this->maybe_def_id.value() == old_operand_id) {
+    this->maybe_def_id = new_operand_id;
+    context.operand_table[old_operand_id]->remove_def();
+    context.operand_table[new_operand_id]->set_def(this->id);
+  }
+
+  for (auto& use_id : this->use_id_list) {
+    if (use_id == old_operand_id) {
+      use_id = new_operand_id;
+      context.operand_table[old_operand_id]->remove_use(this->id);
+      context.operand_table[new_operand_id]->add_use(this->id);
+    }
+  }
+
+  std::visit(
+    overloaded{
+      [&](instruction::Binary& kind) {
+        if (kind.dst_id == old_operand_id) {
+          kind.dst_id = new_operand_id;
+        }
+        if (kind.lhs_id == old_operand_id) {
+          kind.lhs_id = new_operand_id;
+        }
+        if (kind.rhs_id == old_operand_id) {
+          kind.rhs_id = new_operand_id;
+        }
+      },
+      [&](instruction::ICmp& kind) {
+        if (kind.dst_id == old_operand_id) {
+          kind.dst_id = new_operand_id;
+        }
+        if (kind.lhs_id == old_operand_id) {
+          kind.lhs_id = new_operand_id;
+        }
+        if (kind.rhs_id == old_operand_id) {
+          kind.rhs_id = new_operand_id;
+        }
+      },
+      [&](instruction::FCmp& kind) {
+        if (kind.dst_id == old_operand_id) {
+          kind.dst_id = new_operand_id;
+        }
+        if (kind.lhs_id == old_operand_id) {
+          kind.lhs_id = new_operand_id;
+        }
+        if (kind.rhs_id == old_operand_id) {
+          kind.rhs_id = new_operand_id;
+        }
+      },
+      [&](instruction::Cast& kind) {
+        if (kind.dst_id == old_operand_id) {
+          kind.dst_id = new_operand_id;
+        }
+        if (kind.src_id == old_operand_id) {
+          kind.src_id = new_operand_id;
+        }
+      },
+      [&](instruction::Ret& kind) {
+        if (kind.maybe_value_id.has_value() && kind.maybe_value_id.value() == old_operand_id) {
+          kind.maybe_value_id = new_operand_id;
+        }
+      },
+      [&](instruction::CondBr& kind) {
+        if (kind.cond_id == old_operand_id) {
+          kind.cond_id = new_operand_id;
+        }
+      },
+      [&](instruction::Br& kind) {},
+      [&](instruction::Phi& kind) {
+        if (kind.dst_id == old_operand_id) {
+          kind.dst_id = new_operand_id;
+        }
+        for (auto& [value_id, block_id] : kind.incoming_list) {
+          if (value_id == old_operand_id) {
+            value_id = new_operand_id;
+          }
+        }
+      },
+      [&](instruction::Alloca& kind) {
+        if (kind.dst_id == old_operand_id) {
+          kind.dst_id = new_operand_id;
+        }
+        if (kind.maybe_size_id.has_value() && kind.maybe_size_id.value() == old_operand_id) {
+          kind.maybe_size_id = new_operand_id;
+        }
+        if (kind.maybe_align_id.has_value() && kind.maybe_align_id.value() == old_operand_id) {
+          kind.maybe_align_id = new_operand_id;
+        }
+        if (kind.maybe_addrspace_id.has_value() && kind.maybe_addrspace_id.value() == old_operand_id) {
+          kind.maybe_addrspace_id = new_operand_id;
+        }
+      },
+      [&](instruction::Load& kind) {
+        if (kind.dst_id == old_operand_id) {
+          kind.dst_id = new_operand_id;
+        }
+        if (kind.ptr_id == old_operand_id) {
+          kind.ptr_id = new_operand_id;
+        }
+      },
+      [&](instruction::Store& kind) {
+        if (kind.value_id == old_operand_id) {
+          kind.value_id = new_operand_id;
+        }
+        if (kind.ptr_id == old_operand_id) {
+          kind.ptr_id = new_operand_id;
+        }
+      },
+      [&](instruction::Call& kind) {
+        if (kind.maybe_dst_id.has_value() && kind.maybe_dst_id.value() == old_operand_id) {
+          kind.maybe_dst_id = new_operand_id;
+        }
+        for (auto& arg_id : kind.arg_id_list) {
+          if (arg_id == old_operand_id) {
+            arg_id = new_operand_id;
+          }
+        }
+      },
+      [&](instruction::GetElementPtr& kind) {
+        if (kind.dst_id == old_operand_id) {
+          kind.dst_id = new_operand_id;
+        }
+        if (kind.ptr_id == old_operand_id) {
+          kind.ptr_id = new_operand_id;
+        }
+        for (auto& index_id : kind.index_id_list) {
+          if (index_id == old_operand_id) {
+            index_id = new_operand_id;
+          }
+        }
+      },
+      [&](instruction::Dummy& kind) {},
+    },
+    this->kind
+  );
+}
+
 void Instruction::remove(Context& context) {
   std::visit(
     overloaded{
       [this, &context](const instruction::Binary& kind) {
-        context.operand_table.erase(kind.dst_id);
         context.operand_table[kind.lhs_id]->remove_use(this->id);
         context.operand_table[kind.rhs_id]->remove_use(this->id);
       },
       [this, &context](const instruction::ICmp& kind) {
-        context.operand_table.erase(kind.dst_id);
         context.operand_table[kind.lhs_id]->remove_use(this->id);
         context.operand_table[kind.rhs_id]->remove_use(this->id);
       },
       [this, &context](const instruction::FCmp& kind) {
-        context.operand_table.erase(kind.dst_id);
         context.operand_table[kind.lhs_id]->remove_use(this->id);
         context.operand_table[kind.rhs_id]->remove_use(this->id);
       },
       [this, &context](const instruction::Cast& kind) {
-        context.operand_table.erase(kind.dst_id);
         context.operand_table[kind.src_id]->remove_use(this->id);
       },
       [this, &context](const instruction::Ret& kind) {
@@ -77,19 +223,38 @@ void Instruction::remove(Context& context) {
         context.operand_table[kind.cond_id]->remove_use(this->id);
         context.basic_block_table[kind.then_block_id]->remove_use(this->id);
         context.basic_block_table[kind.else_block_id]->remove_use(this->id);
+
+        context.basic_block_table[kind.then_block_id]->remove_pred(
+          this->parent_block_id
+        );
+        context.basic_block_table[kind.else_block_id]->remove_pred(
+          this->parent_block_id
+        );
+
+        context.basic_block_table[this->parent_block_id]->remove_succ(
+          kind.then_block_id
+        );
+        context.basic_block_table[this->parent_block_id]->remove_succ(
+          kind.else_block_id
+        );
       },
       [this, &context](const instruction::Br& kind) {
         context.basic_block_table[kind.block_id]->remove_use(this->id);
+
+        context.basic_block_table[kind.block_id]->remove_pred(
+          this->parent_block_id
+        );
+        context.basic_block_table[this->parent_block_id]->remove_succ(
+          kind.block_id
+        );
       },
       [this, &context](const instruction::Phi& kind) {
-        context.operand_table.erase(kind.dst_id);
         for (auto [operand_id, basic_block_id] : kind.incoming_list) {
           context.operand_table[operand_id]->remove_use(this->id);
           context.basic_block_table[basic_block_id]->remove_use(this->id);
         }
       },
       [this, &context](const instruction::Alloca& kind) {
-        context.operand_table.erase(kind.dst_id);
         if (kind.maybe_size_id.has_value()) {
           context.operand_table[kind.maybe_size_id.value()]->remove_use(this->id
           );
@@ -106,7 +271,6 @@ void Instruction::remove(Context& context) {
         }
       },
       [this, &context](const instruction::Load& kind) {
-        context.operand_table.erase(kind.dst_id);
         context.operand_table[kind.ptr_id]->remove_use(this->id);
         if (kind.maybe_align_id.has_value()) {
           context.operand_table[kind.maybe_align_id.value()]->remove_use(
@@ -134,7 +298,6 @@ void Instruction::remove(Context& context) {
         }
       },
       [this, &context](const instruction::GetElementPtr& kind) {
-        context.operand_table.erase(kind.dst_id);
         context.operand_table[kind.ptr_id]->remove_use(this->id);
         for (auto index_id : kind.index_id_list) {
           context.operand_table[index_id]->remove_use(this->id);
@@ -157,6 +320,37 @@ bool Instruction::is_terminator() const {
   return std::holds_alternative<instruction::Br>(this->kind) ||
          std::holds_alternative<instruction::CondBr>(this->kind) ||
          std::holds_alternative<instruction::Ret>(this->kind);
+}
+
+bool Instruction::is_alloca() const {
+  return std::holds_alternative<instruction::Alloca>(this->kind);
+}
+
+bool Instruction::is_store() const {
+  return std::holds_alternative<instruction::Store>(this->kind);
+}
+
+bool Instruction::is_load() const {
+  return std::holds_alternative<instruction::Load>(this->kind);
+}
+
+bool Instruction::is_phi() const {
+  return std::holds_alternative<instruction::Phi>(this->kind);
+}
+
+bool Instruction::is_br() const {
+  return std::holds_alternative<instruction::Br>(this->kind);
+}
+
+void Instruction::add_phi_operand(
+  OperandID incoming_operand_id,
+  BasicBlockID incoming_block_id
+) {
+  if (!is_phi()) {
+    return;
+  }
+  std::get<instruction::Phi>(this->kind)
+    .incoming_list.emplace_back(incoming_operand_id, incoming_block_id);
 }
 
 Instruction::Instruction(

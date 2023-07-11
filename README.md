@@ -33,12 +33,14 @@ This will generate the `syc` executable in the current directory.
   - t3 is used in codegen for temporary immediate loading, pseudo load/store and comparison.
   - t4 is used in argument passing (temporarily store the new sp).
   - t5, t6 and all temporary floating-point registers are not used yet.
+- [ ] Fix `hidden_functional/29_long_line` (register allocation)
 - [ ] Fix `hidden_functional/30_many_dimensions` (segmentation fault)
 - [x] Fix `hidden_functional/38_light2d`
   - Rounding mode of `fcvt` instruction.
 - [ ] Constant folding in AST
   - Note that logical and/or cannot be folded because of short-circuit evaluation.
-- [ ] Mem2reg.
+- [x] Mem2reg.
+- [ ] Phi elimination.
 - [ ] Constant propagation
 - [ ] `memcpy` and `memset` for local arrays.
 - [ ] Peephole optimization for IR and assembly.

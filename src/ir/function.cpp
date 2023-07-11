@@ -86,7 +86,8 @@ void Function::add_terminators(Builder& builder) {
       curr_basic_block = curr_basic_block->next;
       continue;
     } else {
-      curr_basic_block->append_instruction(
+      builder.set_curr_basic_block(curr_basic_block);
+      builder.append_instruction(
         builder.fetch_br_instruction(curr_basic_block->next->id)
       );
       curr_basic_block = curr_basic_block->next;

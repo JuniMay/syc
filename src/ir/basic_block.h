@@ -26,6 +26,9 @@ struct BasicBlock : std::enable_shared_from_this<BasicBlock> {
   /// List of id of instructions that use this block
   std::vector<InstructionID> use_id_list;
 
+  std::vector<BasicBlockID> pred_list;
+  std::vector<BasicBlockID> succ_list;
+
   /// The next basic block.
   BasicBlockPtr next;
   /// The previous basic block.
@@ -44,6 +47,11 @@ struct BasicBlock : std::enable_shared_from_this<BasicBlock> {
   void add_use(InstructionID use_id);
 
   void remove_use(InstructionID use_id);
+
+  void add_pred(BasicBlockID pred_id);
+  void add_succ(BasicBlockID succ_id);
+  void remove_pred(BasicBlockID pred_id);
+  void remove_succ(BasicBlockID succ_id);
 
   /// Insert the basic block after the current basic block.
   void insert_next(BasicBlockPtr basic_block);

@@ -10,6 +10,7 @@
 #include "passes/asm_dce.h"
 #include "passes/asm_peephole.h"
 #include "passes/linear_scan.h"
+#include "passes/mem2reg.h"
 #include "passes/unreach_elim.h"
 #include "utils.h"
 
@@ -39,6 +40,7 @@ int main(int argc, char* argv[]) {
   irgen(compunit, ir_builder);
 
   if (options.optimization_level > 0) {
+    ir::mem2reg(ir_builder);
     ir::unreach_elim(ir_builder);
   }
 
