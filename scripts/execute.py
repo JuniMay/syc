@@ -241,11 +241,11 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
             print(f'[  ERROR  ] (ir->obj) {testcase}')
             continue
 
-        command = (f'riscv64-linux-gnu-gcc -march=rv64gc {obj_from_ir_path}'
-                   f' -L{runtime_lib_dir} -lsylib -o {exec_path}')
-
-        # command = (f'riscv64-linux-gnu-gcc -march=rv64gc {asm_path}'
+        # command = (f'riscv64-linux-gnu-gcc -march=rv64gc {obj_from_ir_path}'
         #            f' -L{runtime_lib_dir} -lsylib -o {exec_path}')
+
+        command = (f'riscv64-linux-gnu-gcc -march=rv64gc {asm_path}'
+                   f' -L{runtime_lib_dir} -lsylib -o {exec_path}')
 
         exec_result = execute(command, exec_timeout)
         log(log_file, command, exec_result)

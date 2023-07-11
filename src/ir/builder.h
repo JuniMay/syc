@@ -128,7 +128,8 @@ struct Builder {
     TypePtr allocated_type,
     std::optional<OperandID> maybe_size_id,
     std::optional<OperandID> maybe_align_id,
-    std::optional<OperandID> maybe_addrspace_id
+    std::optional<OperandID> maybe_addrspace_id,
+    bool alloca_for_param = false
   );
 
   /// Make a load instruction and register it to the context.

@@ -157,6 +157,8 @@ struct Alloca {
   std::optional<OperandID> maybe_align_id;
   /// Address space of the allocated memory.
   std::optional<OperandID> maybe_addrspace_id;
+  /// If the address is for parameter
+  bool alloca_for_param;
 };
 
 /// Load value from the given address/pointer.

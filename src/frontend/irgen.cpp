@@ -305,7 +305,7 @@ void irgen_stmt(
 
             auto alloca_instruction = builder.fetch_alloca_instruction(
               ir_alloca_dst_id, ir_param_operand->type, std::nullopt,
-              std::nullopt, std::nullopt
+              std::nullopt, std::nullopt, true
             );
 
             builder.prepend_instruction_to_curr_function(alloca_instruction);

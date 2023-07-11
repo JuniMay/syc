@@ -44,6 +44,8 @@ void Instruction::insert_prev(InstructionPtr instruction) {
 std::optional<BasicBlockID> Instruction::get_basic_block_id_if_branch() const {
   if (auto branch = std::get_if<instruction::Branch>(&this->kind)) {
     return branch->block_id;
+  } else if (auto jmp = std::get_if<instruction::J>(&this->kind)) {
+    return jmp->block_id;
   } else {
     return std::nullopt;
   }

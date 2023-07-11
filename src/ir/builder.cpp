@@ -209,7 +209,8 @@ InstructionPtr Builder::fetch_alloca_instruction(
   TypePtr allocaed_type,
   std::optional<OperandID> maybe_size_id,
   std::optional<OperandID> maybe_align_id,
-  std::optional<OperandID> maybe_addrspace_id
+  std::optional<OperandID> maybe_addrspace_id,
+    bool alloca_for_param
 ) {
   auto id = context.get_next_instruction_id();
   auto kind = InstructionKind(instruction::Alloca{
@@ -218,6 +219,7 @@ InstructionPtr Builder::fetch_alloca_instruction(
     maybe_size_id,
     maybe_align_id,
     maybe_addrspace_id,
+    alloca_for_param,
   });
 
   auto instruction = create_instruction(id, kind, curr_basic_block->id);

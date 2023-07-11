@@ -45,6 +45,10 @@ struct LinearScanContext {
 
   std::map<BasicBlockID, bool> visited;
 
+  // 0~6 for t0~t6
+  // 7~18 for ft0~ft11
+  std::map<InstructionID, std::bitset<19>> used_temporary_register_map; 
+
   /// 0 - 11 for s0 - s11
   std::set<int> available_general_register_set;
   /// 0 - 11 for fs0 - fs11

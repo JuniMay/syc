@@ -25,6 +25,12 @@ void mem2reg(Builder& builder) {
 
       auto alloca = std::get<instruction::Alloca>(curr_instr->kind);
 
+      if (alloca.alloca_for_param) {
+        // Skip parameter passing
+        curr_instr = next_instr;
+        continue;
+      }
+
       auto allocated_type = alloca.allocated_type;
 
       // Only convert integer and float

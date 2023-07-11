@@ -357,19 +357,19 @@ void spill(
         def_instruction->insert_next(store_instruction);
       } else {
         auto t0_id = builder.fetch_register(Register{GeneralRegister::T0});
-        auto t1_id = builder.fetch_register(Register{GeneralRegister::T1});
-        auto t2_id = builder.fetch_register(Register{GeneralRegister::T2});
+        auto ftmp_id = builder.fetch_register(Register{FloatRegister::Ft0});
 
         auto li_instruction =
           builder.fetch_li_instruction(t0_id, builder.fetch_immediate(offset));
         auto add_instruction = builder.fetch_binary_instruction(
-          instruction::Binary::ADD, t1_id, sp_id, t0_id
+          instruction::Binary::ADD, t0_id, sp_id, t0_id
         );
         auto fsd_instruction = builder.fetch_float_store_instruction(
-          instruction::FloatStore::FSD, t1_id, t2_id, builder.fetch_immediate(0)
+          instruction::FloatStore::FSD, t0_id, ftmp_id,
+          builder.fetch_immediate(0)
         );
 
-        def_instruction->replace_operand(operand_id, t2_id, builder.context);
+        def_instruction->replace_operand(operand_id, ftmp_id, builder.context);
 
         def_instruction->insert_next(li_instruction);
         li_instruction->insert_next(add_instruction);
@@ -389,19 +389,18 @@ void spill(
         def_instruction->insert_next(store_instruction);
       } else {
         auto t0_id = builder.fetch_register(Register{GeneralRegister::T0});
-        auto t1_id = builder.fetch_register(Register{GeneralRegister::T1});
-        auto t2_id = builder.fetch_register(Register{GeneralRegister::T2});
+        auto tmp_id = builder.fetch_register(Register{GeneralRegister::T1});
 
         auto li_instruction =
           builder.fetch_li_instruction(t0_id, builder.fetch_immediate(offset));
         auto add_instruction = builder.fetch_binary_instruction(
-          instruction::Binary::ADD, t1_id, sp_id, t0_id
+          instruction::Binary::ADD, t0_id, sp_id, t0_id
         );
         auto sd_instruction = builder.fetch_store_instruction(
-          instruction::Store::SD, t1_id, t2_id, builder.fetch_immediate(0)
+          instruction::Store::SD, t0_id, tmp_id, builder.fetch_immediate(0)
         );
 
-        def_instruction->replace_operand(operand_id, t2_id, builder.context);
+        def_instruction->replace_operand(operand_id, tmp_id, builder.context);
 
         def_instruction->insert_next(li_instruction);
         li_instruction->insert_next(add_instruction);
@@ -418,9 +417,38 @@ void spill(
     auto sp_id = builder.fetch_register(Register{GeneralRegister::Sp});
 
     if (live_interval.is_float) {
+      size_t treg_id = 7;
+      auto bitvec = std::bitset<19>();
+
+      for (size_t i = 7; i < 19; i++) {
+        if (!linear_scan_context.used_temporary_register_map.count(
+              use_instruction_id
+            )) {
+          treg_id = i;
+          break;
+        } else if (!linear_scan_context
+                      .used_temporary_register_map[use_instruction_id][i]) {
+          treg_id = i;
+          bitvec =
+            linear_scan_context.used_temporary_register_map[use_instruction_id];
+          break;
+        }
+      }
+
+      bitvec[treg_id] = true;
+      linear_scan_context.used_temporary_register_map[use_instruction_id] =
+        bitvec;
+
+      FloatRegister reg_kind;
+
+      if (treg_id <= 14) {
+        reg_kind = (FloatRegister)(treg_id - 7 + (int)FloatRegister::Ft0);
+      } else {
+        reg_kind = (FloatRegister)(treg_id - 15 + (int)FloatRegister::Ft8);
+      }
+
       if (check_itype_immediate(offset)) {
-        auto tmp_register_id =
-          builder.fetch_register(Register{FloatRegister::Ft0});
+        auto tmp_register_id = builder.fetch_register(Register{reg_kind});
         auto load_instruction = builder.fetch_float_load_instruction(
           instruction::FloatLoad::FLD, tmp_register_id, sp_id,
           builder.fetch_immediate((int32_t)offset)
@@ -431,28 +459,57 @@ void spill(
         use_instruction->insert_prev(load_instruction);
       } else {
         auto t0_id = builder.fetch_register(Register{GeneralRegister::T0});
-        auto t1_id = builder.fetch_register(Register{GeneralRegister::T1});
-        auto t2_id = builder.fetch_register(Register{GeneralRegister::T2});
+        auto ftmp_id = builder.fetch_register(Register{reg_kind});
+        linear_scan_context.used_temporary_register_map[use_instruction_id][0] =
+          true;
 
         auto li_instruction =
           builder.fetch_li_instruction(t0_id, builder.fetch_immediate(offset));
         auto add_instruction = builder.fetch_binary_instruction(
-          instruction::Binary::ADD, t1_id, sp_id, t0_id
+          instruction::Binary::ADD, t0_id, sp_id, t0_id
         );
         auto fld_instruction = builder.fetch_float_load_instruction(
-          instruction::FloatLoad::FLD, t2_id, t1_id, builder.fetch_immediate(0)
+          instruction::FloatLoad::FLD, ftmp_id, t0_id, builder.fetch_immediate(0)
         );
 
-        use_instruction->replace_operand(operand_id, t2_id, builder.context);
+        use_instruction->replace_operand(operand_id, ftmp_id, builder.context);
 
         use_instruction->insert_prev(fld_instruction);
         fld_instruction->insert_prev(add_instruction);
         add_instruction->insert_prev(li_instruction);
       }
     } else {
+      size_t treg_id = 0;
+      auto bitvec = std::bitset<19>();
+
+      for (size_t i = 0; i < 7; i++) {
+        if (!linear_scan_context.used_temporary_register_map.count(
+              use_instruction_id
+            )) {
+          treg_id = i;
+          break;
+        } else if (!linear_scan_context
+                      .used_temporary_register_map[use_instruction_id][i]) {
+          treg_id = i;
+          bitvec =
+            linear_scan_context.used_temporary_register_map[use_instruction_id];
+          break;
+        }
+      }
+
+      bitvec[treg_id] = true;
+      linear_scan_context.used_temporary_register_map[use_instruction_id] =
+        bitvec;
+
+      GeneralRegister reg_kind;
+      if (treg_id <= 2) {
+        reg_kind = (GeneralRegister)(treg_id + (int)GeneralRegister::T0);
+      } else {
+        reg_kind = (GeneralRegister)(treg_id - 3 + (int)GeneralRegister::T3);
+      }
+
       if (check_itype_immediate(offset)) {
-        auto tmp_register_id =
-          builder.fetch_register(Register{GeneralRegister::T0});
+        auto tmp_register_id = builder.fetch_register(Register{reg_kind});
         auto load_instruction = builder.fetch_load_instruction(
           instruction::Load::LD, tmp_register_id, sp_id,
           builder.fetch_immediate((int32_t)offset)
@@ -463,19 +520,20 @@ void spill(
         use_instruction->insert_prev(load_instruction);
       } else {
         auto t0_id = builder.fetch_register(Register{GeneralRegister::T0});
-        auto t1_id = builder.fetch_register(Register{GeneralRegister::T1});
-        auto t2_id = builder.fetch_register(Register{GeneralRegister::T2});
+        auto tmp_id = builder.fetch_register(Register{reg_kind});
+        linear_scan_context.used_temporary_register_map[use_instruction_id][0] =
+          true;
 
         auto li_instruction =
           builder.fetch_li_instruction(t0_id, builder.fetch_immediate(offset));
         auto add_instruction = builder.fetch_binary_instruction(
-          instruction::Binary::ADD, t1_id, sp_id, t0_id
+          instruction::Binary::ADD, t0_id, sp_id, t0_id
         );
         auto ld_instruction = builder.fetch_load_instruction(
-          instruction::Load::LD, t2_id, t1_id, builder.fetch_immediate(0)
+          instruction::Load::LD, tmp_id, t0_id, builder.fetch_immediate(0)
         );
 
-        use_instruction->replace_operand(operand_id, t2_id, builder.context);
+        use_instruction->replace_operand(operand_id, tmp_id, builder.context);
 
         use_instruction->insert_prev(ld_instruction);
         ld_instruction->insert_prev(add_instruction);
