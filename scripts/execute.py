@@ -57,6 +57,7 @@ def parse_args():
     parser.add_argument('--no-test', action='store_true', default=False)
 
     parser.add_argument('--llm', action='store_true', default=False)
+    parser.add_argument('--test-ir', action='store_true', default=False)
 
     return parser.parse_args()
 
@@ -151,7 +152,7 @@ def log(logfile, command, exec_result):
 
 
 def test(executable_path: str, testcase_dir: str, output_dir: str,
-         runtime_lib_dir: str, exec_timeout: int, opt_level: int):
+         runtime_lib_dir: str, exec_timeout: int, opt_level: int, test_ir: bool):
     testcase_list = []
 
     def dfs(curr_dir: str):
@@ -240,18 +241,19 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         if exec_result['returncode'] is None:
             print(f'[  ERROR  ] (ir->obj) {testcase}')
             continue
-
-        # command = (f'riscv64-linux-gnu-gcc -march=rv64gc {obj_from_ir_path}'
-        #            f' -L{runtime_lib_dir} -lsylib -o {exec_path}')
-
-        command = (f'riscv64-linux-gnu-gcc -march=rv64gc {asm_path}'
-                   f' -L{runtime_lib_dir} -lsylib -o {exec_path}')
+        
+        if test_ir:
+            command = (f'riscv64-linux-gnu-gcc -march=rv64gc {obj_from_ir_path}'
+                       f' -L{runtime_lib_dir} -lsylib -lmylib -o {exec_path}')
+        else:
+            command = (f'riscv64-linux-gnu-gcc -march=rv64gc {asm_path}'
+                       f' -L{runtime_lib_dir} -lsylib -o {exec_path}')
 
         exec_result = execute(command, exec_timeout)
         log(log_file, command, exec_result)
 
-        if exec_result['returncode'] is None:
-            print(f'[  ERROR  ] (gcc) {testcase}')
+        if exec_result['returncode'] is None or exec_result['stderr'] != '':
+            print(f'[  ERROR  ] (gcc) {testcase}, see: ', log_path)
 
         command = (f'qemu-riscv64 -L /usr/riscv64-linux-gnu {exec_path}'
                    f' >{out_path}') if in_path is None else (
@@ -278,7 +280,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         if is_equal:
             print(f'[ CORRECT ] {testcase}')
         else:
-            print(f'[  ERROR  ] (WA) {testcase}')
+            print(f'[  ERROR  ] (WA) {testcase}, see: ', log_path)
 
         log(log_file, command, exec_result)
 
@@ -345,7 +347,7 @@ def main():
             os.makedirs(args.output_dir)
 
         test(args.executable_path, args.testcase_dir, args.output_dir,
-             args.runtime_lib_dir, args.timeout, args.opt_level)
+             args.runtime_lib_dir, args.timeout, args.opt_level, args.test_ir)
 
 
 if __name__ == '__main__':
