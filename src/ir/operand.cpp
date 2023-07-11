@@ -39,6 +39,23 @@ std::string operand::Constant::to_string(bool with_type) const {
   return buf.str();
 }
 
+bool operand::Constant::is_zero() const {
+  return std::visit(
+    overloaded{
+      [](int const_int){
+        return const_int == 0;
+      },
+      [](float const_float){
+        return const_float == 0.0;
+      },
+      [](auto const_zero){ 
+        return false; 
+      }
+    },
+    kind
+  );
+}
+
 bool operand::Constant::get_bool_value() const {
   return std::visit(
     overloaded{
