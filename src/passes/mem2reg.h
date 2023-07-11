@@ -9,11 +9,13 @@ namespace syc {
 namespace ir {
 
 struct ControlFlowAnalysisContext {
-  std::map<BasicBlockID, std::set<BasicBlockID>> dom_set_map;
+  /// Immediate dominator of basic blocks
   std::map<BasicBlockID, std::optional<BasicBlockID>> idom_map;
+  /// Height(depth) of basic blocks
   std::map<BasicBlockID, size_t> height_map;
+  /// Dominance frontier of basic blocks
   std::map<BasicBlockID, std::set<BasicBlockID>> dominance_frontier_map;
-
+  /// Dominator tree
   std::map<BasicBlockID, std::vector<BasicBlockID>> dom_tree;
 
   ControlFlowAnalysisContext() = default;

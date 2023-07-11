@@ -77,7 +77,6 @@ void insert_phi(
   }
 
   for (auto& [operand_id, worklist] : mem2reg_ctx.worklist_map) {
-    std::cout << operand_id << std::endl;
     // Memory operand. The type is pointer.
     auto operand = builder.context.get_operand(operand_id);
 
@@ -225,146 +224,119 @@ void control_flow_analysis(
   Context& context,
   ControlFlowAnalysisContext& cfa_ctx
 ) {
-  cfa_ctx.dom_set_map.clear();
   cfa_ctx.idom_map.clear();
   cfa_ctx.height_map.clear();
   cfa_ctx.dominance_frontier_map.clear();
 
-  // Compute dom
+  // Compute idom
   auto entry_bb = function->head_basic_block->next;
 
   auto bb_id_set = std::set<BasicBlockID>();
+  auto bb_id_postorder = std::vector<BasicBlockID>();
+  auto bb_id_visited = std::map<BasicBlockID, bool>();
+
+  size_t postorder_number = 0;
+  auto postorder_number_map = std::map<BasicBlockID, size_t>();
 
   auto curr_bb = function->head_basic_block->next;
   while (curr_bb != function->tail_basic_block) {
     bb_id_set.insert(curr_bb->id);
+    bb_id_visited[curr_bb->id] = false;
     curr_bb = curr_bb->next;
   }
 
-  curr_bb = function->head_basic_block->next;
-  while (curr_bb != function->tail_basic_block) {
-    if (curr_bb == entry_bb) {
-      cfa_ctx.dom_set_map[curr_bb->id] = {curr_bb->id};
-    } else {
-      cfa_ctx.dom_set_map[curr_bb->id] = bb_id_set;
+  // Get postorder
+  std::function<void(BasicBlockID)> dfs = [&](BasicBlockID bb_id) {
+    bb_id_visited[bb_id] = true;
+
+    auto bb = context.get_basic_block(bb_id);
+
+    for (auto succ_id : bb->succ_list) {
+      if (!bb_id_visited[succ_id]) {
+        dfs(succ_id);
+      }
     }
-    cfa_ctx.dom_tree[curr_bb->id] = {};
-    curr_bb = curr_bb->next;
+
+    bb_id_postorder.push_back(bb_id);
+    postorder_number_map[bb_id] = postorder_number;
+    postorder_number++;
+  };
+
+  dfs(entry_bb->id);
+
+  // Reverse postorder
+  auto bb_id_rev_postorder = bb_id_postorder;
+  std::reverse(bb_id_rev_postorder.begin(), bb_id_rev_postorder.end());
+
+  // Initialize idom_map
+  for (auto bb_id : bb_id_set) {
+    cfa_ctx.idom_map[bb_id] = std::nullopt;
   }
+
+  // Initialize entry block
+  cfa_ctx.idom_map[entry_bb->id] = entry_bb->id;
+
+  std::function<BasicBlockID(BasicBlockID, BasicBlockID)> intersect =
+    [&](BasicBlockID bb_lhs, BasicBlockID bb_rhs) {
+      auto finger1 = bb_lhs;
+      auto finger2 = bb_rhs;
+
+      while (finger1 != finger2) {
+        while (postorder_number_map[finger1] < postorder_number_map[finger2]) {
+          finger1 = cfa_ctx.idom_map[finger1].value();
+        }
+        while (postorder_number_map[finger2] < postorder_number_map[finger1]) {
+          finger2 = cfa_ctx.idom_map[finger2].value();
+        }
+      }
+
+      return finger1;
+    };
 
   bool changed = true;
   while (changed) {
     changed = false;
-    for (auto bb_id : bb_id_set) {
+    for (auto bb_id : bb_id_rev_postorder) {
       if (bb_id == entry_bb->id) {
         continue;
       }
 
-      auto new_dom_set = bb_id_set;
-
       auto bb = context.get_basic_block(bb_id);
 
+      // Get first processed as new_idom (not nullopt)
+      std::optional<BasicBlockID> new_idom = std::nullopt;
       for (auto pred_id : bb->pred_list) {
-        // intersection
-        std::set<BasicBlockID> intersection;
-        std::set_intersection(
-          new_dom_set.begin(), new_dom_set.end(),
-          cfa_ctx.dom_set_map[pred_id].begin(),
-          cfa_ctx.dom_set_map[pred_id].end(),
-          std::inserter(intersection, intersection.begin())
-        );
-        new_dom_set = intersection;
+        if (cfa_ctx.idom_map[pred_id].has_value()) {
+          new_idom = pred_id;
+          break;
+        }
       }
 
-      new_dom_set.insert(bb_id);
-
-      if (new_dom_set != cfa_ctx.dom_set_map[bb_id]) {
-        changed = true;
-        cfa_ctx.dom_set_map[bb_id] = new_dom_set;
-      }
-    }
-  }
-
-  // DEBUG
-  std::cout << "dom" << std::endl;
-  for (const auto& [bb_id, dom_set] : cfa_ctx.dom_set_map) {
-    std::cout << "BB" << bb_id << ": ";
-    for (auto dom_id : dom_set) {
-      std::cout << "BB" << dom_id << " ";
-    }
-    std::cout << std::endl;
-  }
-
-  // Compute height using bfs
-  std::queue<BasicBlockID> bb_queue;
-  bb_queue.push(entry_bb->id);
-  cfa_ctx.height_map[entry_bb->id] = 0;
-
-  while (!bb_queue.empty()) {
-    auto curr_bb_id = bb_queue.front();
-    bb_queue.pop();
-
-    auto curr_bb = context.get_basic_block(curr_bb_id);
-
-    for (auto succ_id : curr_bb->succ_list) {
-      if (cfa_ctx.height_map.find(succ_id) == cfa_ctx.height_map.end()) {
-        cfa_ctx.height_map[succ_id] = cfa_ctx.height_map[curr_bb_id] + 1;
-        bb_queue.push(succ_id);
-      }
-    }
-  }
-
-  // Compute idom
-  for (const auto& [bb_id, dom_set] : cfa_ctx.dom_set_map) {
-    if (dom_set.size() == 1) {
-      // only entry_bb
-      cfa_ctx.idom_map[bb_id] = std::nullopt;
-      continue;
-    }
-
-    auto bb = context.get_basic_block(bb_id);
-
-    if (bb->pred_list.size() == 1) {
-      cfa_ctx.idom_map[bb_id] = bb->pred_list[0];
-      continue;
-    }
-
-    // All dom satisfy that dom.height < bb.height
-    // so the idom is the dom with the max height
-    auto max_height = 0;
-    BasicBlockID idom_id = entry_bb->id;
-
-    for (auto dom_id : dom_set) {
-      if (dom_id == bb_id) {
+      if (!new_idom.has_value()) {
         continue;
       }
 
-      if (cfa_ctx.height_map[dom_id] >= max_height) {
-        max_height = cfa_ctx.height_map[dom_id];
-        idom_id = dom_id;
+      for (auto pred_id : bb->pred_list) {
+        if (cfa_ctx.idom_map[pred_id].has_value()) {
+          new_idom = intersect(new_idom.value(), pred_id);
+        }
+      }
+
+      if (cfa_ctx.idom_map[bb_id] != new_idom) {
+        cfa_ctx.idom_map[bb_id] = new_idom;
+        changed = true;
       }
     }
-
-    cfa_ctx.idom_map[bb_id] = idom_id;
   }
+
+  // Reset entry block
+  cfa_ctx.idom_map[entry_bb->id] = std::nullopt;
 
   // Construct the dom tree
   for (const auto& [bb_id, idom_id] : cfa_ctx.idom_map) {
     if (idom_id.has_value()) {
       cfa_ctx.dom_tree[idom_id.value()].push_back(bb_id);
     }
-  }
-
-  // DEBUG
-  std::cout << "idom" << std::endl;
-  for (const auto& [bb_id, idom_id] : cfa_ctx.idom_map) {
-    std::cout << "BB" << bb_id << ": ";
-    if (idom_id.has_value()) {
-      std::cout << "BB" << idom_id.value();
-    } else {
-      std::cout << "None";
-    }
-    std::cout << std::endl;
   }
 
   // Compute dominance frontier
@@ -387,16 +359,6 @@ void control_flow_analysis(
         runner_id = cfa_ctx.idom_map[runner_id].value();
       }
     }
-  }
-
-  // DEBUG
-  std::cout << "dominance frontier" << std::endl;
-  for (const auto& [bb_id, df_set] : cfa_ctx.dominance_frontier_map) {
-    std::cout << "BB" << bb_id << ": ";
-    for (auto df_id : df_set) {
-      std::cout << "BB" << df_id << " ";
-    }
-    std::cout << std::endl;
   }
 }
 
