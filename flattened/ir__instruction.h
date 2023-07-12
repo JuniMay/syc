@@ -27,6 +27,12 @@ enum class BinaryOp {
   FMul,
   /// Divide two floating point numbers.
   FDiv,
+  /// Shift left.
+  Shl,
+  /// Logical shift right.
+  LShr,
+  /// Arithmetic shift right.
+  AShr,
 };
 
 /// Binary instructions.

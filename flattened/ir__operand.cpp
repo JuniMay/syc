@@ -1,6 +1,7 @@
 #include "ir__operand.h"
 #include <sstream>
 #include "ir__type.h"
+#include "ir__operand.h"
 
 namespace syc {
 
@@ -85,7 +86,7 @@ std::string Operand::to_string(bool with_type) const {
   );
 }
 
-TypePtr Operand::get_type() {
+TypePtr Operand::get_type() const {
   using namespace operand;
   return std::visit(
     overloaded{
@@ -115,6 +116,13 @@ void Operand::remove_use(InstructionID use_id) {
   );
 }
 
+bool Operand::is_constant() const {
+  return std::holds_alternative<operand::ConstantPtr>(kind);
+}
+
+bool Operand::is_int() const {
+  return std::holds_alternative<type::Integer>(*(this->get_type()));
+}
 }  // namespace ir
 
 }  // namespace syc

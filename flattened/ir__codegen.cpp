@@ -835,6 +835,75 @@ void codegen_instruction(
 
             break;
           }
+          case ir::instruction::BinaryOp::Shl: {
+            auto asm_rhs_id = codegen_operand(
+              ir_rhs_id, ir_context, builder, codegen_context, true, true
+            );
+
+            bool is_rhs_imm =
+              builder.context.get_operand(asm_rhs_id)->is_immediate();
+
+            if (is_rhs_imm) {
+              auto slli_instruction = builder.fetch_binary_imm_instruction(
+                backend::instruction::BinaryImm::Op::SLLIW, asm_dst_id,
+                asm_lhs_id, asm_rhs_id
+              );
+              builder.append_instruction(slli_instruction);
+            } else {
+              auto sll_instruction = builder.fetch_binary_instruction(
+                backend::instruction::Binary::Op::SLLW, asm_dst_id, asm_lhs_id,
+                asm_rhs_id
+              );
+              builder.append_instruction(sll_instruction);
+            }
+            break;
+          }
+          case ir::instruction::BinaryOp::LShr: {
+            auto asm_rhs_id = codegen_operand(
+              ir_rhs_id, ir_context, builder, codegen_context, true, true
+            );
+
+            bool is_rhs_imm =
+              builder.context.get_operand(asm_rhs_id)->is_immediate();
+
+            if (is_rhs_imm) {
+              auto srli_instruction = builder.fetch_binary_imm_instruction(
+                backend::instruction::BinaryImm::Op::SRLIW, asm_dst_id,
+                asm_lhs_id, asm_rhs_id
+              );
+              builder.append_instruction(srli_instruction);
+            } else {
+              auto srl_instruction = builder.fetch_binary_instruction(
+                backend::instruction::Binary::Op::SRLW, asm_dst_id, asm_lhs_id,
+                asm_rhs_id
+              );
+              builder.append_instruction(srl_instruction);
+            }
+            break;
+          }
+          case ir::instruction::BinaryOp::AShr: {
+            auto asm_rhs_id = codegen_operand(
+              ir_rhs_id, ir_context, builder, codegen_context, true, true
+            );
+
+            bool is_rhs_imm =
+              builder.context.get_operand(asm_rhs_id)->is_immediate();
+
+            if (is_rhs_imm) {
+              auto srai_instruction = builder.fetch_binary_imm_instruction(
+                backend::instruction::BinaryImm::Op::SRAIW, asm_dst_id,
+                asm_lhs_id, asm_rhs_id
+              );
+              builder.append_instruction(srai_instruction);
+            } else {
+              auto sra_instruction = builder.fetch_binary_instruction(
+                backend::instruction::Binary::Op::SRAW, asm_dst_id, asm_lhs_id,
+                asm_rhs_id
+              );
+              builder.append_instruction(sra_instruction);
+            }
+            break;
+          }
         }
       },
       [&](ir::instruction::ICmp& icmp) {
@@ -961,6 +1030,9 @@ void codegen_instruction(
             builder.append_instruction(sltiu_instruction);
 
             break;
+          }
+          default: {
+            throw std::runtime_error("Unimplemented ICmpCond");
           }
         }
       },

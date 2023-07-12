@@ -69,7 +69,7 @@ struct Operand {
   /// Get the type of the operand.
   /// Note that global variables/constants have a pointer of the type.
   /// If the type is directly accessed, it will not be wrapped into a pointer.
-  TypePtr get_type();
+  TypePtr get_type() const;
 
   void set_def(InstructionID def_id);
 
@@ -78,6 +78,10 @@ struct Operand {
   void remove_def();
 
   void remove_use(InstructionID use_id);
+
+  bool is_constant() const;
+
+  bool is_int() const;
 };
 
 }  // namespace ir

@@ -19,6 +19,7 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include <cmath>
 
 template <class... Ts>
 struct overloaded : Ts... {
