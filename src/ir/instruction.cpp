@@ -413,6 +413,19 @@ std::string Instruction::to_string(Context& context) {
             result = dst_str + " = fdiv " + type::to_string(type) + " " +
                      lhs_str + ", " + rhs_str;
             break;
+          case BinaryOp::Shl:
+            result = dst_str + " = shl " + type::to_string(type) + " " +
+                     lhs_str + ", " + rhs_str;
+            break;
+          case BinaryOp::LShr:
+            result = dst_str + " = lshr " + type::to_string(type) + " " +
+                     lhs_str + ", " + rhs_str;
+            break;
+          case BinaryOp::AShr:
+            result = dst_str + " = ashr " + type::to_string(type) + " " +
+                     lhs_str + ", " + rhs_str;
+            break;
+            
           default:
             // unreachable
             break;

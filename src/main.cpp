@@ -13,6 +13,7 @@
 #include "passes/mem2reg.h"
 #include "passes/phi_elim.h"
 #include "passes/unreach_elim.h"
+#include "passes/ir_peephole.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -42,6 +43,7 @@ int main(int argc, char* argv[]) {
 
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
+    ir::peephole(ir_builder);
     ir::unreach_elim(ir_builder);
     ir::phi_elim(ir_builder);
   }

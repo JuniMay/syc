@@ -34,8 +34,8 @@ This will generate the `syc` executable in the current directory.
   - t4 is used in argument passing (temporarily store the new sp).
   - t5, t6 and all temporary floating-point registers are not used yet.
 - [x] Correct linear scan.
-- [ ] Fix `hidden_functional/29_long_line` (register allocation)
-- [ ] Fix `hidden_functional/30_many_dimensions` (segmentation fault)
+- [x] Fix `hidden_functional/29_long_line` (register allocation)
+- [x] Fix `hidden_functional/30_many_dimensions` (segmentation fault)
 - [x] Fix `hidden_functional/38_light2d`
   - Rounding mode of `fcvt` instruction.
 - [ ] Constant folding in AST
@@ -44,7 +44,8 @@ This will generate the `syc` executable in the current directory.
 - [x] Phi elimination.
   - Phi elimination is done with load and store now for ASM optimization later.
 - [ ] Constant propagation
-- [ ] `memcpy` and `memset` for local arrays.
+- [ ] `memcpy` for local arrays.
+- [x] `memset` for local arrays.
 - [ ] Peephole optimization for IR and assembly.
   - `performance/instruction-combining`
   - IR: combine `load` and `store` with the same address.
@@ -56,6 +57,8 @@ This will generate the `syc` executable in the current directory.
   - IR & ASM: unused definitions
   - IR & ASM: jump to next instruction (basic block)
 - [ ] Strength reduction
-  - IR: integer division to shift.
+  - [x] IR: integer multiplication to shift.
+  - [x] IR: integer division by 2 to shift.
+  - [ ] IR: integer division by 2^k to shift.
 - [ ] Loop invariant code motion
   - `performance/hoist`: sum is added 100 times and divided by 100.
