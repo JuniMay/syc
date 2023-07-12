@@ -2,7 +2,7 @@ name: Test functional
 on: [push]
 
 jobs:
-  test-functional-asm:
+  test-asm:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -28,7 +28,7 @@ jobs:
         run: sudo apt-get install gcc-riscv64-linux-gnu
 
       - name: Test functional assembly
-        run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests/functional'
+        run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests'
 
       - name: Report
         run: cat output/result.md > $GITHUB_STEP_SUMMARY
@@ -36,11 +36,11 @@ jobs:
       - name: Package test result
         uses: actions/upload-artifact@v2
         with:
-          name: output-functional-asm
+          name: output-asm
           path: output
 
     
-  test-hidden-functional-asm:
+  test-asm-optimized:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -66,7 +66,7 @@ jobs:
         run: sudo apt-get install gcc-riscv64-linux-gnu
 
       - name: Test hidden functional assembly
-        run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests/hidden_functional'
+        run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests' --opt-level 1
 
       - name: Report
         run: cat output/result.md > $GITHUB_STEP_SUMMARY  
@@ -74,11 +74,11 @@ jobs:
       - name: Package test result
         uses: actions/upload-artifact@v2
         with:
-          name: output-hidden-functional-asm
+          name: output-asm-optimized
           path: output
 
     
-  test-functional-ir:
+  test-ir:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -104,7 +104,7 @@ jobs:
         run: sudo apt-get install gcc-riscv64-linux-gnu
 
       - name: Test functional IR
-        run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests/functional' --test-ir
+        run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests' --test-ir
 
       - name: Report
         run: cat output/result.md > $GITHUB_STEP_SUMMARY  
@@ -112,11 +112,11 @@ jobs:
       - name: Package test result
         uses: actions/upload-artifact@v2
         with:
-          name: output-functional-ir
+          name: output-ir
           path: output
 
     
-  test-hidden-functional-ir:
+  test-ir-optimized:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -142,7 +142,7 @@ jobs:
         run: sudo apt-get install gcc-riscv64-linux-gnu
 
       - name: Test hidden functional IR
-        run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests/hidden_functional' --test-ir
+        run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests' --test-ir --opt-level 1
 
       - name: Report
         run: cat output/result.md > $GITHUB_STEP_SUMMARY  
@@ -150,6 +150,6 @@ jobs:
       - name: Package test result
         uses: actions/upload-artifact@v2
         with:
-          name: output-hidden-functional-ir
+          name: output-ir-optimized
           path: output
  
