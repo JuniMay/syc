@@ -36,8 +36,19 @@ def execute(command, timeout) -> Dict[str, Any]:
             'stdout': result.stdout,
             'stderr': result.stderr,
         }
+
+    except subprocess.TimeoutExpired:
+        return {
+            'returncode': None,
+            'stdout': '',
+            'stderr': 'TIMEOUT',
+        }
     except Exception as e:
-        return {'returncode': None, 'stdout': '', 'stderr': str(e)}
+        return {
+            'returncode': None,
+            'stdout': '',
+            'stderr': str(e),
+        }
 
 
 def parse_args():
@@ -130,7 +141,7 @@ def compile(include_dir: str, executable_path: str, timeout: int):
                f'-I{include_dir} {in_file_str} -o {executable_path}')
 
     print(f'BUILDING: {command}')
-    result = execute(command, timeout)
+    result = execute(command, timeout=None)
 
     print(result['stdout'])
 
@@ -152,7 +163,8 @@ def log(logfile, command, exec_result):
 
 
 def test(executable_path: str, testcase_dir: str, output_dir: str,
-         runtime_lib_dir: str, exec_timeout: int, opt_level: int, test_ir: bool):
+         runtime_lib_dir: str, exec_timeout: int, opt_level: int,
+         test_ir: bool):
     testcase_list = []
 
     def dfs(curr_dir: str):
@@ -209,9 +221,9 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
 
         if exec_result['returncode'] is None:
             if exec_result['stderr'] == 'TIMEOUT':
-                print(f'[ TIMEOUT ] (syc) {testcase}')
+                print(f'[  ERROR  ] (syc TLE) {testcase}')
             else:
-                print(f'[  ERROR  ] (syc) {testcase}')
+                print(f'[  ERROR  ] (syc RE) {testcase}')
 
             continue
 
@@ -229,7 +241,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         log(log_file, command, exec_result)
 
         if exec_result['returncode'] is None:
-            print(f'[  ERROR  ] (ir->asm) {testcase}')
+            print(f'[  ERROR  ] (sycir->asm CE) {testcase}')
             continue
 
         command = (f'clang -fPIC -c --target=riscv64 -mabi=lp64d {ir_path} '
@@ -239,12 +251,13 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         log(log_file, command, exec_result)
 
         if exec_result['returncode'] is None:
-            print(f'[  ERROR  ] (ir->obj) {testcase}')
+            print(f'[  ERROR  ] (sycir->obj CE) {testcase}')
             continue
-        
+
         if test_ir:
-            command = (f'riscv64-linux-gnu-gcc -march=rv64gc {obj_from_ir_path}'
-                       f' -L{runtime_lib_dir} -lsylib -lmylib -o {exec_path}')
+            command = (
+                f'riscv64-linux-gnu-gcc -march=rv64gc {obj_from_ir_path}'
+                f' -L{runtime_lib_dir} -lsylib -lmylib -o {exec_path}')
         else:
             command = (f'riscv64-linux-gnu-gcc -march=rv64gc {asm_path}'
                        f' -L{runtime_lib_dir} -lsylib -o {exec_path}')
@@ -253,7 +266,8 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         log(log_file, command, exec_result)
 
         if exec_result['returncode'] is None or exec_result['stderr'] != '':
-            print(f'[  ERROR  ] (gcc) {testcase}, see: ', log_path)
+            print(f'[  ERROR  ] (CE) {testcase}, see: ', log_path)
+            continue
 
         command = (f'qemu-riscv64 -L /usr/riscv64-linux-gnu {exec_path}'
                    f' >{out_path}') if in_path is None else (
@@ -268,6 +282,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
             if len(content) > 0:
                 if not content.endswith('\n'):
                     need_newline = True
+
         # add return code to the last line of out file
         with open(out_path, 'a+') as f:
             if need_newline:
@@ -277,10 +292,16 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
 
         is_equal = check_file(out_path, std_out_path, diff_path)
 
-        if is_equal:
-            print(f'[ CORRECT ] {testcase}')
+        if exec_result['returncode'] is None:
+            # print(exec_result)
+            if exec_result['stderr'] == 'TIMEOUT':
+                print(f'[  ERROR  ] (TLE) {testcase}')
+            else:
+                print(f'[  ERROR  ] (RE) {testcase}, see: {log_path}')
+        elif is_equal:
+            print(f'[ CORRECT ] (AC) {testcase}')
         else:
-            print(f'[  ERROR  ] (WA) {testcase}, see: ', log_path)
+            print(f'[  ERROR  ] (WA) {testcase}, see: {log_path}')
 
         log(log_file, command, exec_result)
 
