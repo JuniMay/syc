@@ -1,0 +1,40 @@
+name: Test functional
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Bison and Flex
+        run: sudo apt-get install bison flex
+
+      - name: Generate parser
+        run: bash scripts/yacc_gen.sh
+
+      - name: Configure CMake
+        run: cmake -B build
+
+      - name: Build
+        run: cmake --build build -j8
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Flatten and compile
+        run: python scripts/execute.py --no-test
+
+      - name: Setup QEMU
+        run: sudo apt-get install qemu-user
+
+      - name: Test functional assembly
+        run: python scripts/execute.py --timeout 30 --testcase-dir './ci-tests/functional' --no-compile
+
+      - name: Package output
+        uses: actions/upload-artifact@v2
+        with:
+          name: output
+          path: output
