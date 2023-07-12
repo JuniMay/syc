@@ -63,6 +63,10 @@ InstructionPtr Builder::fetch_binary_instruction(
   context.operand_table[lhs_id]->add_use(id);
   context.operand_table[rhs_id]->add_use(id);
 
+  instruction->set_def(dst_id);
+  instruction->add_use(lhs_id);
+  instruction->add_use(rhs_id);
+
   return instruction;
 }
 
@@ -83,6 +87,10 @@ InstructionPtr Builder::fetch_icmp_instruction(
   context.operand_table[dst_id]->set_def(id);
   context.operand_table[lhs_id]->add_use(id);
   context.operand_table[rhs_id]->add_use(id);
+
+  instruction->set_def(dst_id);
+  instruction->add_use(lhs_id);
+  instruction->add_use(rhs_id);
 
   return instruction;
 }
@@ -105,6 +113,10 @@ InstructionPtr Builder::fetch_fcmp_instruction(
   context.operand_table[lhs_id]->add_use(id);
   context.operand_table[rhs_id]->add_use(id);
 
+  instruction->set_def(dst_id);
+  instruction->add_use(lhs_id);
+  instruction->add_use(rhs_id);
+
   return instruction;
 }
 
@@ -124,6 +136,9 @@ InstructionPtr Builder::fetch_cast_instruction(
   context.operand_table[dst_id]->set_def(id);
   context.operand_table[src_id]->add_use(id);
 
+  instruction->set_def(dst_id);
+  instruction->add_use(src_id);
+
   return instruction;
 }
 
@@ -140,6 +155,7 @@ InstructionPtr Builder::fetch_ret_instruction(
 
   if (maybe_value_id.has_value()) {
     context.operand_table[maybe_value_id.value()]->add_use(id);
+    instruction->add_use(maybe_value_id.value());
   }
 
   return instruction;
@@ -165,6 +181,8 @@ InstructionPtr Builder::fetch_condbr_instruction(
   context.operand_table[cond_id]->add_use(id);
   context.basic_block_table[then_block_id]->add_use(id);
   context.basic_block_table[else_block_id]->add_use(id);
+
+  instruction->add_use(cond_id);
 
   return instruction;
 }
@@ -194,11 +212,14 @@ InstructionPtr Builder::fetch_phi_instruction(
 
   context.register_instruction(instruction);
 
+  instruction->set_def(dst_id);
+
   // NOT SURE if the phi instruction should be added to the use list.
   context.operand_table[dst_id]->set_def(id);
   for (auto [value_id, block_id] : incoming_list) {
     context.operand_table[value_id]->add_use(id);
     context.basic_block_table[block_id]->add_use(id);
+    instruction->add_use(value_id);
   }
 
   return instruction;
@@ -210,7 +231,7 @@ InstructionPtr Builder::fetch_alloca_instruction(
   std::optional<OperandID> maybe_size_id,
   std::optional<OperandID> maybe_align_id,
   std::optional<OperandID> maybe_addrspace_id,
-    bool alloca_for_param
+  bool alloca_for_param
 ) {
   auto id = context.get_next_instruction_id();
   auto kind = InstructionKind(instruction::Alloca{
@@ -226,16 +247,21 @@ InstructionPtr Builder::fetch_alloca_instruction(
 
   context.register_instruction(instruction);
 
+  instruction->set_def(dst_id);
+
   context.operand_table[dst_id]->set_def(id);
   if (maybe_size_id.has_value()) {
     context.operand_table[maybe_size_id.value()]->add_use(id);
+    instruction->add_use(maybe_size_id.value());
   }
   if (maybe_align_id.has_value()) {
     context.operand_table[maybe_align_id.value()]->add_use(id);
+    instruction->add_use(maybe_align_id.value());
   }
   if (maybe_addrspace_id.has_value()) {
     context.operand_table[maybe_addrspace_id.value()]->use_id_list.push_back(id
     );
+    instruction->add_use(maybe_addrspace_id.value());
   }
 
   return instruction;
@@ -259,8 +285,13 @@ InstructionPtr Builder::fetch_load_instruction(
 
   context.operand_table[dst_id]->set_def(id);
   context.operand_table[ptr_id]->add_use(id);
+
+  instruction->set_def(dst_id);
+  instruction->add_use(ptr_id);
+
   if (maybe_align_id.has_value()) {
     context.operand_table[maybe_align_id.value()]->add_use(id);
+    instruction->add_use(maybe_align_id.value());
   }
 
   return instruction;
@@ -284,8 +315,13 @@ InstructionPtr Builder::fetch_store_instruction(
 
   context.operand_table[value_id]->add_use(id);
   context.operand_table[ptr_id]->add_use(id);
+
+  instruction->add_use(value_id);
+  instruction->add_use(ptr_id);
+
   if (maybe_align_id.has_value()) {
     context.operand_table[maybe_align_id.value()]->add_use(id);
+    instruction->add_use(maybe_align_id.value());
   }
 
   return instruction;
@@ -309,9 +345,11 @@ InstructionPtr Builder::fetch_call_instruction(
 
   if (maybe_dst_id.has_value()) {
     context.operand_table[maybe_dst_id.value()]->set_def(id);
+    instruction->set_def(maybe_dst_id.value());
   }
   for (auto arg_id : args_id) {
     context.operand_table[arg_id]->add_use(id);
+    instruction->add_use(arg_id);
   }
   context.function_table[function_name]->caller_id_list.push_back(id);
 
@@ -338,8 +376,13 @@ InstructionPtr Builder::fetch_getelementptr_instruction(
 
   context.operand_table[dst_id]->set_def(id);
   context.operand_table[ptr_id]->add_use(id);
+
+  instruction->set_def(dst_id);
+  instruction->add_use(ptr_id);
+
   for (auto index_id : indices_id) {
     context.operand_table[index_id]->add_use(id);
+    instruction->add_use(index_id);
   }
 
   return instruction;
