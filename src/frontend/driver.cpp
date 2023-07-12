@@ -61,6 +61,11 @@ Driver::Driver(std::string filename) {
   this->add_function_decl(
     create_void_type(), "_sysy_stoptime", {{create_int_type(), "lineno"}}
   );
+  this->add_function_decl(
+    create_void_type(), "__builtin_fill_zero",
+    {{create_array_type(create_int_type(), std::nullopt), "dest"},
+     {create_int_type(), "count"}}
+  );
 }
 
 Driver::~Driver() {
