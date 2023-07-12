@@ -2,10 +2,9 @@
 /src/frontend/generated/
 /flattened/
 /tests/
-/tests_output/
 /.cache/
 /build/
-/output
+/output/
 
 /syc
 *.ll
