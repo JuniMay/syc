@@ -31,7 +31,7 @@ jobs:
         run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests/functional'
 
       - name: Report
-        run: cat output/report.md > $GITHUB_STEP_SUMMARY
+        run: cat output/result.md > $GITHUB_STEP_SUMMARY
 
       - name: Package test result
         uses: actions/upload-artifact@v2
@@ -69,7 +69,7 @@ jobs:
         run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests/hidden_functional'
 
       - name: Report
-        run: cat output/report.md > $GITHUB_STEP_SUMMARY  
+        run: cat output/result.md > $GITHUB_STEP_SUMMARY  
 
       - name: Package test result
         uses: actions/upload-artifact@v2
@@ -107,7 +107,7 @@ jobs:
         run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests/functional' --test-ir
 
       - name: Report
-        run: cat output/report.md > $GITHUB_STEP_SUMMARY  
+        run: cat output/result.md > $GITHUB_STEP_SUMMARY  
 
       - name: Package test result
         uses: actions/upload-artifact@v2
@@ -145,7 +145,7 @@ jobs:
         run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests/hidden_functional' --test-ir
 
       - name: Report
-        run: cat output/report.md > $GITHUB_STEP_SUMMARY  
+        run: cat output/result.md > $GITHUB_STEP_SUMMARY  
 
       - name: Package test result
         uses: actions/upload-artifact@v2
