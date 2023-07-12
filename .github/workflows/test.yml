@@ -13,12 +13,6 @@ jobs:
       - name: Generate parser
         run: bash scripts/yacc_gen.sh
 
-      - name: Configure CMake
-        run: cmake -B build
-
-      - name: Build
-        run: cmake --build build -j8
-
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -30,10 +24,13 @@ jobs:
       - name: Setup QEMU
         run: sudo apt-get install qemu-user
 
-      - name: Test functional assembly
-        run: python scripts/execute.py --timeout 30 --testcase-dir './ci-tests/functional' --no-compile
+      - name: Setup GCC
+        run: sudo apt-get install gcc-riscv64-linux-gnu
 
-      - name: Package output
+      - name: Test functional assembly
+        run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests/functional' --output-dir './output/functional-asm'
+
+      - name: Package test result
         uses: actions/upload-artifact@v2
         with:
           name: output
