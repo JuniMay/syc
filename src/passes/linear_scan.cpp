@@ -29,38 +29,53 @@ void depth_first_numbering(
 
   linear_scan_context.visited[basic_block->id] = true;
 
+  linear_scan_context.live_def_map[basic_block->id] = {};
+  linear_scan_context.live_use_map[basic_block->id] = {};
+
   auto curr_instruction = basic_block->head_instruction->next;
   while (curr_instruction != basic_block->tail_instruction) {
     auto number = linear_scan_context.get_next_instruction_number();
 
-    linear_scan_context.instruction_number_map[number] = curr_instruction->id;
+    linear_scan_context.instruction_number_map[curr_instruction->id] = number;
 
     for (auto operand_id : curr_instruction->def_id_list) {
+      // Roughly calculate the intervals
       auto operand = builder.context.get_operand(operand_id);
       if (operand->is_vreg()) {
-        linear_scan_context.live_interval_list.push_back(operand_id);
-        linear_scan_context.live_interval_map[operand_id] = {
-          number,
-          number,
-          operand->is_float(),
-        };
+        if (!linear_scan_context.live_interval_map.count(operand_id)) {
+          linear_scan_context.live_interval_map[operand_id] = {
+            number,
+            number,
+            operand->is_float(),
+          };
+        } else {
+          linear_scan_context.live_interval_map[operand_id].st = std::min(
+            linear_scan_context.live_interval_map[operand_id].st, number
+          );
+        }
+        linear_scan_context.live_def_map[basic_block->id].insert(operand_id);
       }
     }
 
     for (auto operand_id : curr_instruction->use_id_list) {
+      // Roughly calculate the intervals
       auto operand = builder.context.get_operand(operand_id);
-      if (linear_scan_context.live_interval_map.find(operand_id) ==
-          linear_scan_context.live_interval_map.end()) {
-        // This shall not happen.
-        linear_scan_context.live_interval_map[operand_id] = {
-          number,
-          number,
-          operand->is_float(),
-        };
-      } else {
-        auto curr_ed = linear_scan_context.live_interval_map[operand_id].ed;
-        if (curr_ed < number) {
-          linear_scan_context.live_interval_map[operand_id].ed = number;
+      if (operand->is_vreg()) {
+        if (!linear_scan_context.live_interval_map.count(operand_id)) {
+          linear_scan_context.live_interval_map[operand_id] = {
+            number,
+            number,
+            operand->is_float(),
+          };
+        } else {
+          linear_scan_context.live_interval_map[operand_id].ed = std::max(
+            linear_scan_context.live_interval_map[operand_id].ed, number
+          );
+        }
+
+        if (!linear_scan_context.live_def_map[basic_block->id].count(operand_id
+            )) {
+          linear_scan_context.live_use_map[basic_block->id].insert(operand_id);
         }
       }
     }
@@ -74,10 +89,6 @@ void depth_first_numbering(
       linear_scan_context
     );
   }
-
-  if (basic_block->next->next != nullptr) {
-    depth_first_numbering(basic_block->next, builder, linear_scan_context);
-  }
 }
 
 void live_interval_analysis(
@@ -85,12 +96,6 @@ void live_interval_analysis(
   Builder& builder,
   LinearScanContext& linear_scan_context
 ) {
-  linear_scan_context.visited.clear();
-  linear_scan_context.next_instruction_number = 0;
-  linear_scan_context.instruction_number_map.clear();
-  linear_scan_context.live_interval_map.clear();
-  linear_scan_context.live_interval_list.clear();
-
   auto curr_basic_block = function->head_basic_block->next;
   while (curr_basic_block != function->tail_basic_block) {
     linear_scan_context.visited[curr_basic_block->id] = false;
@@ -100,6 +105,161 @@ void live_interval_analysis(
   depth_first_numbering(
     function->head_basic_block->next, builder, linear_scan_context
   );
+
+  // Reverse order of basic blocks
+  std::vector<BasicBlockID> basic_block_revlst;
+  auto exit_basic_block = function->tail_basic_block->prev.lock();
+
+  std::queue<BasicBlockID> basic_block_queue;
+  basic_block_queue.push(exit_basic_block->id);
+
+  curr_basic_block = function->head_basic_block->next;
+  while (curr_basic_block != function->tail_basic_block) {
+    linear_scan_context.visited[curr_basic_block->id] = false;
+    curr_basic_block = curr_basic_block->next;
+  }
+
+  while (!basic_block_queue.empty()) {
+    auto basic_block_id = basic_block_queue.front();
+    basic_block_queue.pop();
+
+    basic_block_revlst.push_back(basic_block_id);
+
+    auto basic_block = builder.context.get_basic_block(basic_block_id);
+
+    for (auto pred_id : basic_block->pred_list) {
+      if (!linear_scan_context.visited[pred_id]) {
+        linear_scan_context.visited[pred_id] = true;
+        basic_block_queue.push(pred_id);
+      }
+    }
+  }
+
+  /// Compute live-ins and live-outs
+  bool changed = true;
+  while (changed) {
+    changed = false;
+    for (auto basic_block_id : basic_block_revlst) {
+      auto basic_block = builder.context.get_basic_block(basic_block_id);
+      std::set<OperandID> live_out = {};
+
+      for (auto succ_id : basic_block->succ_list) {
+        if (!linear_scan_context.live_in_map.count(succ_id)) {
+          linear_scan_context.live_in_map[succ_id] = {};
+        }
+        std::set<OperandID> tmp;
+        std::set_union(
+          live_out.begin(), live_out.end(),
+          linear_scan_context.live_in_map[succ_id].begin(),
+          linear_scan_context.live_in_map[succ_id].end(),
+          std::inserter(tmp, tmp.begin())
+        );
+        live_out = tmp;
+      }
+
+      std::set<OperandID> tmp;
+      auto live_def = linear_scan_context.live_def_map[basic_block_id];
+      auto live_use = linear_scan_context.live_use_map[basic_block_id];
+
+      std::set_difference(
+        live_out.begin(), live_out.end(), live_def.begin(), live_def.end(),
+        std::inserter(tmp, tmp.begin())
+      );
+      std::set<OperandID> live_in;
+      std::set_union(
+        tmp.begin(), tmp.end(), live_use.begin(), live_use.end(),
+        std::inserter(live_in, live_in.begin())
+      );
+
+      if (!linear_scan_context.live_in_map.count(basic_block_id)) {
+        linear_scan_context.live_in_map[basic_block_id] = {};
+      }
+
+      if (!linear_scan_context.live_out_map.count(basic_block_id)) {
+        linear_scan_context.live_out_map[basic_block_id] = {};
+      }
+
+      if (linear_scan_context.live_out_map[basic_block_id] != live_out) {
+        linear_scan_context.live_out_map[basic_block_id] = live_out;
+        changed = true;
+      }
+
+      if (linear_scan_context.live_in_map[basic_block_id] != live_in) {
+        linear_scan_context.live_in_map[basic_block_id] = live_in;
+        changed = true;
+      }
+    }
+  }
+
+  // Compute live intervals
+  for (auto basic_block_id : basic_block_revlst) {
+    auto basic_block = builder.context.get_basic_block(basic_block_id);
+
+    auto live_in = linear_scan_context.live_in_map[basic_block_id];
+    auto live_out = linear_scan_context.live_out_map[basic_block_id];
+
+    auto curr_st =
+      linear_scan_context
+        .instruction_number_map[basic_block->head_instruction->next->id];
+
+    auto curr_ed =
+      linear_scan_context
+        .instruction_number_map[basic_block->tail_instruction->prev.lock()->id];
+
+    // Operands in live_in but not in live_out
+    std::set<OperandID> live_in_only;
+    // Operands in live_out but not in live_in
+    std::set<OperandID> live_out_only;
+    // Operands in both live_in and live_out
+    std::set<OperandID> live_in_out;
+
+    std::set_difference(
+      live_in.begin(), live_in.end(), live_out.begin(), live_out.end(),
+      std::inserter(live_in_only, live_in_only.begin())
+    );
+
+    std::set_difference(
+      live_out.begin(), live_out.end(), live_in.begin(), live_in.end(),
+      std::inserter(live_out_only, live_out_only.begin())
+    );
+
+    std::set_intersection(
+      live_in.begin(), live_in.end(), live_out.begin(), live_out.end(),
+      std::inserter(live_in_out, live_in_out.begin())
+    );
+
+    auto curr_instruction = basic_block->head_instruction->next;
+    while (curr_instruction != basic_block->tail_instruction) {
+      for (auto operand_id : live_in_only) {
+        linear_scan_context.live_interval_map[operand_id].st = std::min(
+          linear_scan_context.live_interval_map[operand_id].st, curr_st
+        );
+      }
+
+      for (auto operand_id : live_out_only) {
+        linear_scan_context.live_interval_map[operand_id].ed = std::max(
+          linear_scan_context.live_interval_map[operand_id].ed, curr_ed
+        );
+      }
+
+      for (auto operand_id : live_in_out) {
+        linear_scan_context.live_interval_map[operand_id].st = std::min(
+          linear_scan_context.live_interval_map[operand_id].st, curr_st
+        );
+        linear_scan_context.live_interval_map[operand_id].ed = std::max(
+          linear_scan_context.live_interval_map[operand_id].ed, curr_ed
+        );
+      }
+
+      curr_instruction = curr_instruction->next;
+    }
+  }
+
+  // Push into live interval list
+  for (auto [operand_id, live_interval] :
+       linear_scan_context.live_interval_map) {
+    linear_scan_context.live_interval_list.push_back(operand_id);
+  }
 }
 
 Register map_general_register(int i) {
@@ -469,7 +629,8 @@ void spill(
           instruction::Binary::ADD, t0_id, sp_id, t0_id
         );
         auto fld_instruction = builder.fetch_float_load_instruction(
-          instruction::FloatLoad::FLD, ftmp_id, t0_id, builder.fetch_immediate(0)
+          instruction::FloatLoad::FLD, ftmp_id, t0_id,
+          builder.fetch_immediate(0)
         );
 
         use_instruction->replace_operand(operand_id, ftmp_id, builder.context);

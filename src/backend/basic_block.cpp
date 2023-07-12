@@ -52,6 +52,16 @@ void BasicBlock::insert_prev(BasicBlockPtr basic_block) {
 std::string BasicBlock::to_string(Context& context) {
   std::string result = this->get_label() + ":\n";
 
+  result += "\t# preds = ";
+  for (auto pred_id : this->pred_list) {
+    result += std::to_string(pred_id) + ", ";
+  }
+  result += "; succs = ";
+  for (auto succ_id : this->succ_list) {
+    result += std::to_string(succ_id) + ", ";
+  }
+  result += "\n";
+
   auto curr_instruction = this->head_instruction->next;
 
   while (curr_instruction != this->tail_instruction) {
