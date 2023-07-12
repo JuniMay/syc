@@ -2,6 +2,7 @@
 #define SYC_COMMON_H_
 
 #include <algorithm>
+#include <bitset>
 #include <functional>
 #include <iomanip>
 #include <iostream>

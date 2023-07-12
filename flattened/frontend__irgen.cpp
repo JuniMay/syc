@@ -21,7 +21,7 @@ void irgen_stmt(
             for (auto [ast_type, name, maybe_ast_expr] : kind.defs) {
               auto ir_type = irgen_type(ast_type, builder).value();
               auto is_constant_value = kind.is_const;
-              IrOperandID ir_operand_id = 0;
+              IrOperandID ir_operand_id = 0; 
 
               if (maybe_ast_expr.has_value()) {
                 auto ast_expr = maybe_ast_expr.value();
@@ -95,6 +95,37 @@ void irgen_stmt(
               if (maybe_ast_expr.has_value()) {
                 auto ast_expr = maybe_ast_expr.value();
                 if (ast_expr->is_initializer_list()) {
+                  bool memset_init = false;
+                  if (ast_type->is_array() 
+                  && ast_type->get_root_element_type().value()->is_int()) {
+                    auto arr_size = ast_expr->get_type()->get_size() / 32;
+                    if (arr_size >= 8) {
+                      // if the size of array is greater than 8, use memset to initialize
+                      auto ir_cast_dest_operand_id = builder.fetch_arbitrary_operand(
+                        builder.fetch_pointer_type(
+                          builder.fetch_i32_type()
+                        )
+                      );
+                      auto call_cast_instruction = builder.fetch_cast_instruction(
+                        IrCastOp::BitCast,
+                        ir_cast_dest_operand_id,
+                        ir_dst_operand_id
+                      );
+                      builder.append_instruction(call_cast_instruction);
+                      auto call_memset_instruction = builder.fetch_call_instruction(
+                        std::nullopt,
+                        "__builtin_fill_zero",
+                        {
+                          ir_cast_dest_operand_id,
+                          builder.fetch_constant_operand(
+                            builder.fetch_i32_type(), (int)arr_size
+                          )
+                        }
+                      );
+                      builder.append_instruction(call_memset_instruction);
+                      memset_init = true;
+                    }
+                  }
                   auto ir_ptr_id = ir_dst_operand_id;
 
                   auto curr_ast_type = ast_type;
@@ -129,6 +160,7 @@ void irgen_stmt(
 
                   ast_expr_queue.push(ast_expr);
 
+                  size_t shift_amount = 0;
                   while (!ast_expr_queue.empty()) {
                     auto ast_expr = ast_expr_queue.front();
                     ast_expr_queue.pop();
@@ -184,29 +216,64 @@ void irgen_stmt(
                       auto ir_value_id =
                         irgen_expr(ast_expr, symtable, builder, false).value();
 
-                      auto store_instruction = builder.fetch_store_instruction(
-                        ir_value_id, ir_ptr_id, std::nullopt
-                      );
+                      if (memset_init) {
+                        auto value = std::get_if<IrConstantPtr>(&builder.context.get_operand(ir_value_id)->kind);
+                        if (value != nullptr && (*value)->is_zero()) {
+                          // if the array is initialized by memset, 
+                          // we don't need to store the value
+                          shift_amount += 1;
+                          continue;
+                        }
 
-                      builder.append_instruction(store_instruction);
-
-                      auto ir_tmp_ptr_id = builder.fetch_arbitrary_operand(
-                        builder.fetch_pointer_type(
-                          irgen_type(curr_ast_type, builder).value()
-                        )
-                      );
-                      auto gep_instruction =
-                        builder.fetch_getelementptr_instruction(
-                          ir_tmp_ptr_id,
-                          irgen_type(curr_ast_type, builder).value(), ir_ptr_id,
-                          {
-                            builder.fetch_constant_operand(
-                              builder.fetch_i32_type(), (int)1
-                            ),
-                          }
+                        auto ir_tmp_ptr_id = builder.fetch_arbitrary_operand(
+                          builder.fetch_pointer_type(
+                            irgen_type(curr_ast_type, builder).value()
+                          )
                         );
-                      builder.append_instruction(gep_instruction);
-                      ir_ptr_id = ir_tmp_ptr_id;
+                        auto gep_instruction =
+                          builder.fetch_getelementptr_instruction(
+                            ir_tmp_ptr_id,
+                            irgen_type(curr_ast_type, builder).value(), ir_ptr_id,
+                            {
+                              builder.fetch_constant_operand(
+                                builder.fetch_i32_type(), (int)shift_amount
+                              ),
+                            }
+                          );
+                        shift_amount = 1;
+                        builder.append_instruction(gep_instruction);
+
+                        ir_ptr_id = ir_tmp_ptr_id;
+                        auto store_instruction = builder.fetch_store_instruction(
+                          ir_value_id, ir_ptr_id, std::nullopt
+                        );
+                        builder.append_instruction(store_instruction);
+
+                      } else {
+                        auto store_instruction = builder.fetch_store_instruction(
+                          ir_value_id, ir_ptr_id, std::nullopt
+                        );
+
+                        builder.append_instruction(store_instruction);
+
+                        auto ir_tmp_ptr_id = builder.fetch_arbitrary_operand(
+                          builder.fetch_pointer_type(
+                            irgen_type(curr_ast_type, builder).value()
+                          )
+                        );
+                        auto gep_instruction =
+                          builder.fetch_getelementptr_instruction(
+                            ir_tmp_ptr_id,
+                            irgen_type(curr_ast_type, builder).value(), ir_ptr_id,
+                            {
+                              builder.fetch_constant_operand(
+                                builder.fetch_i32_type(), (int)1
+                              ),
+                            }
+                          );
+                        builder.append_instruction(gep_instruction);
+                        ir_ptr_id = ir_tmp_ptr_id;
+                      }
                     }
                   }
                 } else {
@@ -305,7 +372,7 @@ void irgen_stmt(
 
             auto alloca_instruction = builder.fetch_alloca_instruction(
               ir_alloca_dst_id, ir_param_operand->type, std::nullopt,
-              std::nullopt, std::nullopt
+              std::nullopt, std::nullopt, true
             );
 
             builder.prepend_instruction_to_curr_function(alloca_instruction);

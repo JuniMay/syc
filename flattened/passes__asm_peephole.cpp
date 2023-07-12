@@ -40,7 +40,8 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
       if (rd->is_vreg() && rs->is_vreg() && imm->is_zero() && (op == instruction::BinaryImm::ADDI || op == instruction::BinaryImm::ADDIW)) {
         // remove: addi(w) v0, v1, 0
         // make all the uses of v0 use v1 instead
-        for (auto use_instruction_id : rd->use_id_list) {
+        auto use_id_list_copy = rd->use_id_list;
+        for (auto use_instruction_id : use_id_list_copy) {
           auto instruction =
             builder.context.get_instruction(use_instruction_id);
           instruction->replace_operand(rd->id, rs->id, builder.context);
@@ -98,7 +99,8 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
       auto imm = builder.context.get_operand(kind.imm_id);
 
       if (rd->is_vreg() && imm->is_zero()) {
-        for (auto use_instruction_id : rd->use_id_list) {
+        auto use_id_list_copy = rd->use_id_list;
+        for (auto use_instruction_id : use_id_list_copy) {
           auto instruction =
             builder.context.get_instruction(use_instruction_id);
           instruction->replace_operand(
@@ -122,7 +124,8 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
       auto rs2 = builder.context.get_operand(kind.rs2_id);
 
       if (rd->is_vreg() && (rs1->is_zero() || rs2->is_zero()) && (op == instruction::Binary::MUL || op == instruction::Binary::MULW)) {
-        for (auto use_instruction_id : rd->use_id_list) {
+        auto use_id_list_copy = rd->use_id_list;
+        for (auto use_instruction_id : use_id_list_copy) {
           auto instruction =
             builder.context.get_instruction(use_instruction_id);
           instruction->replace_operand(
@@ -132,14 +135,16 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
         }
         curr_instruction->remove(builder.context);
       } else if (rd->is_vreg() && rs1->is_zero() && (op == instruction::Binary::ADD || op == instruction::Binary::ADDW)) {
-        for (auto use_instruction_id : rd->use_id_list) {
+        auto use_id_list_copy = rd->use_id_list;
+        for (auto use_instruction_id : use_id_list_copy) {
           auto instruction =
             builder.context.get_instruction(use_instruction_id);
           instruction->replace_operand(rd->id, rs2->id, builder.context);
         }
         curr_instruction->remove(builder.context);
       } else if (rd->is_vreg() && rs2->is_zero() && (op == instruction::Binary::ADD || op == instruction::Binary::ADDW)) {
-        for (auto use_instruction_id : rd->use_id_list) {
+        auto use_id_list_copy = rd->use_id_list;
+        for (auto use_instruction_id : use_id_list_copy) {
           auto instruction =
             builder.context.get_instruction(use_instruction_id);
           instruction->replace_operand(rd->id, rs1->id, builder.context);

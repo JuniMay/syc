@@ -70,8 +70,12 @@ std::string BasicBlock::to_string(Context& context) {
 
   result += "; use count: " + std::to_string(this->use_id_list.size());
   result += "; succ: ";
-  for (auto succ_id : this->get_succ()) {
+  for (auto succ_id : this->succ_list) {
     result += std::to_string(succ_id) + ", ";
+  }
+  result += "; pred: ";
+  for (auto pred_id : this->pred_list) {
+    result += std::to_string(pred_id) + ", ";
   }
   result += "\n";
 
@@ -104,6 +108,25 @@ void BasicBlock::remove_use(InstructionID use_id) {
   );
 }
 
+void BasicBlock::add_pred(BasicBlockID pred_id) {
+  this->pred_list.push_back(pred_id);
+}
+void BasicBlock::add_succ(BasicBlockID succ_id) {
+  this->succ_list.push_back(succ_id);
+}
+void BasicBlock::remove_pred(BasicBlockID pred_id) {
+  this->pred_list.erase(
+    std::remove(this->pred_list.begin(), this->pred_list.end(), pred_id),
+    this->pred_list.end()
+  );
+}
+void BasicBlock::remove_succ(BasicBlockID succ_id) {
+  this->succ_list.erase(
+    std::remove(this->succ_list.begin(), this->succ_list.end(), succ_id),
+    this->succ_list.end()
+  );
+}
+
 bool BasicBlock::has_terminator() const {
   return this->tail_instruction->prev.lock()->is_terminator();
 }
@@ -114,23 +137,22 @@ bool BasicBlock::has_use() const {
 
 std::vector<BasicBlockID> BasicBlock::get_succ() const {
   std::vector<BasicBlockID> result;
-  if(this->head_instruction->next == this->tail_instruction)
+  if (this->head_instruction->next == this->tail_instruction)
     return result;
   auto tail_instruction_ptr = this->tail_instruction->prev.lock();
-  if(tail_instruction_ptr)
-  {
+  if (tail_instruction_ptr) {
     std::visit(
-      overloaded {
-        [&](const ir::instruction::Br& kind) { 
-          result = std::vector<BasicBlockID> { kind.block_id };
+      overloaded{
+        [&](const ir::instruction::Br& kind) {
+          result = std::vector<BasicBlockID>{kind.block_id};
         },
-        [&](const ir::instruction::CondBr& kind) { 
-          result = std::vector<BasicBlockID> { kind.then_block_id, kind.else_block_id };  
+        [&](const ir::instruction::CondBr& kind) {
+          result =
+            std::vector<BasicBlockID>{kind.then_block_id, kind.else_block_id};
         },
         [](const auto&) {
           // Do nothing for other instruction kinds
-        }
-      },
+        }},
       tail_instruction_ptr->kind
     );
   }

@@ -68,6 +68,20 @@ std::string Context::to_string() {
   // generate asm code
   std::string result = "\t.option pic\n";
   result += "\t.text\n";
+  result += 
+  "\t.globl  __builtin_fill_zero\n"
+  "\t.type   __builtin_fill_zero, @function\n"
+  "__builtin_fill_zero:\n"
+  "\taddiw   a5,a1,-1\n"
+  "\tslli    a5,a5,32\n"
+  "\tsrli    a5,a5,30\n"
+  "\taddi    a4,a0,4\n"
+  "\tadd     a5,a5,a4\n"
+  ".__builtin_label_0:\n"
+  "\tsw      zero,0(a0)\n"
+  "\taddi    a0,a0,4\n"
+  "\tbne     a0,a5,.__builtin_label_0\n"
+  "\tret\n";
 
   for (auto& func : this->function_table) {
     result += func.second->to_string(*this);

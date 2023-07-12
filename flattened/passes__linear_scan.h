@@ -28,8 +28,20 @@ struct LiveIntervalEndComparator {
 };
 
 struct LinearScanContext {
-  std::map<OperandID, LiveInterval> live_interval_map;
+  /// Instruction number map
+  std::map<InstructionID, InstructionNumber> instruction_number_map;
 
+  /// Live-def map
+  std::map<BasicBlockID, std::set<OperandID>> live_def_map;
+  /// Live-use map
+  std::map<BasicBlockID, std::set<OperandID>> live_use_map;
+  /// Live-in map
+  std::map<BasicBlockID, std::set<OperandID>> live_in_map;
+  /// Live-out map
+  std::map<BasicBlockID, std::set<OperandID>> live_out_map;
+  
+  /// Live intervals
+  std::map<OperandID, LiveInterval> live_interval_map;
   /// Sorted by live interval start.
   std::vector<OperandID> live_interval_list;
 
@@ -41,9 +53,13 @@ struct LinearScanContext {
   /// Sorted by live interval end.
   std::set<OperandID, LiveIntervalEndComparator> active_list;
 
-  std::map<InstructionNumber, InstructionID> instruction_number_map;
-
+  /// General purpose dfs
   std::map<BasicBlockID, bool> visited;
+
+  /// Record the usage of temporary registers.
+  /// 0~6 for t0~t6
+  /// 7~18 for ft0~ft11
+  std::map<InstructionID, std::bitset<19>> used_temporary_register_map; 
 
   /// 0 - 11 for s0 - s11
   std::set<int> available_general_register_set;

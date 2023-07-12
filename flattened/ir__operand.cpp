@@ -39,17 +39,14 @@ std::string operand::Constant::to_string(bool with_type) const {
   return buf.str();
 }
 
-bool operand::Constant::get_bool_value() const{
+bool operand::Constant::is_zero() const {
   return std::visit(
     overloaded{
       [](int const_int){
-        return const_int != 0;
+        return const_int == 0;
       },
       [](float const_float){
-        return const_float != 0.0;
-      },
-      [](ir::operand::ConstantPtr const_ptr){
-        return const_ptr->get_bool_value();
+        return const_float == 0.0;
       },
       [](auto const_zero){ 
         return false; 
@@ -59,8 +56,21 @@ bool operand::Constant::get_bool_value() const{
   );
 }
 
+bool operand::Constant::get_bool_value() const {
+  return std::visit(
+    overloaded{
+      [](int const_int) { return const_int != 0; },
+      [](float const_float) { return const_float != 0.0; },
+      [](ir::operand::ConstantPtr const_ptr) {
+        return const_ptr->get_bool_value();
+      },
+      [](auto const_zero) { return false; }},
+    kind
+  );
+}
+
 Operand::Operand(OperandID id, TypePtr type, OperandKind kind)
-  : id(id), type(type), kind(kind), def_id(std::nullopt) {}
+  : id(id), type(type), kind(kind), maybe_def_id(std::nullopt) {}
 
 std::string Operand::to_string(bool with_type) const {
   using namespace operand;
@@ -87,11 +97,15 @@ TypePtr Operand::get_type() {
   );
 }
 void Operand::set_def(InstructionID def_id) {
-  this->def_id = def_id;
+  this->maybe_def_id = def_id;
 }
 
 void Operand::add_use(InstructionID use_id) {
   use_id_list.push_back(use_id);
+}
+
+void Operand::remove_def() {
+  this->maybe_def_id = std::nullopt;
 }
 
 void Operand::remove_use(InstructionID use_id) {

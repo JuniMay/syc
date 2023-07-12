@@ -514,6 +514,10 @@ ExprPtr create_call_expr(
 }
 
 ExprPtr create_cast_expr(ExprPtr expr, TypePtr type, Driver& driver) {
+  if (expr->get_type() == type) {
+    return expr;
+  }
+  
   // int/float -> bool cast
   if (type->is_bool()) {
     if (expr->get_type()->is_float() || expr->get_type()->is_int()) {
