@@ -1,0 +1,155 @@
+name: Test functional
+on: [push]
+
+jobs:
+  test-functional-asm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Bison and Flex
+        run: sudo apt-get install bison flex
+
+      - name: Generate parser
+        run: bash scripts/yacc_gen.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Flatten and compile
+        run: python scripts/execute.py --no-test
+
+      - name: Setup QEMU
+        run: sudo apt-get install qemu-user
+
+      - name: Setup GCC
+        run: sudo apt-get install gcc-riscv64-linux-gnu
+
+      - name: Test functional assembly
+        run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests/functional'
+
+      - name: Report
+        run: cat output/result.md > $GITHUB_STEP_SUMMARY
+
+      - name: Package test result
+        uses: actions/upload-artifact@v2
+        with:
+          name: output-functional-asm
+          path: output
+
+    
+  test-hidden-functional-asm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Bison and Flex
+        run: sudo apt-get install bison flex
+
+      - name: Generate parser
+        run: bash scripts/yacc_gen.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Flatten and compile
+        run: python scripts/execute.py --no-test
+
+      - name: Setup QEMU
+        run: sudo apt-get install qemu-user
+
+      - name: Setup GCC
+        run: sudo apt-get install gcc-riscv64-linux-gnu
+
+      - name: Test hidden functional assembly
+        run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests/hidden_functional'
+
+      - name: Report
+        run: cat output/result.md > $GITHUB_STEP_SUMMARY  
+
+      - name: Package test result
+        uses: actions/upload-artifact@v2
+        with:
+          name: output-hidden-functional-asm
+          path: output
+
+    
+  test-functional-ir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Bison and Flex
+        run: sudo apt-get install bison flex
+
+      - name: Generate parser
+        run: bash scripts/yacc_gen.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Flatten and compile
+        run: python scripts/execute.py --no-test
+
+      - name: Setup QEMU
+        run: sudo apt-get install qemu-user
+
+      - name: Setup GCC
+        run: sudo apt-get install gcc-riscv64-linux-gnu
+
+      - name: Test functional IR
+        run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests/functional' --test-ir
+
+      - name: Report
+        run: cat output/result.md > $GITHUB_STEP_SUMMARY  
+
+      - name: Package test result
+        uses: actions/upload-artifact@v2
+        with:
+          name: output-functional-ir
+          path: output
+
+    
+  test-hidden-functional-ir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Bison and Flex
+        run: sudo apt-get install bison flex
+
+      - name: Generate parser
+        run: bash scripts/yacc_gen.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Flatten and compile
+        run: python scripts/execute.py --no-test
+
+      - name: Setup QEMU
+        run: sudo apt-get install qemu-user
+
+      - name: Setup GCC
+        run: sudo apt-get install gcc-riscv64-linux-gnu
+
+      - name: Test hidden functional IR
+        run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests/hidden_functional' --test-ir
+
+      - name: Report
+        run: cat output/result.md > $GITHUB_STEP_SUMMARY  
+
+      - name: Package test result
+        uses: actions/upload-artifact@v2
+        with:
+          name: output-hidden-functional-ir
+          path: output
+ 
