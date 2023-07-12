@@ -165,6 +165,8 @@ def log(logfile, command, exec_result):
 def test(executable_path: str, testcase_dir: str, output_dir: str,
          runtime_lib_dir: str, exec_timeout: int, opt_level: int,
          test_ir: bool):
+    
+    
     testcase_list = []
 
     def dfs(curr_dir: str):
@@ -180,6 +182,13 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
                 dfs(full_path)
 
     dfs(testcase_dir)
+    
+    result_md = f"# Test Result\n\n"
+    testcase_cnt = len(testcase_list)
+    correct_cnt = 0
+    result_md_table = f"| Testcase | Status |\n"
+    result_md_table += f"| -------- | ------ |\n"
+    
 
     for testcase in testcase_list:
         basename: str = os.path.basename(testcase)
@@ -221,10 +230,12 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
 
         if exec_result['returncode'] is None:
             if exec_result['stderr'] == 'TIMEOUT':
+                result_md_table += f"| `{testcase}` | ⚠️ syc TLE |\n"
                 print(f'[  ERROR  ] (syc TLE) {testcase}')
             else:
+                result_md_table += f"| `{testcase}` | ⚠️ syc RE |\n"
                 print(f'[  ERROR  ] (syc RE) {testcase}')
-
+                
             continue
 
         command = (f'clang -xc {testcase}.sy -include '
@@ -241,6 +252,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         log(log_file, command, exec_result)
 
         if exec_result['returncode'] is None:
+            result_md_table += f"| `{testcase}` | ⚠️ syc ir->asm CE |\n"
             print(f'[  ERROR  ] (sycir->asm CE) {testcase}')
             continue
 
@@ -251,6 +263,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         log(log_file, command, exec_result)
 
         if exec_result['returncode'] is None:
+            result_md_table += f"| `{testcase}` | ⚠️ syc ir->obj CE |\n"
             print(f'[  ERROR  ] (sycir->obj CE) {testcase}')
             continue
 
@@ -266,6 +279,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         log(log_file, command, exec_result)
 
         if exec_result['returncode'] is None or exec_result['stderr'] != '':
+            result_md_table += f"| `{testcase}` | 😢 CE |\n"
             print(f'[  ERROR  ] (CE) {testcase}, see: ', log_path)
             continue
 
@@ -293,17 +307,29 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         is_equal = check_file(out_path, std_out_path, diff_path)
 
         if exec_result['returncode'] is None:
-            # print(exec_result)
             if exec_result['stderr'] == 'TIMEOUT':
+                result_md_table += f'| {testcase} | ⏱️ TLE |\n'
                 print(f'[  ERROR  ] (TLE) {testcase}')
             else:
+                # SOS icon
+                result_md_table += f'| {testcase} | 🆘 RE |\n'
                 print(f'[  ERROR  ] (RE) {testcase}, see: {log_path}')
         elif is_equal:
+            correct_cnt += 1
+            result_md_table += f'| {testcase} | ✅ AC |\n'
             print(f'[ CORRECT ] (AC) {testcase}')
         else:
+            result_md_table += f'| {testcase} | ❌ WA |\n'
             print(f'[  ERROR  ] (WA) {testcase}, see: {log_path}')
 
         log(log_file, command, exec_result)
+        
+    result_md += f'Passed {correct_cnt}/{testcase_cnt} testcases.\n\n'
+    
+    result_md += result_md_table
+    
+    with open(f'{output_dir}/result.md', 'w') as f:
+        f.write(result_md)
 
 
 # put all files together in an .txt file with their relative path
