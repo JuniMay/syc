@@ -308,18 +308,18 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
 
         if exec_result['returncode'] is None:
             if exec_result['stderr'] == 'TIMEOUT':
-                result_md_table += f'| {testcase} | ⏱️ TLE |\n'
+                result_md_table += f'| `{testcase}` | ⏱️ TLE |\n'
                 print(f'[  ERROR  ] (TLE) {testcase}')
             else:
                 # SOS icon
-                result_md_table += f'| {testcase} | 🆘 RE |\n'
+                result_md_table += f'| `{testcase}` | 🆘 RE |\n'
                 print(f'[  ERROR  ] (RE) {testcase}, see: {log_path}')
         elif is_equal:
             correct_cnt += 1
-            result_md_table += f'| {testcase} | ✅ AC |\n'
+            result_md_table += f'| `{testcase}` | ✅ AC |\n'
             print(f'[ CORRECT ] (AC) {testcase}')
         else:
-            result_md_table += f'| {testcase} | ❌ WA |\n'
+            result_md_table += f'| `{testcase}` | ❌ WA |\n'
             print(f'[  ERROR  ] (WA) {testcase}, see: {log_path}')
 
         log(log_file, command, exec_result)
