@@ -1,0 +1,38 @@
+name: Test - Hidden Functional
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Bison and Flex
+        run: sudo apt-get install bison flex
+
+      - name: Generate parser
+        run: bash scripts/yacc_gen.sh
+
+      - name: Configure CMake
+        run: cmake -B build
+
+      - name: Build
+        run: cmake --build build -j8
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Test hidden_functional assembly
+        run: python scripts/execute.py --src-dir src --flatten-dir flattened --timeout 30 --opt-level 0 --test-dir './ci-tests/hidden_functional'
+      
+      - name: Test hidden_functional optimized assembly
+        run: python scripts/execute.py --src-dir src --flatten-dir flattened --timeout 30 --opt-level 1 --test-dir './ci-tests/hidden_functional' --no-compile
+
+      - name: Test hidden_functional IR
+        run: python scripts/execute.py --src-dir src --flatten-dir flattened --timeout 30 --opt-level 0 --test-dir './ci-tests/hidden_functional' --test-ir --no-compile
+
+      - name: Test hidden_functional optimized IR
+        run: python scripts/execute.py --src-dir src --flatten-dir flattened --timeout 30 --opt-level 1 --test-dir './ci-tests/hidden_functional' --test-ir --no-compile
