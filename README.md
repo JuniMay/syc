@@ -40,6 +40,8 @@ This will generate the `syc` executable in the current directory.
   - Rounding mode of `fcvt` instruction.
 - [ ] Constant folding in AST
   - Note that logical and/or cannot be folded because of short-circuit evaluation.
+  - [x] Constant folding for most expressions
+  - Fix ` functional/82_long_func.sy` (constant array slices with variable indices - incorrectly returns  `true `when using `is_const`)
 - [x] Mem2reg.
 - [x] Phi elimination.
   - Phi elimination is done with load and store now for ASM optimization later.

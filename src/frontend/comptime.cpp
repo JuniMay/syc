@@ -99,6 +99,30 @@ ComptimeValuePtr comptime_compute_binary(
         bool value = std::get<bool>(lhs->kind) || std::get<bool>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
+      case BinaryOp::Ne: {
+        bool value = std::get<bool>(lhs->kind) != std::get<bool>(rhs->kind);
+        return create_comptime_value(value, create_bool_type());
+      }
+      case BinaryOp::Eq: {
+        bool value = std::get<bool>(lhs->kind) == std::get<bool>(rhs->kind);
+        return create_comptime_value(value, create_bool_type());
+      }
+      case BinaryOp::Lt: {
+        bool value = std::get<bool>(lhs->kind) < std::get<bool>(rhs->kind);
+        return create_comptime_value(value, create_bool_type());
+      }
+      case BinaryOp::Gt: {
+        bool value = std::get<bool>(lhs->kind) > std::get<bool>(rhs->kind);
+        return create_comptime_value(value, create_bool_type());
+      }
+      case BinaryOp::Le: {
+        bool value = std::get<bool>(lhs->kind) <= std::get<bool>(rhs->kind);
+        return create_comptime_value(value, create_bool_type());
+      }
+      case BinaryOp::Ge: {
+        bool value = std::get<bool>(lhs->kind) >= std::get<bool>(rhs->kind);
+        return create_comptime_value(value, create_bool_type());
+      }
       default: {
         throw std::runtime_error(
           "Unsupported compile-time binary operation for type `bool`."
@@ -231,6 +255,10 @@ ComptimeValuePtr comptime_compute_unary(UnaryOp op, ComptimeValuePtr val) {
   if (val->type->is_bool()) {
     switch (op) {
       case UnaryOp::Neg: {
+        bool value = !std::get<bool>(val->kind);
+        return create_comptime_value(value, create_bool_type());
+      }
+      case UnaryOp::LogicalNot: {
         bool value = !std::get<bool>(val->kind);
         return create_comptime_value(value, create_bool_type());
       }

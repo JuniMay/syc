@@ -701,7 +701,15 @@ void Compunit::add_stmt(StmtPtr stmt) {
   this->stmts.push_back(stmt);
 }
 
-Expr::Expr(ExprKind kind) : kind(kind) {}
+Expr::Expr(ExprKind kind) {
+  this->kind = kind;
+  if (is_comptime() && 
+      !std::holds_alternative<expr::Constant>(this->kind) &&
+      !std::holds_alternative<expr::InitializerList>(this->kind) &&
+      !std::holds_alternative<expr::Identifier>(this->kind)) {
+    this->kind = ExprKind(expr::Constant{get_comptime_value().value()});
+  }
+}
 
 Stmt::Stmt(StmtKind kind) : kind(kind) {}
 
