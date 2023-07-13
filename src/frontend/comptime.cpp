@@ -33,6 +33,34 @@ std::string ComptimeValue::to_string() const {
   return buf.str();
 }
 
+std::string ComptimeValue::to_source_code(int depth) const {
+  if (this->is_zeroinitializer()) {
+    return "{0}";
+  }
+
+  std::stringstream buf;
+
+  if (this->type->is_bool()) {
+    buf << std::get<bool>(this->kind);
+  } else if (this->type->is_int()) {
+    buf << std::get<int>(this->kind);
+  } else if (this->type->is_float()) {
+    buf << std::get<float>(this->kind);
+  } else if (this->type->is_array()) {
+    buf << "{";
+    for (auto& item : std::get<std::vector<ComptimeValuePtr>>(this->kind)) {
+      buf << item->to_source_code(depth + 1) << ", ";
+    }
+    buf << "}";
+  } else {
+    throw std::runtime_error(
+      "Unsupported type for compile-time value to be converted to string."
+    );
+  }
+
+  return buf.str();
+}
+
 bool ComptimeValue::is_zeroinitializer() const {
   return std::holds_alternative<Zeroinitializer>(this->kind);
 }

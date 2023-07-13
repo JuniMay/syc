@@ -108,10 +108,114 @@ std::string Expr::to_string() const {
           buf << "\tZEROINITIALIZER" << std::endl;
         }
       },
-      [&buf](const auto& kind) { buf << "UNKNWON_STMT"; },
+      [&buf](const auto& kind) { buf << "UNKNWON_EXPR"; },
     },
     this->kind
   );
+  return buf.str();
+}
+
+std::string Expr::to_source_code(int depth) const {
+  if (depth > 8) {
+    return "";
+  }
+  std::stringstream buf;
+  buf << "(";
+  std::visit(
+    overloaded{
+      [&](const expr::Identifier& kind) { buf << kind.name; },
+      [&](const expr::Binary& kind) {
+        buf << kind.lhs->to_source_code(depth + 1);
+        switch (kind.op) {
+          case BinaryOp::Add:
+            buf << "+";
+            break;
+          case BinaryOp::Sub:
+            buf << "-";
+            break;
+          case BinaryOp::Mul:
+            buf << "*";
+            break;
+          case BinaryOp::Div:
+            buf << "/";
+            break;
+          case BinaryOp::Mod:
+            buf << "\%";
+            break;
+          case BinaryOp::Lt:
+            buf << "<";
+            break;
+          case BinaryOp::Gt:
+            buf << ">";
+            break;
+          case BinaryOp::Le:
+            buf << "<=";
+            break;
+          case BinaryOp::Ge:
+            buf << ">=";
+            break;
+          case BinaryOp::Eq:
+            buf << "==";
+            break;
+          case BinaryOp::Ne:
+            buf << "!=";
+            break;
+          case BinaryOp::LogicalAnd:
+            buf << "&&";
+            break;
+          case BinaryOp::LogicalOr:
+            buf << "||";
+            break;
+          case BinaryOp::Index:
+            buf << "[";
+            break;
+        }
+        buf << kind.rhs->to_source_code(depth + 1);
+        if (kind.op == BinaryOp::Index) {
+          buf << "]";
+        }
+      },
+      [&](const expr::Unary& kind) {
+        switch (kind.op) {
+          case UnaryOp::Neg:
+            buf << "-";
+            break;
+          case UnaryOp::LogicalNot:
+            buf << "!";
+            break;
+          default:
+            break;
+        }
+        buf << kind.expr->to_source_code(depth + 1) << std::endl;
+      },
+      [&](const expr::Call& kind) {
+        buf << kind.func_symbol->name << "(";
+        for (auto expr : kind.args) {
+          buf << expr->to_source_code(depth + 1) << ", ";
+        }
+        buf << ")";
+      },
+      [&](const expr::Cast& kind) {
+        buf << kind.expr->to_source_code(depth + 1);
+      },
+      [&](const expr::Constant& kind) {
+        buf << kind.value->to_source_code(depth + 1);
+      },
+      [&](const expr::InitializerList& kind) {
+        buf << "{";
+        for (auto expr : kind.init_list) {
+          buf << expr->to_source_code(depth + 1) << ", ";
+        }
+        buf << "}";
+        if (kind.is_zeroinitializer) {
+          buf << "{0}" << std::endl;
+        }
+      },
+      [&buf](const auto& kind) { buf << "UNKNWON_EXPR"; },
+    },
+    this->kind
+  );
+  buf << ")";
   return buf.str();
 }
 

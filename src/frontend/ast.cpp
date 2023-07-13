@@ -9,7 +9,12 @@ namespace frontend {
 namespace ast {
 
 bool Expr::operator==(const Expr& other) const {
-  return this->to_string() == other.to_string();
+  std::string lhs_source_code = this->to_source_code();
+  std::string rhs_source_code = other.to_source_code();
+  if (lhs_source_code == "" || rhs_source_code == "") {
+    return false;
+  }
+  return lhs_source_code == rhs_source_code;
 }
 
 std::pair<int, ExprPtr> as_integer_mul(ExprPtr expr) {
@@ -419,7 +424,7 @@ create_binary_expr(BinaryOp op, ExprPtr lhs, ExprPtr rhs, Driver& driver) {
     auto lhs_expr = integer_mul_lhs.second;
     auto rhs_expr = integer_mul_rhs.second;
 
-    if (lhs_expr->to_string() == rhs_expr->to_string()) {
+    if (*lhs_expr == *rhs_expr) {
       auto new_int = create_comptime_value(lhs_int + rhs_int, type.value());
       return create_binary_expr(
         BinaryOp::Mul, create_constant_expr(new_int), lhs_expr, driver
