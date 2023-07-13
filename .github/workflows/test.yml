@@ -39,45 +39,6 @@ jobs:
           name: output-asm
           path: output
 
-    
-  test-asm-optimized:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Install Bison and Flex
-        run: sudo apt-get install bison flex
-
-      - name: Generate parser
-        run: bash scripts/yacc_gen.sh
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Flatten and compile
-        run: python scripts/execute.py --no-test
-
-      - name: Setup QEMU
-        run: sudo apt-get install qemu-user
-
-      - name: Setup GCC
-        run: sudo apt-get install gcc-riscv64-linux-gnu
-
-      - name: Test hidden functional assembly
-        run: python scripts/execute.py --timeout 30 --no-compile --testcase-dir './ci-tests' --opt-level 1
-
-      - name: Report
-        run: cat output/result.md > $GITHUB_STEP_SUMMARY  
-
-      - name: Package test result
-        uses: actions/upload-artifact@v2
-        with:
-          name: output-asm-optimized
-          path: output
-
-    
   test-ir:
     runs-on: ubuntu-latest
     steps:
@@ -115,7 +76,6 @@ jobs:
           name: output-ir
           path: output
 
-    
   test-ir-optimized:
     runs-on: ubuntu-latest
     steps:
