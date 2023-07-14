@@ -2,17 +2,17 @@
 #define SYC_PASSES_PHI_ELIM_H_
 
 #include "common.h"
-#include "ir/builder.h"
-#include "ir/function.h"
+#include "backend/builder.h"
+#include "backend/function.h"
 
 namespace syc {
-namespace ir {
+namespace backend {
 
 void phi_elim(Builder& builder);
 
 void phi_elim_function(FunctionPtr function, Builder& builder);
 
-}  // namespace ir
+}  // namespace backend
 }  // namespace syc
 
 #endif

@@ -13,9 +13,9 @@ void dce(Builder& builder) {
 
   // remove all the operands and its corresponding def instructions
   for (auto [operand_id, operand] : builder.context.operand_table) {
-    if (operand->is_vreg() && operand->use_id_list.size() == 0 && operand->maybe_def_id.has_value()) {
+    if (operand->is_vreg() && operand->use_id_list.size() == 0 && operand->def_id_list.size() == 1) {
       auto instruction =
-        builder.context.get_instruction(operand->maybe_def_id.value());
+        builder.context.get_instruction(operand->def_id_list[0]);
       instruction->remove(builder.context);
     }
   }
