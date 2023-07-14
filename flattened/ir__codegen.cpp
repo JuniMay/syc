@@ -63,7 +63,7 @@ void codegen(
           [&](ir::operand::ConstantPtr& ir_constant) {
             if (std::holds_alternative<ir::type::Array>(*ir_constant->type)) {
               auto& ir_constant_kind = ir_constant->kind;
-              if (auto ir_constant_list = std::get_if<std::vector<ir::operand::ConstantPtr> >(&ir_constant_kind)) {
+              if (auto ir_constant_list = std::get_if<std::vector<ir::operand::ConstantPtr>>(&ir_constant_kind)) {
                 for (auto& ir_constant_element : *ir_constant_list) {
                   recursive_func(ir_constant_element);
                 }
@@ -748,7 +748,7 @@ void codegen_instruction(
             );
 
             auto mul_instruction = builder.fetch_binary_instruction(
-              backend::instruction::Binary::Op::MUL, asm_dst_id, asm_lhs_id,
+              backend::instruction::Binary::Op::MULW, asm_dst_id, asm_lhs_id,
               asm_rhs_id
             );
             builder.append_instruction(mul_instruction);
@@ -760,7 +760,7 @@ void codegen_instruction(
             );
 
             auto div_instruction = builder.fetch_binary_instruction(
-              backend::instruction::Binary::Op::DIV, asm_dst_id, asm_lhs_id,
+              backend::instruction::Binary::Op::DIVW, asm_dst_id, asm_lhs_id,
               asm_rhs_id
             );
             builder.append_instruction(div_instruction);
@@ -772,7 +772,7 @@ void codegen_instruction(
             );
 
             auto rem_instruction = builder.fetch_binary_instruction(
-              backend::instruction::Binary::Op::REM, asm_dst_id, asm_lhs_id,
+              backend::instruction::Binary::Op::REMW, asm_dst_id, asm_lhs_id,
               asm_rhs_id
             );
             builder.append_instruction(rem_instruction);
@@ -1187,7 +1187,28 @@ void codegen_instruction(
         builder.append_instruction(j_instruction);
       },
       [&](ir::instruction::Phi& phi) {
-        // Phi instruction should be eliminated in SSA construction.
+        auto asm_dst_id = codegen_operand(
+          phi.dst_id, ir_context, builder, codegen_context, false, false
+        );
+
+        std::vector<std::tuple<AsmOperandID, AsmBasicBlockID>>
+          asm_incoming_list = {};
+
+        for (auto [ir_operand_id, ir_block_id] : phi.incoming_list) {
+          auto asm_operand_id = codegen_operand(
+            ir_operand_id, ir_context, builder, codegen_context, false, false,
+            true
+          );
+
+          auto asm_block_id = codegen_context.basic_block_map.at(ir_block_id);
+
+          asm_incoming_list.push_back({asm_operand_id, asm_block_id});
+        }
+
+        auto phi_instruction =
+          builder.fetch_phi_instruction(asm_dst_id, asm_incoming_list);
+
+        builder.append_instruction(phi_instruction);
       },
       [&](ir::instruction::Call& call) {
         int curr_general_reg = 0;
@@ -1558,7 +1579,8 @@ AsmOperandID codegen_operand(
   AsmBuilder& builder,
   CodegenContext& codegen_context,
   bool try_keep_imm,
-  bool use_fmv
+  bool use_fmv,
+  bool force_keep_imm
 ) {
   auto ir_operand = ir_context.get_operand(ir_operand_id);
   auto& ir_operand_kind = ir_operand->kind;
@@ -1635,8 +1657,9 @@ AsmOperandID codegen_operand(
           auto asm_temp_id =
             builder.fetch_virtual_register(backend::VirtualRegisterKind::General
             );
-
-          if (check_utype_immediate(bits)) {
+          if (force_keep_imm) {
+            asm_operand_id = asm_imm_id;
+          } else if (check_utype_immediate(bits)) {
             auto lui_instruction = builder.fetch_lui_instruction(
               asm_temp_id, builder.fetch_immediate((uint32_t)(bits >> 12))
             );
@@ -1647,7 +1670,9 @@ AsmOperandID codegen_operand(
             builder.append_instruction(li_instruction);
           }
 
-          if (use_fmv) {
+          if (force_keep_imm) {
+            // Not using fmv instruction.
+          } else if (use_fmv) {
             asm_operand_id =
               builder.fetch_virtual_register(backend::VirtualRegisterKind::Float
               );
@@ -1660,10 +1685,12 @@ AsmOperandID codegen_operand(
           } else {
             asm_operand_id = asm_temp_id;
           }
+
         } else {
           int value = std::get<int>(ir_constant->kind);
-
-          if (check_itype_immediate(value) && try_keep_imm) {
+          if (force_keep_imm) {
+            asm_operand_id = builder.fetch_immediate((int32_t)value);
+          } else if (check_itype_immediate(value) && try_keep_imm) {
             auto asm_imm_id = builder.fetch_immediate((int32_t)value);
             asm_operand_id = asm_imm_id;
           } else {

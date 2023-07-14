@@ -6,16 +6,19 @@ namespace backend {
 Operand::Operand(OperandID id, OperandKind kind, Modifier modifier)
   : id(id), kind(kind), modifier(modifier) {}
 
-void Operand::set_def(InstructionID def_id) {
-  this->maybe_def_id = def_id;
+void Operand::add_def(InstructionID def_id) {
+  def_id_list.push_back(def_id);
 }
 
 void Operand::add_use(InstructionID use_id) {
   use_id_list.push_back(use_id);
 }
 
-void Operand::remove_def() {
-  this->maybe_def_id = std::nullopt;
+void Operand::remove_def(InstructionID def_id) {
+  this->def_id_list.erase(
+    std::remove(this->def_id_list.begin(), this->def_id_list.end(), def_id),
+    this->def_id_list.end()
+  );
 }
 
 void Operand::remove_use(InstructionID use_id) {

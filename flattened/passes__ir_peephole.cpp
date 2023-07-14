@@ -44,19 +44,12 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
                 // mul lhs, 0 -> make all uses of dst to 0
                 auto use_id_list_copy = dst->use_id_list;
                 auto zero = builder.fetch_constant_operand(builder.fetch_i32_type(), (int)0);
-                std::cout << "replace " << dst->id << " with " << zero << std::endl;
                 for (auto use_instruction_id : use_id_list_copy) {
-                    std::cout << "use instruction id: " << use_instruction_id << std::endl;
                     auto instruction = builder.context.get_instruction(use_instruction_id);
                     instruction->replace_operand(dst->id, zero, builder.context);
                 }
-                // curr_instruction->insert_next(builder.fetch_store_instruction(
-                //     builder.fetch_constant_operand(builder.fetch_i32_type(), (int)0),
-                //     dst->id,
-                //     std::nullopt
-                // ));
                 curr_instruction->remove(builder.context);
-            } else if ((constant_value > 1 && constant_value & (constant_value - 1)) == 0) {
+            } else if (constant_value > 1 && (constant_value & (constant_value - 1)) == 0) {
                 // dest = mul lhs, 2^k -> dest = shl lhs, k
                 curr_instruction->insert_next(builder.fetch_binary_instruction(
                     instruction::BinaryOp::Shl,

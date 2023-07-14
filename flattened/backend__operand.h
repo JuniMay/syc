@@ -34,14 +34,14 @@ struct Operand {
 
   Operand(OperandID id, OperandKind kind, Modifier modifier);
 
-  std::optional<InstructionID> maybe_def_id;
+  std::vector<InstructionID> def_id_list;
   std::vector<InstructionID> use_id_list;
 
-  void set_def(InstructionID def_id);
+  void add_def(InstructionID def_id);
 
   void add_use(InstructionID use_id);
 
-  void remove_def();
+  void remove_def(InstructionID def_id);
 
   void remove_use(InstructionID use_id);
 

@@ -349,6 +349,13 @@ struct J {
 
 struct Dummy {};
 
+/// Temporary phi instruction in assembly.
+/// This needs to be removed after register allocation.
+struct Phi {
+  OperandID rd_id;
+  std::vector<std::tuple<OperandID, BasicBlockID>> incoming_list;
+};
+
 }  // namespace instruction
 
 /// Machine instruction
@@ -391,6 +398,10 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
   std::optional<BasicBlockID> get_basic_block_id_if_branch() const;
 
   void replace_operand(OperandID old_operand_id, OperandID new_operand_id, Context& context);
+
+  bool is_phi() const;
+
+  bool is_branch_or_jmp() const;
 };
 
 InstructionPtr create_instruction(

@@ -33,6 +33,34 @@ std::string ComptimeValue::to_string() const {
   return buf.str();
 }
 
+std::string ComptimeValue::to_source_code(int depth) const {
+  if (this->is_zeroinitializer()) {
+    return "{0}";
+  }
+
+  std::stringstream buf;
+
+  if (this->type->is_bool()) {
+    buf << std::get<bool>(this->kind);
+  } else if (this->type->is_int()) {
+    buf << std::get<int>(this->kind);
+  } else if (this->type->is_float()) {
+    buf << std::get<float>(this->kind);
+  } else if (this->type->is_array()) {
+    buf << "{";
+    for (auto& item : std::get<std::vector<ComptimeValuePtr>>(this->kind)) {
+      buf << item->to_source_code(depth + 1) << ", ";
+    }
+    buf << "}";
+  } else {
+    throw std::runtime_error(
+      "Unsupported type for compile-time value to be converted to string."
+    );
+  }
+
+  return buf.str();
+}
+
 bool ComptimeValue::is_zeroinitializer() const {
   return std::holds_alternative<Zeroinitializer>(this->kind);
 }
@@ -69,6 +97,30 @@ ComptimeValuePtr comptime_compute_binary(
       }
       case BinaryOp::LogicalOr: {
         bool value = std::get<bool>(lhs->kind) || std::get<bool>(rhs->kind);
+        return create_comptime_value(value, create_bool_type());
+      }
+      case BinaryOp::Ne: {
+        bool value = std::get<bool>(lhs->kind) != std::get<bool>(rhs->kind);
+        return create_comptime_value(value, create_bool_type());
+      }
+      case BinaryOp::Eq: {
+        bool value = std::get<bool>(lhs->kind) == std::get<bool>(rhs->kind);
+        return create_comptime_value(value, create_bool_type());
+      }
+      case BinaryOp::Lt: {
+        bool value = std::get<bool>(lhs->kind) < std::get<bool>(rhs->kind);
+        return create_comptime_value(value, create_bool_type());
+      }
+      case BinaryOp::Gt: {
+        bool value = std::get<bool>(lhs->kind) > std::get<bool>(rhs->kind);
+        return create_comptime_value(value, create_bool_type());
+      }
+      case BinaryOp::Le: {
+        bool value = std::get<bool>(lhs->kind) <= std::get<bool>(rhs->kind);
+        return create_comptime_value(value, create_bool_type());
+      }
+      case BinaryOp::Ge: {
+        bool value = std::get<bool>(lhs->kind) >= std::get<bool>(rhs->kind);
         return create_comptime_value(value, create_bool_type());
       }
       default: {
@@ -203,6 +255,10 @@ ComptimeValuePtr comptime_compute_unary(UnaryOp op, ComptimeValuePtr val) {
   if (val->type->is_bool()) {
     switch (op) {
       case UnaryOp::Neg: {
+        bool value = !std::get<bool>(val->kind);
+        return create_comptime_value(value, create_bool_type());
+      }
+      case UnaryOp::LogicalNot: {
         bool value = !std::get<bool>(val->kind);
         return create_comptime_value(value, create_bool_type());
       }
