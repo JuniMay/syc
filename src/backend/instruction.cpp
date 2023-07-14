@@ -85,8 +85,8 @@ void Instruction::replace_operand(
       this->def_id_list.begin(), this->def_id_list.end(), old_operand_id
     ));
     this->def_id_list.push_back(new_operand_id);
-    old_operand->remove_def();
-    new_operand->set_def(this->id);
+    old_operand->remove_def(this->id);
+    new_operand->add_def(this->id);
   }
 
   if (std::find(this->use_id_list.begin(), this->use_id_list.end(), old_operand_id) != this->use_id_list.end()) {
@@ -280,6 +280,16 @@ void Instruction::replace_operand(
           instruction.rs2_id = new_operand_id;
         }
       },
+      [&](Phi& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        for (auto& [id, _] : instruction.incoming_list) {
+          if (id == old_operand_id) {
+            id = new_operand_id;
+          }
+        }
+      },
       [&](auto& instruction) {
         // Do nothing.
       }},
@@ -290,7 +300,7 @@ void Instruction::replace_operand(
 void Instruction::remove(Context& context) {
   for (auto def_id : this->def_id_list) {
     auto def = context.get_operand(def_id);
-    def->remove_def();
+    def->remove_def(this->id);
   }
 
   for (auto use_id : this->use_id_list) {
@@ -937,10 +947,33 @@ std::string Instruction::to_string(Context& context) {
                context.get_basic_block(instruction.block_id)->get_label();
       },
       [&context](const Ret& instruction) -> std::string { return "ret"; },
+      [&context](const Phi& instruction) {
+        std::stringstream ss;
+
+        // make as comment
+        ss << "# phi " << context.get_operand(instruction.rd_id)->to_string()
+           << " = ";
+
+        for (auto& [operand_id, block_id] : instruction.incoming_list) {
+          ss << "[" << context.get_operand(operand_id)->to_string() << ", "
+             << context.get_basic_block(block_id)->get_label() << "], ";
+        }
+
+        return ss.str();
+      },
       [&context](const auto& instruction) -> std::string { return ""; },
     },
     kind
   );
+}
+
+bool Instruction::is_phi() const {
+  return std::holds_alternative<instruction::Phi>(this->kind);
+}
+
+bool Instruction::is_branch_or_jmp() const {
+  return std::holds_alternative<instruction::J>(this->kind) ||
+         std::holds_alternative<instruction::Branch>(this->kind);
 }
 
 }  // namespace backend

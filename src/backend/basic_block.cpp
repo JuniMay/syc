@@ -19,6 +19,19 @@ void BasicBlock::add_succ(BasicBlockID succ_id) {
   this->succ_list.push_back(succ_id);
 }
 
+void BasicBlock::remove_pred(BasicBlockID pred_id) {
+  auto it = std::find(this->pred_list.begin(), this->pred_list.end(), pred_id);
+  if (it != this->pred_list.end()) {
+    this->pred_list.erase(it);
+  }
+}
+void BasicBlock::remove_succ(BasicBlockID succ_id) {
+  auto it = std::find(this->succ_list.begin(), this->succ_list.end(), succ_id);
+  if (it != this->succ_list.end()) {
+    this->succ_list.erase(it);
+  }
+}
+
 void BasicBlock::prepend_instruction(InstructionPtr instruction) {
   this->head_instruction->insert_next(instruction);
 }

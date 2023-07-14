@@ -309,7 +309,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
         if exec_result['returncode'] is None:
             if exec_result['stderr'] == 'TIMEOUT':
                 result_md_table += f'| `{testcase}` | ⏱️ TLE |\n'
-                print(f'[  ERROR  ] (TLE) {testcase}')
+                print(f'[  ERROR  ] (TLE) {testcase}, check: {asm_path}')
             else:
                 # SOS icon
                 result_md_table += f'| `{testcase}` | 🆘 RE |\n'

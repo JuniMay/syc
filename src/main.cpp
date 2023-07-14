@@ -9,11 +9,11 @@
 #include "ir/instruction.h"
 #include "passes/asm_dce.h"
 #include "passes/asm_peephole.h"
+#include "passes/ir_peephole.h"
 #include "passes/linear_scan.h"
 #include "passes/mem2reg.h"
 #include "passes/phi_elim.h"
 #include "passes/unreach_elim.h"
-#include "passes/ir_peephole.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -44,8 +44,8 @@ int main(int argc, char* argv[]) {
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
     ir::peephole(ir_builder);
+    // Still problematic
     ir::unreach_elim(ir_builder);
-    ir::phi_elim(ir_builder);
   }
 
   if (options.ir_file.has_value()) {
@@ -63,8 +63,12 @@ int main(int argc, char* argv[]) {
 
   codegen(ir_builder.context, asm_builder, codegen_context);
 
-  backend::peephole(asm_builder);
-  backend::dce(asm_builder);
+  if (options.optimization_level > 0) {
+    backend::peephole(asm_builder);
+    backend::dce(asm_builder);
+    // Still problematic
+    backend::phi_elim(asm_builder);
+  }
 
   codegen_rest(ir_builder.context, asm_builder, codegen_context);
 

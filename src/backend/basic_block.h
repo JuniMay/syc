@@ -26,6 +26,9 @@ struct BasicBlock : std::enable_shared_from_this<BasicBlock> {
   void add_pred(BasicBlockID pred_id);
   void add_succ(BasicBlockID succ_id);
 
+  void remove_pred(BasicBlockID pred_id);
+  void remove_succ(BasicBlockID succ_id);
+
   std::string get_label() const { return ".bb_" + std::to_string(id); }
 
   void prepend_instruction(InstructionPtr instruction);

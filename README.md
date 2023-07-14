@@ -42,11 +42,15 @@ This will generate the `syc` executable in the current directory.
   - Note that logical and/or cannot be folded because of short-circuit evaluation.
   - [x] Constant folding for most expressions
   - Fix ` functional/82_long_func.sy` (constant array slices with variable indices - incorrectly returns  `true `when using `is_const`)
+- [ ] Unreachable elimination.
+  - [ ] Fix `functional/51_short_circuit`
+  - [ ] Fix `functional/75_max_flow`
+  - [ ] Fix `functional/82_long_func`
 - [x] Mem2reg.
-- [x] Phi elimination.
-  - Phi elimination is done with load and store now for ASM optimization later.
+- [ ] Phi elimination.
+  - Done in ASM.
+  - [ ] Fix `hidden_functional/19_search` and `hidden_functional/35_math`
 - [ ] Constant propagation
-- [ ] `memcpy` for local arrays.
 - [x] `memset` for local arrays.
 - [ ] Peephole optimization for IR and assembly.
   - `performance/instruction-combining`
@@ -62,5 +66,6 @@ This will generate the `syc` executable in the current directory.
   - [x] IR: integer multiplication to shift.
   - [x] IR: integer division by 2 to shift.
   - [ ] IR: integer division by 2^k to shift.
+- [ ] `memcpy` for local arrays.
 - [ ] Loop invariant code motion
   - `performance/hoist`: sum is added 100 times and divided by 100.
