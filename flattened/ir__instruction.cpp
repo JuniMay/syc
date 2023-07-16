@@ -425,6 +425,18 @@ std::string Instruction::to_string(Context& context) {
             result = dst_str + " = ashr " + type::to_string(type) + " " +
                      lhs_str + ", " + rhs_str;
             break;
+          case BinaryOp::And:
+            result = dst_str + " = and " + type::to_string(type) + " " +
+                     lhs_str + ", " + rhs_str;
+            break;
+          case BinaryOp::Or:
+            result = dst_str + " = or " + type::to_string(type) + " " + lhs_str +
+                     ", " + rhs_str;
+            break;
+          case BinaryOp::Xor:
+            result = dst_str + " = xor " + type::to_string(type) + " " +
+                     lhs_str + ", " + rhs_str;
+            break;
             
           default:
             // unreachable

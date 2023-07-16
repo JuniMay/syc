@@ -921,6 +921,76 @@ void codegen_instruction(
             }
             break;
           }
+          case ir::instruction::BinaryOp::And: {
+            auto asm_rhs_id = codegen_operand(
+              ir_rhs_id, ir_context, builder, codegen_context, true, false
+            );
+
+            bool is_rhs_imm =
+              builder.context.get_operand(asm_rhs_id)->is_immediate();
+            if (is_rhs_imm) {
+              auto andi_instruction = builder.fetch_binary_imm_instruction(
+                backend::instruction::BinaryImm::Op::ANDI, asm_dst_id,
+                asm_lhs_id, asm_rhs_id
+              );
+              builder.append_instruction(andi_instruction);
+            } else {
+              auto and_instruction = builder.fetch_binary_instruction(
+                backend::instruction::Binary::Op::AND, asm_dst_id, asm_lhs_id,
+                asm_rhs_id
+              );
+              builder.append_instruction(and_instruction);
+            }
+            break;
+          }
+          case ir::instruction::BinaryOp::Or: {
+            auto asm_rhs_id = codegen_operand(
+              ir_rhs_id, ir_context, builder, codegen_context, true, false
+            );
+
+            bool is_rhs_imm =
+              builder.context.get_operand(asm_rhs_id)->is_immediate();
+            if (is_rhs_imm) {
+              auto ori_instruction = builder.fetch_binary_imm_instruction(
+                backend::instruction::BinaryImm::Op::ORI, asm_dst_id,
+                asm_lhs_id, asm_rhs_id
+              );
+              builder.append_instruction(ori_instruction);
+            } else {
+              auto or_instruction = builder.fetch_binary_instruction(
+                backend::instruction::Binary::Op::OR, asm_dst_id, asm_lhs_id,
+                asm_rhs_id
+              );
+              builder.append_instruction(or_instruction);
+            }
+            break;
+          }
+          case ir::instruction::BinaryOp::Xor: {
+            auto asm_rhs_id = codegen_operand(
+              ir_rhs_id, ir_context, builder, codegen_context, true, false
+            );
+
+            bool is_rhs_imm =
+              builder.context.get_operand(asm_rhs_id)->is_immediate();
+            if (is_rhs_imm) {
+              auto xori_instruction = builder.fetch_binary_imm_instruction(
+                backend::instruction::BinaryImm::Op::XORI, asm_dst_id,
+                asm_lhs_id, asm_rhs_id
+              );
+              builder.append_instruction(xori_instruction);
+            } else {
+              auto xor_instruction = builder.fetch_binary_instruction(
+                backend::instruction::Binary::Op::XOR, asm_dst_id, asm_lhs_id,
+                asm_rhs_id
+              );
+              builder.append_instruction(xor_instruction);
+            }
+            
+            break;
+          }
+          default: {
+            throw std::runtime_error("unimplemented binary op");
+          }
         }
       },
       [&](ir::instruction::ICmp& icmp) {
