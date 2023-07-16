@@ -1,4 +1,4 @@
-// A Bison parser, made by GNU Bison 3.8.2.
+// A Bison parser, made by GNU Bison 3.8.
 
 // Skeleton implementation for Bison LALR(1) parsers in C++
 
@@ -164,9 +164,9 @@ namespace  syc { namespace frontend  {
    Parser ::syntax_error::~syntax_error () YY_NOEXCEPT YY_NOTHROW
   {}
 
-  /*---------.
-  | symbol.  |
-  `---------*/
+  /*---------------.
+  | symbol kinds.  |
+  `---------------*/
 
 
 
@@ -573,7 +573,7 @@ namespace  syc { namespace frontend  {
   }
 
   void
-   Parser ::yypop_ (int n) YY_NOEXCEPT
+   Parser ::yypop_ (int n)
   {
     yystack_.pop (n);
   }
@@ -616,13 +616,13 @@ namespace  syc { namespace frontend  {
   }
 
   bool
-   Parser ::yy_pact_value_is_default_ (int yyvalue) YY_NOEXCEPT
+   Parser ::yy_pact_value_is_default_ (int yyvalue)
   {
     return yyvalue == yypact_ninf_;
   }
 
   bool
-   Parser ::yy_table_value_is_error_ (int yyvalue) YY_NOEXCEPT
+   Parser ::yy_table_value_is_error_ (int yyvalue)
   {
     return yyvalue == yytable_ninf_;
   }
