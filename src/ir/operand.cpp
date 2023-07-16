@@ -1,7 +1,7 @@
 #include "ir/operand.h"
 #include <sstream>
-#include "ir/type.h"
 #include "ir/operand.h"
+#include "ir/type.h"
 
 namespace syc {
 
@@ -43,16 +43,9 @@ std::string operand::Constant::to_string(bool with_type) const {
 bool operand::Constant::is_zero() const {
   return std::visit(
     overloaded{
-      [](int const_int){
-        return const_int == 0;
-      },
-      [](float const_float){
-        return const_float == 0.0;
-      },
-      [](auto const_zero){ 
-        return false; 
-      }
-    },
+      [](int const_int) { return const_int == 0; },
+      [](float const_float) { return const_float == 0.0; },
+      [](auto const_zero) { return false; }},
     kind
   );
 }
@@ -123,6 +116,11 @@ bool Operand::is_constant() const {
 bool Operand::is_int() const {
   return std::holds_alternative<type::Integer>(*(this->get_type()));
 }
+
+bool Operand::is_parameter() const {
+  return std::holds_alternative<operand::Parameter>(kind);
+}
+
 }  // namespace ir
 
 }  // namespace syc

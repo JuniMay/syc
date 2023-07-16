@@ -82,6 +82,8 @@ struct Operand {
   bool is_constant() const;
 
   bool is_int() const;
+
+  bool is_parameter() const;
 };
 
 }  // namespace ir
