@@ -121,17 +121,20 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           // dest = sra t2, k
           auto tmp0 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
           auto tmp1 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+          auto tmp2 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::AShr, curr_dst->id, tmp1,
-            builder.fetch_constant_operand(
-              builder.fetch_i32_type(), (int)constant_value
-            )
+            instruction::BinaryOp::AShr, curr_dst->id, tmp2,
+            builder.fetch_constant_operand(builder.fetch_i32_type(), (int)log2(constant_value))
           ));
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::Add, tmp1, tmp0, curr_lhs->id
+            instruction::BinaryOp::Add, tmp2, tmp1, curr_lhs->id
           ));
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::LShr, tmp0, curr_lhs->id,
+            instruction::BinaryOp::LShr, tmp1, tmp0,
+            builder.fetch_constant_operand(builder.fetch_i32_type(), (int)(32 - log2(constant_value)))
+          ));
+          curr_instruction->insert_next(builder.fetch_binary_instruction(
+            instruction::BinaryOp::AShr, tmp0, curr_lhs->id,
             builder.fetch_constant_operand(builder.fetch_i32_type(), (int)31)
           ));
           next_instruction = curr_instruction->next;
