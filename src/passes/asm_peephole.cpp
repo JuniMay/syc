@@ -161,6 +161,18 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
       }
     }
 
+    // if (std::holds_alternative<instruction::J>(curr_instruction->kind)) {
+    //   // remove: b label
+    //   //         label:
+    //   const auto& kind = std::get<instruction::J>(curr_instruction->kind);
+    //   auto next_bb_id =
+    //     builder.context.get_basic_block(curr_instruction->parent_block_id)
+    //       ->next->id;
+    //   if (kind.block_id == next_bb_id) {
+    //     curr_instruction->remove(builder.context);
+    //   }
+    // }
+
     curr_instruction = next_instruction;
   }
 }

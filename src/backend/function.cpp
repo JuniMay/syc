@@ -18,6 +18,7 @@ void Function::append_basic_block(BasicBlockPtr basic_block) {
 
 std::string Function::to_string(Context& context) {
   std::string result = "\t.globl " + this->name + "\n";
+  result += "\t.align 1\n";
   result += "\t.type " + this->name + ", @function\n";
   result += this->name + ":\n";
 
