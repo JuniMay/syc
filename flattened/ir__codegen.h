@@ -32,6 +32,8 @@ using AsmFunctionPtr = backend::FunctionPtr;
 struct CodegenContext {
   std::map<IrOperandID, AsmOperandID> operand_map;
   std::map<IrBasicBlockID, AsmBasicBlockID> basic_block_map;
+  // This is used for parameter passed by stack in phi instructions.
+  std::map<AsmOperandID, AsmOperandID> phi_placeholder_map;
 
   CodegenContext() = default;
 

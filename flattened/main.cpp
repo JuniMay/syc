@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
     ir::mem2reg(ir_builder);
     ir::peephole(ir_builder);
     // Still problematic
-    ir::unreach_elim(ir_builder);
+    // ir::unreach_elim(ir_builder);
   }
 
   if (options.ir_file.has_value()) {

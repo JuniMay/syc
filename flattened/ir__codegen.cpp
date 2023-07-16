@@ -163,6 +163,9 @@ void codegen_function(
 
   std::vector<IrOperandID> ir_stack_param_id_list;
 
+  auto entry_block = builder.curr_function->head_basic_block->next;
+  builder.set_curr_basic_block(entry_block);
+
   for (auto ir_operand_id : ir_function->parameter_id_list) {
     auto ir_operand = ir_context.get_operand(ir_operand_id);
     auto ir_operand_type = ir_operand->type;
@@ -173,7 +176,14 @@ void codegen_function(
           builder.fetch_register(backend::Register{(backend::FloatRegister)(
             (int)backend::FloatRegister::Fa0 + curr_float_reg
           )});
-        codegen_context.operand_map[ir_operand_id] = asm_reg;
+        auto vreg =
+          builder.fetch_virtual_register(backend::VirtualRegisterKind::Float);
+        auto fsgnjs_instruction = builder.fetch_float_binary_instruction(
+          backend::instruction::FloatBinary::FSGNJ,
+          backend::instruction::FloatBinary::S, vreg, asm_reg, asm_reg
+        );
+        builder.append_instruction(fsgnjs_instruction);
+        codegen_context.operand_map[ir_operand_id] = vreg;
         curr_float_reg++;
       } else {
         ir_stack_param_id_list.push_back(ir_operand_id);
@@ -184,7 +194,14 @@ void codegen_function(
           builder.fetch_register(backend::Register{(backend::GeneralRegister)(
             (int)backend::GeneralRegister::A0 + curr_general_reg
           )});
-        codegen_context.operand_map[ir_operand_id] = asm_reg;
+        auto vreg =
+          builder.fetch_virtual_register(backend::VirtualRegisterKind::General);
+        auto addi_instruction = builder.fetch_binary_imm_instruction(
+          backend::instruction::BinaryImm::ADDI, vreg, asm_reg,
+          builder.fetch_immediate(0)
+        );
+        builder.append_instruction(addi_instruction);
+        codegen_context.operand_map[ir_operand_id] = vreg;
         curr_general_reg++;
       } else {
         ir_stack_param_id_list.push_back(ir_operand_id);
@@ -1195,10 +1212,27 @@ void codegen_instruction(
           asm_incoming_list = {};
 
         for (auto [ir_operand_id, ir_block_id] : phi.incoming_list) {
-          auto asm_operand_id = codegen_operand(
-            ir_operand_id, ir_context, builder, codegen_context, false, false,
-            true
-          );
+          auto ir_operand = ir_context.get_operand(ir_operand_id);
+
+          AsmOperandID asm_operand_id;
+
+          if (ir_operand->is_parameter()) {
+            auto asm_param_id = codegen_context.operand_map.at(ir_operand_id);
+            auto asm_param = builder.context.get_operand(asm_param_id);
+            if (asm_param->is_local_memory()) {
+              asm_operand_id = asm_param_id;
+            } else {
+              asm_operand_id = codegen_operand(
+                ir_operand_id, ir_context, builder, codegen_context, false,
+                false, true
+              );
+            }
+          } else {
+            asm_operand_id = codegen_operand(
+              ir_operand_id, ir_context, builder, codegen_context, false, false,
+              true
+            );
+          }
 
           auto asm_block_id = codegen_context.basic_block_map.at(ir_block_id);
 
@@ -1732,7 +1766,7 @@ AsmOperandID codegen_operand(
         auto asm_param_id = codegen_context.operand_map.at(ir_operand_id);
         auto asm_param = builder.context.get_operand(asm_param_id);
 
-        if (asm_param->is_reg()) {
+        if (asm_param->is_reg() || asm_param->is_vreg()) {
           asm_operand_id = asm_param_id;
         } else if (asm_param->is_local_memory()) {
           int offset = std::get<backend::LocalMemory>(asm_param->kind).offset;
