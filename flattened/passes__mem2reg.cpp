@@ -25,16 +25,14 @@ void mem2reg(Builder& builder) {
 
       auto alloca = std::get<instruction::Alloca>(curr_instr->kind);
 
-      if (alloca.alloca_for_param) {
-        // Skip parameter passing
-        curr_instr = next_instr;
-        continue;
-      }
-
       auto allocated_type = alloca.allocated_type;
 
+      bool convert = std::holds_alternative<type::Integer>(*allocated_type) ||
+                     std::holds_alternative<type::Float>(*allocated_type) ||
+                     std::holds_alternative<type::Pointer>(*allocated_type);
+
       // Only convert integer and float
-      if (std::holds_alternative<type::Integer>(*allocated_type) || std::holds_alternative<type::Float>(*allocated_type)) {
+      if (convert) {
         // Add the memory operand to variable set
         mem2reg_ctx.variable_set.insert(alloca.dst_id);
         // Initialize the maps

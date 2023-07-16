@@ -32,6 +32,8 @@ using AsmFunctionPtr = backend::FunctionPtr;
 struct CodegenContext {
   std::map<IrOperandID, AsmOperandID> operand_map;
   std::map<IrBasicBlockID, AsmBasicBlockID> basic_block_map;
+  // This is used for parameter passed by stack in phi instructions.
+  std::map<AsmOperandID, AsmOperandID> phi_placeholder_map;
 
   CodegenContext() = default;
 
@@ -88,13 +90,15 @@ void codegen_instruction(
 /// try_keep_imm: if the immediate is an i-type immediate, keep it as immediate,
 ///   otherwise load it into a register.
 /// use_fmv: fmv floating-point bits from general register to a float register.
+/// force_keep_imm: used in phi instruction.
 AsmOperandID codegen_operand(
   IrOperandID ir_operand,
   IrContext& ir_context,
   AsmBuilder& builder,
   CodegenContext& codegen_context,
   bool try_keep_imm = false,
-  bool use_fmv = false
+  bool use_fmv = false,
+  bool force_keep_imm = false
 );
 
 bool check_utype_immediate(uint32_t value);

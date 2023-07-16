@@ -33,6 +33,12 @@ enum class BinaryOp {
   LShr,
   /// Arithmetic shift right.
   AShr,
+  /// Bitwise and.
+  And,
+  /// Bitwise or.
+  Or,
+  /// Bitwise xor.
+  Xor,
 };
 
 /// Binary instructions.

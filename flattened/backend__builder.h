@@ -156,6 +156,11 @@ struct Builder {
 
   InstructionPtr fetch_j_instruction(BasicBlockID block_id);
 
+  InstructionPtr fetch_phi_instruction(
+    OperandID rd_id,
+    std::vector<std::tuple<OperandID, BasicBlockID>> incoming_list
+  );
+
   InstructionPtr fetch_call_instruction(std::string function_name);
 
   InstructionPtr fetch_branch_instruction(

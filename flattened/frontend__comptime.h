@@ -22,6 +22,8 @@ struct ComptimeValue {
   /// Convert to string.
   std::string to_string() const;
 
+  std::string to_source_code(int depth = 0) const;
+
   bool is_zeroinitializer() const;
 };
 

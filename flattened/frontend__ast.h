@@ -132,11 +132,6 @@ struct Constant {
 struct Expr {
   /// Expression kind.
   ExprKind kind;
-  /// Symbol entry
-  /// If the expression is a identifier, the symbol entry is corresponding to
-  /// the name. Otherwise the symbol entry is temporary.
-  /// If the expression is a literal value or a initializer list, the symbol
-  /// entry is nullopt.
 
   /// Constructor
   Expr(ExprKind kind);
@@ -151,6 +146,8 @@ struct Expr {
   TypePtr get_type() const;
 
   std::string to_string() const;
+
+  std::string to_source_code(int depth=0) const;
 
   bool is_initializer_list() const;
 
