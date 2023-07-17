@@ -70,7 +70,7 @@ std::string Context::to_string() {
   result += "\t.text\n";
   result += 
   "\t.globl  __builtin_fill_zero\n"
-  "\t.align  2\n"
+  "\t.align  1\n"
   "\t.type   __builtin_fill_zero, @function\n"
   "__builtin_fill_zero:\n"
   "\taddiw   a5,a1,-1\n"
