@@ -709,6 +709,12 @@ Expr::Expr(ExprKind kind) {
       !std::holds_alternative<expr::Identifier>(this->kind)) {
     this->kind = ExprKind(expr::Constant{get_comptime_value().value()});
   }
+  if (std::holds_alternative<expr::Identifier>(this->kind) &&
+      std::get<expr::Identifier>(this->kind).symbol->is_const &&
+      (std::get<expr::Identifier>(this->kind).symbol->type->is_int()
+      || std::get<expr::Identifier>(this->kind).symbol->type->is_float())) {
+    this->kind = ExprKind(expr::Constant{get_comptime_value().value()});
+  }
 }
 
 Stmt::Stmt(StmtKind kind) : kind(kind) {}

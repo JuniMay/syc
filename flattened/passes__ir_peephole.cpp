@@ -345,26 +345,33 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
       }
     }
     // TODO: remove getelementptr type ptr, 0, 0
-    // else if (std::holds_alternative<instruction::GetElementPtr>) {
-    //   auto curr_kind =
-    //   std::get<instruction::GetElementPtr>(curr_instruction->kind); auto
-    //   curr_dst = curr_kind.dst_id; auto curr_ptr = curr_kind.ptr_id; for
-    //   (auto &curr_operand : curr_kind.index_id_list) {
-    //     if (curr_operand.is_constant()) {
-    //       auto constant = std::get<operand::ConstantPtr>(curr_operand->kind);
-    //       auto constant_value = std::get<int>(constant->kind);
-    //       if (constant_value == 0) {
-    //         curr_instruction->insert_next(builder.fetch_binary_instruction(
-    //             instruction::BinaryOp::Add,
-    //             curr_dst,
-    //             curr_ptr,
-    //             curr_operand->id
-    //         ));
-    //         curr_instruction->remove(builder.context);
-    //       }
-    //     }
-    //   }
-    // }
+    else if (std::holds_alternative<instruction::GetElementPtr>(curr_instruction->kind)) {
+      auto curr_kind =
+      std::get<instruction::GetElementPtr>(curr_instruction->kind); 
+      auto curr_dst = builder.context.get_operand(curr_kind.dst_id); 
+      auto curr_ptr = builder.context.get_operand(curr_kind.ptr_id);
+      bool replacable = true;
+      for (auto index_operand_id : curr_kind.index_id_list) {
+        auto index_operand = builder.context.get_operand(index_operand_id);
+        if (!index_operand->is_constant()) {
+          replacable = false;
+        } else {
+          auto constant = std::get<operand::ConstantPtr>(index_operand->kind);
+          auto constant_value = std::get<int>(constant->kind);
+          if (constant_value != 0) {
+            replacable = false;
+          }
+        }
+      }
+      if (replacable) {
+        auto bitcast_instruction = builder.fetch_cast_instruction(
+              instruction::CastOp::BitCast, curr_dst->id, curr_ptr->id
+            );
+          curr_instruction->insert_next(bitcast_instruction);
+          next_instruction = curr_instruction->next;
+          curr_instruction->remove(builder.context);
+      }
+    }
 
     curr_instruction = next_instruction;
   }

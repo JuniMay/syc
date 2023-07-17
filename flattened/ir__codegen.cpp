@@ -985,7 +985,7 @@ void codegen_instruction(
               );
               builder.append_instruction(xor_instruction);
             }
-            
+
             break;
           }
           default: {
@@ -1210,11 +1210,19 @@ void codegen_instruction(
             break;
           }
           case ir::instruction::CastOp::BitCast: {
-            auto addi_instruction = builder.fetch_binary_imm_instruction(
-              backend::instruction::BinaryImm::Op::ADDI, asm_dst, asm_src,
-              builder.fetch_immediate(0)
-            );
-            builder.append_instruction(addi_instruction);
+            auto asm_src_operand = builder.context.get_operand(asm_src);
+            if (asm_src_operand->is_global()) {
+              auto la_instuction = builder.fetch_pseudo_load_instruction(
+                backend::instruction::PseudoLoad::LA, asm_dst, asm_src
+              );
+              builder.append_instruction(la_instuction);
+            } else {
+              auto addi_instruction = builder.fetch_binary_imm_instruction(
+                backend::instruction::BinaryImm::Op::ADDI, asm_dst, asm_src,
+                builder.fetch_immediate(0)
+              );
+              builder.append_instruction(addi_instruction);
+            }
             break;
           }
           case ir::instruction::CastOp::FPToSI: {

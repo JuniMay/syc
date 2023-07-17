@@ -344,13 +344,16 @@ bool Instruction::is_br() const {
 
 void Instruction::add_phi_operand(
   OperandID incoming_operand_id,
-  BasicBlockID incoming_block_id
+  BasicBlockID incoming_block_id,
+  Context& context
 ) {
   if (!is_phi()) {
     return;
   }
   std::get<instruction::Phi>(this->kind)
     .incoming_list.emplace_back(incoming_operand_id, incoming_block_id);
+  context.operand_table[incoming_operand_id]->add_use(this->id);
+  context.basic_block_table[incoming_block_id]->add_use(this->id);
 }
 
 Instruction::Instruction(
@@ -430,14 +433,14 @@ std::string Instruction::to_string(Context& context) {
                      lhs_str + ", " + rhs_str;
             break;
           case BinaryOp::Or:
-            result = dst_str + " = or " + type::to_string(type) + " " + lhs_str +
-                     ", " + rhs_str;
+            result = dst_str + " = or " + type::to_string(type) + " " +
+                     lhs_str + ", " + rhs_str;
             break;
           case BinaryOp::Xor:
             result = dst_str + " = xor " + type::to_string(type) + " " +
                      lhs_str + ", " + rhs_str;
             break;
-            
+
           default:
             // unreachable
             break;
