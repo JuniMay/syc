@@ -345,22 +345,25 @@ bool Instruction::is_br() const {
 std::optional<OperandID> Instruction::get_dest_operand() const {
   return std::visit(
     overloaded{
-      [](instruction::Binary& inst) -> std::optional<OperandID> {
+      [](const instruction::Binary& inst) -> std::optional<OperandID> {
         return std::optional<OperandID>(inst.dst_id);
       },
-      [](instruction::Alloca& inst) -> std::optional<OperandID> {
+      [](const instruction::Alloca& inst) -> std::optional<OperandID> {
         return std::optional<OperandID>(inst.dst_id);
       },
-      [](instruction::Load& inst) -> std::optional<OperandID> {
+      [](const instruction::Load& inst) -> std::optional<OperandID> {
         return std::optional<OperandID>(inst.dst_id);
       },
-      [](instruction::GetElementPtr& inst) -> std::optional<OperandID> {
+      [](const instruction::GetElementPtr& inst) -> std::optional<OperandID> {
         return std::optional<OperandID>(inst.dst_id);
       },
-      [](instruction::Phi& inst) -> std::optional<OperandID> {
+      [](const instruction::Phi& inst) -> std::optional<OperandID> {
         return std::optional<OperandID>(inst.dst_id);
       },
-      [](auto) -> std::optional<OperandID> {
+      [](const instruction::Cast& inst) -> std::optional<OperandID> {
+        return std::optional<OperandID>(inst.dst_id);
+      },
+      [](const auto&) -> std::optional<OperandID> {
         return std::nullopt;
       },
     },

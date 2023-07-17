@@ -9,6 +9,7 @@
 #include "ir__instruction.h"
 #include "passes__asm_dce.h"
 #include "passes__asm_peephole.h"
+#include "passes__asm_peephole_second.h"
 #include "passes__ir_peephole.h"
 #include "passes__linear_scan.h"
 #include "passes__mem2reg.h"
@@ -72,6 +73,7 @@ int main(int argc, char* argv[]) {
     backend::dce(asm_builder);
     // Still problematic
     backend::phi_elim(asm_builder);
+    backend::peephole_second(asm_builder);
   }
 
   codegen_rest(ir_builder.context, asm_builder, codegen_context);

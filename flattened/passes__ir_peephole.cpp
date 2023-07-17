@@ -371,6 +371,26 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           next_instruction = curr_instruction->next;
           curr_instruction->remove(builder.context);
       }
+    } else if (std::holds_alternative<instruction::Cast>(curr_instruction->kind)) {
+      auto curr_kind =
+      std::get<instruction::Cast>(curr_instruction->kind); 
+      auto curr_dst = builder.context.get_operand(curr_kind.dst_id); 
+      auto curr_src = builder.context.get_operand(curr_kind.src_id);
+      auto curr_op = curr_kind.op;
+      if (curr_op == instruction::CastOp::BitCast 
+        && type::to_string(curr_dst->get_type()) == type::to_string(curr_src->get_type())) {
+          // bitcast dst, src are same type
+          // -> make all dst to src
+          auto use_id_list_copy = curr_dst->use_id_list;
+          for (auto use_instruction_id : use_id_list_copy) {
+          auto instruction =
+            builder.context.get_instruction(use_instruction_id);
+          instruction->replace_operand(
+            curr_dst->id, curr_src->id, builder.context
+          );
+          }
+          curr_instruction->remove(builder.context);
+      }
     }
 
     curr_instruction = next_instruction;
