@@ -109,9 +109,17 @@ void BasicBlock::remove_use(InstructionID use_id) {
 }
 
 void BasicBlock::add_pred(BasicBlockID pred_id) {
+  if (std::find(this->pred_list.begin(), this->pred_list.end(), pred_id) !=
+      this->pred_list.end()) {
+    return;
+  }
   this->pred_list.push_back(pred_id);
 }
 void BasicBlock::add_succ(BasicBlockID succ_id) {
+  if (std::find(this->succ_list.begin(), this->succ_list.end(), succ_id) !=
+      this->succ_list.end()) {
+    return;
+  }
   this->succ_list.push_back(succ_id);
 }
 void BasicBlock::remove_pred(BasicBlockID pred_id) {
