@@ -15,6 +15,7 @@
 #include "passes__phi_elim.h"
 #include "passes__unreach_elim.h"
 #include "passes__straighten.h"
+#include "passes__unused_elim.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -48,6 +49,7 @@ int main(int argc, char* argv[]) {
     ir::peephole(ir_builder);
     // Still problematic
     // ir::unreach_elim(ir_builder);
+    ir::unused_elim(ir_builder);
   }
 
   if (options.ir_file.has_value()) {
