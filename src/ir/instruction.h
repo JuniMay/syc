@@ -281,6 +281,8 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
 
   bool is_br() const;
 
+  std::optional<OperandID> get_dest_operand() const;
+
   void add_phi_operand(
     OperandID incoming_operand_id,
     BasicBlockID incoming_block_id,

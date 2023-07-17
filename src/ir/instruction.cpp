@@ -342,6 +342,32 @@ bool Instruction::is_br() const {
   return std::holds_alternative<instruction::Br>(this->kind);
 }
 
+std::optional<OperandID> Instruction::get_dest_operand() const {
+  return std::visit(
+    overloaded{
+      [](instruction::Binary& inst) -> std::optional<OperandID> {
+        return std::optional<OperandID>(inst.dst_id);
+      },
+      [](instruction::Alloca& inst) -> std::optional<OperandID> {
+        return std::optional<OperandID>(inst.dst_id);
+      },
+      [](instruction::Load& inst) -> std::optional<OperandID> {
+        return std::optional<OperandID>(inst.dst_id);
+      },
+      [](instruction::GetElementPtr& inst) -> std::optional<OperandID> {
+        return std::optional<OperandID>(inst.dst_id);
+      },
+      [](instruction::Phi& inst) -> std::optional<OperandID> {
+        return std::optional<OperandID>(inst.dst_id);
+      },
+      [](auto) -> std::optional<OperandID> {
+        return std::nullopt;
+      },
+    },
+    kind
+  );
+}
+
 void Instruction::add_phi_operand(
   OperandID incoming_operand_id,
   BasicBlockID incoming_block_id,
