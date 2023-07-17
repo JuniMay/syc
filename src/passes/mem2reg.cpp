@@ -188,7 +188,7 @@ void rename(
         curr_instr->add_phi_operand(
           mem2reg_ctx.rename_stack_map[mem2reg_ctx.phi_map[curr_instr->id]].top(
           ),
-          basic_block->id
+          basic_block->id, builder.context
         );
       } else {
         auto phi = std::get<instruction::Phi>(curr_instr->kind);
@@ -196,11 +196,13 @@ void rename(
 
         if (std::holds_alternative<type::Integer>(*phi_type)) {
           curr_instr->add_phi_operand(
-            builder.fetch_constant_operand(phi_type, (int)0), basic_block->id
+            builder.fetch_constant_operand(phi_type, (int)0), basic_block->id,
+            builder.context
           );
         } else if (std::holds_alternative<type::Float>(*phi_type)) {
           curr_instr->add_phi_operand(
-            builder.fetch_constant_operand(phi_type, (float)0), basic_block->id
+            builder.fetch_constant_operand(phi_type, (float)0), basic_block->id,
+            builder.context
           );
         }
       }

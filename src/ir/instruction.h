@@ -283,7 +283,8 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
 
   void add_phi_operand(
     OperandID incoming_operand_id,
-    BasicBlockID incoming_block_id
+    BasicBlockID incoming_block_id,
+    Context& context
   );
 };
 
