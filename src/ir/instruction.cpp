@@ -342,6 +342,10 @@ bool Instruction::is_br() const {
   return std::holds_alternative<instruction::Br>(this->kind);
 }
 
+bool Instruction::is_binary() const {
+  return std::holds_alternative<instruction::Binary>(this->kind);
+}
+
 void Instruction::add_phi_operand(
   OperandID incoming_operand_id,
   BasicBlockID incoming_block_id,

@@ -11,10 +11,11 @@
 #include "passes/asm_peephole.h"
 #include "passes/ir_peephole.h"
 #include "passes/linear_scan.h"
+#include "passes/load_elim.h"
 #include "passes/mem2reg.h"
 #include "passes/phi_elim.h"
-#include "passes/unreach_elim.h"
 #include "passes/straighten.h"
+#include "passes/unreach_elim.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -45,6 +46,7 @@ int main(int argc, char* argv[]) {
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
     ir::straighten(ir_builder);
+    ir::load_elim(ir_builder);
     ir::peephole(ir_builder);
     // Still problematic
     // ir::unreach_elim(ir_builder);
