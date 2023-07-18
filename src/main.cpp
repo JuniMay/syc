@@ -9,6 +9,7 @@
 #include "ir/instruction.h"
 #include "passes/asm_dce.h"
 #include "passes/asm_peephole.h"
+#include "passes/asm_peephole_second.h"
 #include "passes/ir_peephole.h"
 #include "passes/linear_scan.h"
 #include "passes/load_elim.h"
@@ -16,6 +17,7 @@
 #include "passes/phi_elim.h"
 #include "passes/straighten.h"
 #include "passes/unreach_elim.h"
+#include "passes/unused_elim.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -50,6 +52,7 @@ int main(int argc, char* argv[]) {
     ir::peephole(ir_builder);
     // Still problematic
     // ir::unreach_elim(ir_builder);
+    ir::unused_elim(ir_builder);
   }
 
   if (options.ir_file.has_value()) {
@@ -72,6 +75,7 @@ int main(int argc, char* argv[]) {
     backend::dce(asm_builder);
     // Still problematic
     backend::phi_elim(asm_builder);
+    backend::peephole_second(asm_builder);
   }
 
   codegen_rest(ir_builder.context, asm_builder, codegen_context);
