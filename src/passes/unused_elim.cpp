@@ -27,12 +27,13 @@ void unused_elim_basic_block(BasicBlockPtr basic_block, Builder& builder) {
 
   while (curr_instruction != basic_block->tail_instruction) {
     auto next_instruction = curr_instruction->next;
-    auto dst_operand = curr_instruction->get_dest_operand();
-    if(dst_operand.has_value()) {
-        auto dst_operand_id = dst_operand.value();
-        if (builder.context.get_operand(dst_operand_id)->use_id_list.size() == 0) {
-            curr_instruction->remove(builder.context);
-        }
+    auto maybe_dst_id = curr_instruction->maybe_def_id;
+    if (maybe_dst_id.has_value()) {
+      auto dst_operand_id = maybe_dst_id.value();
+      if (builder.context.get_operand(dst_operand_id)->use_id_list.size() == 0 
+          && !curr_instruction->is_call()) {
+        curr_instruction->remove(builder.context);
+      }
     }
     curr_instruction = next_instruction;
   }

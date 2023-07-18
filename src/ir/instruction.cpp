@@ -346,33 +346,8 @@ bool Instruction::is_binary() const {
   return std::holds_alternative<instruction::Binary>(this->kind);
 }
 
-std::optional<OperandID> Instruction::get_dest_operand() const {
-  return std::visit(
-    overloaded{
-      [](const instruction::Binary& inst) -> std::optional<OperandID> {
-        return std::optional<OperandID>(inst.dst_id);
-      },
-      [](const instruction::Alloca& inst) -> std::optional<OperandID> {
-        return std::optional<OperandID>(inst.dst_id);
-      },
-      [](const instruction::Load& inst) -> std::optional<OperandID> {
-        return std::optional<OperandID>(inst.dst_id);
-      },
-      [](const instruction::GetElementPtr& inst) -> std::optional<OperandID> {
-        return std::optional<OperandID>(inst.dst_id);
-      },
-      [](const instruction::Phi& inst) -> std::optional<OperandID> {
-        return std::optional<OperandID>(inst.dst_id);
-      },
-      [](const instruction::Cast& inst) -> std::optional<OperandID> {
-        return std::optional<OperandID>(inst.dst_id);
-      },
-      [](const auto&) -> std::optional<OperandID> {
-        return std::nullopt;
-      },
-    },
-    kind
-  );
+bool Instruction::is_call() const {
+  return std::holds_alternative<instruction::Call>(this->kind);
 }
 
 void Instruction::add_phi_operand(
