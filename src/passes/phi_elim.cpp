@@ -61,7 +61,7 @@ void phi_elim_function(FunctionPtr function, Builder& builder) {
                 instruction::FloatMove::Fmt::S, instruction::FloatMove::Fmt::X,
                 phi.rd_id, t5_id
               );
-              exit_instr->insert_next(fmv_instr);
+              li_instr->insert_next(fmv_instr);
             } else {
               auto li_instr =
                 builder.fetch_li_instruction(phi.rd_id, operand_id);
@@ -89,12 +89,12 @@ void phi_elim_function(FunctionPtr function, Builder& builder) {
                 backend::instruction::Binary::Op::ADD, asm_tmp_id, asm_fp_id,
                 asm_tmp_id
               );
-              exit_instr->insert_next(add_instruction);
+              li_instruction->insert_next(add_instruction);
               auto ld_instruction = builder.fetch_load_instruction(
                 backend::instruction::Load::Op::LD, phi_rd->id, asm_tmp_id,
                 builder.fetch_immediate(0)
               );
-              exit_instr->insert_next(ld_instruction);
+              add_instruction->insert_next(ld_instruction);
             }
           } else {
             if (phi_rd->is_float()) {
@@ -146,7 +146,7 @@ void phi_elim_function(FunctionPtr function, Builder& builder) {
                   exit_instr = exit_instr->prev.lock();
                 }
                 exit_instr->insert_next(li_instr);
-                exit_instr->insert_next(fmv_instr);
+                li_instr->insert_next(fmv_instr);
               }
 
             } else if (operand->is_local_memory()) {
@@ -194,8 +194,8 @@ void phi_elim_function(FunctionPtr function, Builder& builder) {
                     exit_instr = exit_instr->prev.lock();
                   }
                   exit_instr->insert_next(li_instruction);
-                  exit_instr->insert_next(add_instruction);
-                  exit_instr->insert_next(ld_instruction);
+                  li_instruction->insert_next(add_instruction);
+                  add_instruction->insert_next(ld_instruction);
                 }
               }
             } else {
