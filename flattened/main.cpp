@@ -10,6 +10,7 @@
 #include "passes__asm_dce.h"
 #include "passes__asm_peephole.h"
 #include "passes__asm_peephole_second.h"
+#include "passes__cse.h"
 #include "passes__ir_peephole.h"
 #include "passes__linear_scan.h"
 #include "passes__load_elim.h"
@@ -49,6 +50,7 @@ int main(int argc, char* argv[]) {
     ir::mem2reg(ir_builder);
     ir::straighten(ir_builder);
     ir::load_elim(ir_builder);
+    ir::local_cse(ir_builder);
     ir::peephole(ir_builder);
     // Still problematic
     // ir::unreach_elim(ir_builder);
