@@ -52,11 +52,13 @@ int main(int argc, char* argv[]) {
     ir::auto_inline(ir_builder);
     ir::straighten(ir_builder);
     ir::load_elim(ir_builder);
-    ir::local_cse(ir_builder);
-    ir::peephole(ir_builder);
+    for (int i = 0; i < 3; i++) {
+      ir::local_cse(ir_builder);
+      ir::peephole(ir_builder);
+      ir::unused_elim(ir_builder);
+    }
     // TODO: implement phi instruction in unreach_elim
     // ir::unreach_elim(ir_builder);
-    ir::unused_elim(ir_builder);
   }
 
   if (options.ir_file.has_value()) {

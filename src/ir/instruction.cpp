@@ -359,6 +359,10 @@ bool Instruction::is_ret() const {
   return std::holds_alternative<instruction::Ret>(this->kind);
 }
 
+bool Instruction::is_getelementptr() const {
+  return std::holds_alternative<instruction::GetElementPtr>(this->kind);
+}
+
 void Instruction::add_phi_operand(
   OperandID incoming_operand_id,
   BasicBlockID incoming_block_id,
