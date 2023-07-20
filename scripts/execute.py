@@ -4,6 +4,9 @@ import os
 import shutil
 import subprocess
 from typing import Any, Dict
+import re
+import datetime
+import csv
 
 
 def check_file(file1, file2, diff_file):
@@ -16,8 +19,9 @@ def check_file(file1, file2, diff_file):
         )
         diff_list = list(diff)
 
-        with open(diff_file, 'w') as f:
-            f.writelines(diff_list)
+        if diff_file is not None:
+            with open(diff_file, 'w') as f:
+                f.writelines(diff_list)
 
         return len(diff_list) == 0
 
@@ -51,6 +55,139 @@ def execute(command, timeout) -> Dict[str, Any]:
         }
 
 
+def execute_testcase(executable, input_file, output_file, timeout,
+                     std_output_file):
+    command = (f'{executable} <{input_file} >{output_file}'
+               if input_file is not None else f'{executable} >{output_file}')
+    try:
+        result = subprocess.run(command,
+                                shell=True,
+                                timeout=timeout,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                universal_newlines=True)
+
+        # Get time from stderr using regex
+        # Add result into us (microseconds)
+        # Format: TOTAL: xH-xM-xS-xus
+        # e.g. TOTAL: 0H-0M-3S-940755us
+        time = re.search(r'TOTAL: (\d+)H-(\d+)M-(\d+)S-(\d+)us', result.stderr)
+        if time:
+            time = (int(time.group(1)) * 3600 * 1000000 +
+                    int(time.group(2)) * 60 * 1000000 +
+                    int(time.group(3)) * 1000000 + int(time.group(4)))
+        else:
+            time = -1
+
+        need_newline = False
+        with open(output_file, 'r') as f:
+            content = f.read()
+            if len(content) > 0:
+                if not content.endswith('\n'):
+                    need_newline = True
+
+        # add return code to the last line of out file
+        with open(output_file, 'a+') as f:
+            if need_newline:
+                f.write('\n')
+            f.write(str(result.returncode))
+            f.write('\n')
+
+        is_equal = check_file(output_file, std_output_file, None)
+
+        if is_equal:
+            return ('AC', time)
+        else:
+            return ('WA', -1)
+
+    except subprocess.TimeoutExpired:
+        return ('TLE', -1)
+
+    except Exception as e:
+        print(e)
+        return ('RE', -1)
+
+
+def test_native(executable_path: str,
+                testcase_dir: str,
+                output_dir: str,
+                runtime_lib_dir: str,
+                exec_timeout: int,
+                opt_level: int,
+                csv_path: str,
+                is_performance: bool = False):
+
+    testcase_list = []
+
+    def dfs(curr_dir: str):
+        dir_list = sorted(os.listdir(curr_dir))
+
+        for file_or_dir in dir_list:
+            full_path = os.path.join(curr_dir, file_or_dir)
+
+            if os.path.isfile(full_path) and full_path.endswith('.sy'):
+                testcase_list.append(full_path.rsplit('.', 1)[0])
+
+            elif os.path.isdir(full_path):
+                dfs(full_path)
+
+    dfs(testcase_dir)
+
+    result = []
+
+    # create csv file if not exist
+    if not os.path.isfile(csv_path):
+        with open(csv_path, 'w+') as f:
+            csv_writer = csv.DictWriter(f, fieldnames=['time'])
+            csv_writer.writeheader()
+
+    with open(csv_path, 'r') as f:
+        csv_reader = csv.DictReader(f)
+        for row in csv_reader:
+            result.append(row)
+
+    result.append({})
+
+    test_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    result[-1]['time'] = test_time
+
+    for testcase in testcase_list:
+
+        basename: str = os.path.basename(testcase)
+
+        in_path = f'{testcase}.in'
+
+        std_out_path = f'{testcase}.out'
+        if not os.path.isfile(in_path):
+            in_path = None
+
+        asm_path = os.path.join(output_dir, f'{basename}.s')
+        exec_path = os.path.join(output_dir, f'{basename}')
+
+        command = f'{executable_path} {testcase}.sy -S -o {asm_path} -O{opt_level}'
+
+        execute(command, exec_timeout)
+
+        command = f'gcc -march=rv64gc {asm_path} -L{runtime_lib_dir} -lsylib -o {exec_path}'
+
+        execute(command, exec_timeout)
+
+        status, time = execute_testcase(exec_path, in_path,
+                                        f'{output_dir}/{basename}.out',
+                                        exec_timeout, std_out_path)
+
+        print(f'{testcase}: {status} {time}')
+
+        result[-1][basename] = f'{time}({status})'
+
+    if is_performance:
+        with open(csv_path, 'w+') as f:
+            csv_writer = csv.DictWriter(f, fieldnames=result[0].keys())
+            csv_writer.writeheader()
+            csv_writer.writerows(result)
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--timeout', type=int, default=600)
@@ -60,12 +197,17 @@ def parse_args():
     parser.add_argument('--flatten-dir', default='./flattened')
     parser.add_argument('--testcase-dir', default='./tests')
     parser.add_argument('--runtime-lib-dir', default='./sysy-runtime-lib')
+    parser.add_argument('--csv-file', default='./result.csv')
 
     parser.add_argument('--executable-path', default='./syc')
 
     parser.add_argument('--no-compile', action='store_true', default=False)
     parser.add_argument('--no-flatten', action='store_true', default=False)
     parser.add_argument('--no-test', action='store_true', default=False)
+
+    parser.add_argument('--native', action='store_true', default=False)
+
+    parser.add_argument('--performance', action='store_true', default=False)
 
     parser.add_argument('--llm', action='store_true', default=False)
     parser.add_argument('--test-ir', action='store_true', default=False)
@@ -165,8 +307,7 @@ def log(logfile, command, exec_result):
 def test(executable_path: str, testcase_dir: str, output_dir: str,
          runtime_lib_dir: str, exec_timeout: int, opt_level: int,
          test_ir: bool):
-    
-    
+
     testcase_list = []
 
     def dfs(curr_dir: str):
@@ -182,13 +323,12 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
                 dfs(full_path)
 
     dfs(testcase_dir)
-    
+
     result_md = f"# Test Result\n\n"
     testcase_cnt = len(testcase_list)
     correct_cnt = 0
     result_md_table = f"| Testcase | Status |\n"
     result_md_table += f"| -------- | ------ |\n"
-    
 
     for testcase in testcase_list:
         basename: str = os.path.basename(testcase)
@@ -235,7 +375,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
             else:
                 result_md_table += f"| `{testcase}` | ⚠️ syc RE |\n"
                 print(f'[  ERROR  ] (syc RE) {testcase}')
-                
+
             continue
 
         command = (f'clang -xc {testcase}.sy -include '
@@ -323,11 +463,11 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
             print(f'[  ERROR  ] (WA) {testcase}, see: {log_path}')
 
         log(log_file, command, exec_result)
-        
+
     result_md += f'Passed {correct_cnt}/{testcase_cnt} testcases.\n\n'
-    
+
     result_md += result_md_table
-    
+
     with open(f'{output_dir}/result.md', 'w') as f:
         f.write(result_md)
 
@@ -393,8 +533,14 @@ def main():
         if not os.path.exists(args.output_dir):
             os.makedirs(args.output_dir)
 
-        test(args.executable_path, args.testcase_dir, args.output_dir,
-             args.runtime_lib_dir, args.timeout, args.opt_level, args.test_ir)
+        if args.native:
+            test_native(args.executable_path, args.testcase_dir,
+                        args.output_dir, args.runtime_lib_dir, args.timeout,
+                        args.opt_level, args.csv_file, args.performance)
+        else:
+            test(args.executable_path, args.testcase_dir, args.output_dir,
+                 args.runtime_lib_dir, args.timeout, args.opt_level,
+                 args.test_ir)
 
 
 if __name__ == '__main__':

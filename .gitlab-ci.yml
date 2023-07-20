@@ -1,0 +1,29 @@
+stages:
+  - compile
+  - performance
+
+compile:
+  stage: compile
+  tags:
+    - visionfive2
+  script:
+    - ./scripts/yacc_gen.sh
+    - python3 ./scripts/execute.py --no-test
+  artifacts:
+    paths:
+      - syc
+
+performance:
+  stage: performance
+  tags:
+    - rv64gc
+  script:
+    - chmod +x ./scripts/benchmark.sh
+    - ./scripts/benchmark.sh
+
+  dependencies:
+    - compile
+
+  artifacts:
+    paths:
+      - /home/share/result.csv
