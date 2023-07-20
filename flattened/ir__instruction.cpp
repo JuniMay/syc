@@ -49,7 +49,12 @@ void Instruction::set_def(OperandID def_id) {
 }
 
 void Instruction::add_use(OperandID use_id) {
-  this->use_id_list.push_back(use_id);
+  if (std::find(this->use_id_list.begin(), this->use_id_list.end(), use_id) ==
+      this->use_id_list.end()) {
+    this->use_id_list.push_back(use_id);
+  } else {
+    return;
+  }
 }
 
 void Instruction::replace_operand(
@@ -342,33 +347,20 @@ bool Instruction::is_br() const {
   return std::holds_alternative<instruction::Br>(this->kind);
 }
 
-std::optional<OperandID> Instruction::get_dest_operand() const {
-  return std::visit(
-    overloaded{
-      [](const instruction::Binary& inst) -> std::optional<OperandID> {
-        return std::optional<OperandID>(inst.dst_id);
-      },
-      [](const instruction::Alloca& inst) -> std::optional<OperandID> {
-        return std::optional<OperandID>(inst.dst_id);
-      },
-      [](const instruction::Load& inst) -> std::optional<OperandID> {
-        return std::optional<OperandID>(inst.dst_id);
-      },
-      [](const instruction::GetElementPtr& inst) -> std::optional<OperandID> {
-        return std::optional<OperandID>(inst.dst_id);
-      },
-      [](const instruction::Phi& inst) -> std::optional<OperandID> {
-        return std::optional<OperandID>(inst.dst_id);
-      },
-      [](const instruction::Cast& inst) -> std::optional<OperandID> {
-        return std::optional<OperandID>(inst.dst_id);
-      },
-      [](const auto&) -> std::optional<OperandID> {
-        return std::nullopt;
-      },
-    },
-    kind
-  );
+bool Instruction::is_binary() const {
+  return std::holds_alternative<instruction::Binary>(this->kind);
+}
+
+bool Instruction::is_call() const {
+  return std::holds_alternative<instruction::Call>(this->kind);
+}
+
+bool Instruction::is_ret() const {
+  return std::holds_alternative<instruction::Ret>(this->kind);
+}
+
+bool Instruction::is_getelementptr() const {
+  return std::holds_alternative<instruction::GetElementPtr>(this->kind);
 }
 
 void Instruction::add_phi_operand(
@@ -383,6 +375,7 @@ void Instruction::add_phi_operand(
     .incoming_list.emplace_back(incoming_operand_id, incoming_block_id);
   context.operand_table[incoming_operand_id]->add_use(this->id);
   context.basic_block_table[incoming_block_id]->add_use(this->id);
+  this->add_use(incoming_operand_id);
 }
 
 Instruction::Instruction(

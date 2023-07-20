@@ -281,7 +281,13 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
 
   bool is_br() const;
 
-  std::optional<OperandID> get_dest_operand() const;
+  bool is_binary() const;
+
+  bool is_call() const;
+
+  bool is_ret() const;
+
+  bool is_getelementptr() const;
 
   void add_phi_operand(
     OperandID incoming_operand_id,
