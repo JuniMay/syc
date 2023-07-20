@@ -72,9 +72,10 @@ int main(int argc, char* argv[]) {
 
   codegen(ir_builder.context, asm_builder, codegen_context);
 
+  backend::peephole(asm_builder);
+  backend::dce(asm_builder);
+  
   if (options.optimization_level > 0) {
-    backend::peephole(asm_builder);
-    backend::dce(asm_builder);
     // Still problematic
     backend::phi_elim(asm_builder);
     backend::peephole_second(asm_builder);
