@@ -121,6 +121,10 @@ bool Operand::is_parameter() const {
   return std::holds_alternative<operand::Parameter>(kind);
 }
 
+bool Operand::is_arbitrary() const {
+  return std::holds_alternative<operand::Arbitrary>(kind);
+}
+
 }  // namespace ir
 
 }  // namespace syc

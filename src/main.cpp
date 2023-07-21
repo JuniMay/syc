@@ -10,6 +10,7 @@
 #include "passes/asm_dce.h"
 #include "passes/asm_peephole.h"
 #include "passes/asm_peephole_second.h"
+#include "passes/auto_inline.h"
 #include "passes/cse.h"
 #include "passes/ir_peephole.h"
 #include "passes/linear_scan.h"
@@ -48,11 +49,12 @@ int main(int argc, char* argv[]) {
 
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
+    ir::auto_inline(ir_builder);
     ir::straighten(ir_builder);
     ir::load_elim(ir_builder);
     ir::local_cse(ir_builder);
     ir::peephole(ir_builder);
-    // Still problematic
+    // TODO: implement phi instruction in unreach_elim
     // ir::unreach_elim(ir_builder);
     ir::unused_elim(ir_builder);
   }
@@ -74,9 +76,9 @@ int main(int argc, char* argv[]) {
 
   backend::peephole(asm_builder);
   backend::dce(asm_builder);
-  
+
   if (options.optimization_level > 0) {
-    // Still problematic
+    // FIXME: `hidden_functional/search`
     backend::phi_elim(asm_builder);
     backend::peephole_second(asm_builder);
   }

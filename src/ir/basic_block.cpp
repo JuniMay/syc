@@ -1,4 +1,5 @@
 #include "ir/basic_block.h"
+#include "ir/builder.h"
 #include "ir/context.h"
 #include "ir/instruction.h"
 
@@ -106,6 +107,50 @@ void BasicBlock::remove_use(InstructionID use_id) {
     std::remove(this->use_id_list.begin(), this->use_id_list.end(), use_id),
     this->use_id_list.end()
   );
+}
+
+void BasicBlock::split(InstructionPtr instruction, Builder& builder) {
+  auto new_basic_block = builder.fetch_basic_block();
+  // Change the succs and preds
+  new_basic_block->succ_list = this->succ_list;
+
+  for (auto succ_id : this->succ_list) {
+    auto succ = builder.context.get_basic_block(succ_id);
+    succ->remove_pred(this->id);
+    succ->add_pred(new_basic_block->id);
+  }
+
+  this->succ_list = {};
+
+  this->insert_next(new_basic_block);
+
+  // Move the instructions
+  builder.set_curr_basic_block(new_basic_block);
+  auto curr_instruction = instruction->next;
+
+  instruction->insert_next(this->tail_instruction);
+
+  while (curr_instruction != this->tail_instruction) {
+    auto next_instruction = curr_instruction->next;
+    builder.append_instruction(curr_instruction);
+    curr_instruction = next_instruction;
+  }
+
+  // Change the uses in phi instructions
+  auto use_id_list_copy = this->use_id_list;
+  for (auto use_id : use_id_list_copy) {
+    auto use = builder.context.get_instruction(use_id);
+    if (use->is_phi()) {
+      auto& phi = std::get<instruction::Phi>(use->kind);
+      for (auto& [operand_id, block_id] : phi.incoming_list) {
+        if (block_id == this->id) {
+          block_id = new_basic_block->id;
+        }
+      }
+      this->remove_use(use_id);
+      new_basic_block->add_use(use_id);
+    }
+  }
 }
 
 void BasicBlock::add_pred(BasicBlockID pred_id) {

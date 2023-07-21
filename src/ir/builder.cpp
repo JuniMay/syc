@@ -214,7 +214,6 @@ InstructionPtr Builder::fetch_phi_instruction(
 
   instruction->set_def(dst_id);
 
-  // NOT SURE if the phi instruction should be added to the use list.
   context.operand_table[dst_id]->set_def(id);
   for (auto [value_id, block_id] : incoming_list) {
     context.operand_table[value_id]->add_use(id);
@@ -394,6 +393,7 @@ void Builder::append_instruction(InstructionPtr instruction) {
   }
 
   curr_basic_block->append_instruction(instruction);
+  instruction->parent_block_id = curr_basic_block->id;
 
   if (std::holds_alternative<instruction::CondBr>(instruction->kind)) {
     const auto& condbr = std::get<instruction::CondBr>(instruction->kind);
@@ -419,11 +419,13 @@ void Builder::append_instruction(InstructionPtr instruction) {
 void Builder::prepend_instruction_to_curr_basic_block(InstructionPtr instruction
 ) {
   curr_basic_block->prepend_instruction(instruction);
+  instruction->parent_block_id = curr_basic_block->id;
 }
 
 /// Prepend an instruction to the current function.
 void Builder::prepend_instruction_to_curr_function(InstructionPtr instruction) {
   curr_function->head_basic_block->next->prepend_instruction(instruction);
+  instruction->parent_block_id = curr_function->head_basic_block->next->id;
 }
 
 BasicBlockPtr Builder::fetch_basic_block() {

@@ -511,8 +511,7 @@ void spill(
   auto def_id_list_copy = operand->def_id_list;
 
   for (auto def_instruction_id : def_id_list_copy) {
-    auto def_instruction =
-      builder.context.get_instruction(def_instruction_id);
+    auto def_instruction = builder.context.get_instruction(def_instruction_id);
     auto sp_id = builder.fetch_register(Register{GeneralRegister::Sp});
 
     if (live_interval.is_float) {
@@ -692,18 +691,17 @@ void spill(
         );
         use_instruction->insert_prev(load_instruction);
       } else {
-        auto t0_id = builder.fetch_register(Register{GeneralRegister::T0});
         auto tmp_id = builder.fetch_register(Register{reg_kind});
         linear_scan_context.used_temporary_register_map[use_instruction_id][0] =
           true;
 
         auto li_instruction =
-          builder.fetch_li_instruction(t0_id, builder.fetch_immediate(offset));
+          builder.fetch_li_instruction(tmp_id, builder.fetch_immediate(offset));
         auto add_instruction = builder.fetch_binary_instruction(
-          instruction::Binary::ADD, t0_id, sp_id, t0_id
+          instruction::Binary::ADD, tmp_id, sp_id, tmp_id
         );
         auto ld_instruction = builder.fetch_load_instruction(
-          instruction::Load::LD, tmp_id, t0_id, builder.fetch_immediate(0)
+          instruction::Load::LD, tmp_id, tmp_id, builder.fetch_immediate(0)
         );
 
         use_instruction->replace_operand(operand_id, tmp_id, builder.context);

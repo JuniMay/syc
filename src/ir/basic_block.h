@@ -2,6 +2,7 @@
 #define SYC_IR_BASIC_BLOCK_H_
 
 #include "common.h"
+#include "ir/builder.h"
 #include "ir/context.h"
 
 namespace syc {
@@ -47,6 +48,11 @@ struct BasicBlock : std::enable_shared_from_this<BasicBlock> {
   void add_use(InstructionID use_id);
 
   void remove_use(InstructionID use_id);
+
+  // Split the block into two blocks.
+  // This will not add branch at the end of the block.
+  // This will not check if the instruction is within the block.
+  void split(InstructionPtr instruction, Builder& builder);
 
   void add_pred(BasicBlockID pred_id);
   void add_succ(BasicBlockID succ_id);
