@@ -1,0 +1,24 @@
+stages:
+  - compile
+  - performance
+
+compile:
+  stage: compile
+  tages:
+    - visionfive2
+  script:
+    - python3 ./scripts/execute.py --no-test
+
+performance:
+  stage: performance
+  tags:
+    - rv64gc
+  script:
+    - ./scripts/benchmark.sh
+
+  dependencies:
+    - compile
+
+  artifacts:
+    paths:
+      - /home/user/result.csv
