@@ -4,7 +4,7 @@ stages:
 
 compile:
   stage: compile
-  tages:
+  tags:
     - visionfive2
   script:
     - python3 ./scripts/execute.py --no-test
