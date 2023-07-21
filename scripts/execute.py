@@ -67,6 +67,8 @@ def parse_args():
     parser.add_argument('--no-flatten', action='store_true', default=False)
     parser.add_argument('--no-test', action='store_true', default=False)
 
+    parser.add_argument('--native', action='store_true', default=False)
+
     parser.add_argument('--llm', action='store_true', default=False)
     parser.add_argument('--test-ir', action='store_true', default=False)
 
@@ -162,11 +164,15 @@ def log(logfile, command, exec_result):
     logfile.write(f'\n')
 
 
-def test(executable_path: str, testcase_dir: str, output_dir: str,
-         runtime_lib_dir: str, exec_timeout: int, opt_level: int,
-         test_ir: bool):
-    
-    
+def test(executable_path: str,
+         testcase_dir: str,
+         output_dir: str,
+         runtime_lib_dir: str,
+         exec_timeout: int,
+         opt_level: int,
+         test_ir: bool,
+         native: bool = False):
+
     testcase_list = []
 
     def dfs(curr_dir: str):
@@ -182,13 +188,12 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
                 dfs(full_path)
 
     dfs(testcase_dir)
-    
+
     result_md = f"# Test Result\n\n"
     testcase_cnt = len(testcase_list)
     correct_cnt = 0
     result_md_table = f"| Testcase | Status |\n"
     result_md_table += f"| -------- | ------ |\n"
-    
 
     for testcase in testcase_list:
         basename: str = os.path.basename(testcase)
@@ -235,7 +240,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
             else:
                 result_md_table += f"| `{testcase}` | ⚠️ syc RE |\n"
                 print(f'[  ERROR  ] (syc RE) {testcase}')
-                
+
             continue
 
         command = (f'clang -xc {testcase}.sy -include '
@@ -283,10 +288,19 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
             print(f'[  ERROR  ] (CE) {testcase}, see: ', log_path)
             continue
 
-        command = (f'qemu-riscv64 -L /usr/riscv64-linux-gnu {exec_path}'
-                   f' >{out_path}') if in_path is None else (
-                       f'qemu-riscv64 -L /usr/riscv64-linux-gnu {exec_path}'
-                       f' <{in_path} >{out_path}')
+        if not native:
+
+            command = (
+                f'qemu-riscv64 -L /usr/riscv64-linux-gnu {exec_path}'
+                f' >{out_path}') if in_path is None else (
+                    f'qemu-riscv64 -L /usr/riscv64-linux-gnu {exec_path}'
+                    f' <{in_path} >{out_path}')
+
+        else:
+            command = (f'{exec_path}'
+                       f' >{out_path}') if in_path is None else (
+                           f'{exec_path}'
+                           f' <{in_path} >{out_path}')
 
         exec_result = execute(command, exec_timeout)
 
@@ -323,11 +337,11 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
             print(f'[  ERROR  ] (WA) {testcase}, see: {log_path}')
 
         log(log_file, command, exec_result)
-        
+
     result_md += f'Passed {correct_cnt}/{testcase_cnt} testcases.\n\n'
-    
+
     result_md += result_md_table
-    
+
     with open(f'{output_dir}/result.md', 'w') as f:
         f.write(result_md)
 
@@ -394,7 +408,8 @@ def main():
             os.makedirs(args.output_dir)
 
         test(args.executable_path, args.testcase_dir, args.output_dir,
-             args.runtime_lib_dir, args.timeout, args.opt_level, args.test_ir)
+             args.runtime_lib_dir, args.timeout, args.opt_level, args.test_ir,
+             args.native)
 
 
 if __name__ == '__main__':
