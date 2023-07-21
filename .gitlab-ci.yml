@@ -20,10 +20,11 @@ performance:
   script:
     - chmod +x ./scripts/benchmark.sh
     - ./scripts/benchmark.sh
+    - cp /home/share/result.csv .
 
   dependencies:
     - compile
 
   artifacts:
     paths:
-      - /home/share/result.csv
+      - result.csv
