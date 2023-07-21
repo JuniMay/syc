@@ -26,4 +26,4 @@ performance:
 
   artifacts:
     paths:
-      - result.csv
+      - /home/share/result.csv
