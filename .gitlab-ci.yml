@@ -9,6 +9,9 @@ compile:
   script:
     - ./scripts/yacc_gen.sh
     - python3 ./scripts/execute.py --no-test
+  artifacts:
+    paths:
+      - syc
 
 performance:
   stage: performance
@@ -23,4 +26,4 @@ performance:
 
   artifacts:
     paths:
-      - ../result.csv
+      - result.csv
