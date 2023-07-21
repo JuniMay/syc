@@ -15,6 +15,7 @@ performance:
   tags:
     - rv64gc
   script:
+    - chmod +x ./scripts/benchmark.sh
     - ./scripts/benchmark.sh
 
   dependencies:
