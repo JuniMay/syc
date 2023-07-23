@@ -1,5 +1,5 @@
-#ifndef SYC_PASSES_AUTO_INLINE_H_
-#define SYC_PASSES_AUTO_INLINE_H_
+#ifndef SYC_PASSES_IR_AUTO_INLINE_H_
+#define SYC_PASSES_IR_AUTO_INLINE_H_
 
 #include "common.h"
 #include "ir/basic_block.h"

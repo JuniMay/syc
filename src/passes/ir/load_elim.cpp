@@ -1,4 +1,4 @@
-#include "passes/load_elim.h"
+#include "passes/ir/load_elim.h"
 
 namespace syc {
 namespace ir {

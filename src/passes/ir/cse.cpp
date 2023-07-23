@@ -1,4 +1,4 @@
-#include "passes/cse.h"
+#include "passes/ir/cse.h"
 
 namespace syc {
 namespace ir {

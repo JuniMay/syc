@@ -1,4 +1,4 @@
-#include "passes/asm_peephole.h"
+#include "passes/asm/peephole.h"
 #include "backend/basic_block.h"
 #include "backend/builder.h"
 #include "backend/context.h"

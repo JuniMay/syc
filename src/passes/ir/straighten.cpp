@@ -1,4 +1,4 @@
-#include "passes/straighten.h"
+#include "passes/ir/straighten.h"
 
 namespace syc {
 namespace ir {

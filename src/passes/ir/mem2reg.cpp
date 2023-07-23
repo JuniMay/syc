@@ -1,4 +1,4 @@
-#include "passes/mem2reg.h"
+#include "passes/ir/mem2reg.h"
 #include "ir/basic_block.h"
 #include "ir/context.h"
 #include "ir/instruction.h"

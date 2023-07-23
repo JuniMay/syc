@@ -1,4 +1,4 @@
-#include "passes/auto_inline.h"
+#include "passes/ir/auto_inline.h"
 
 namespace syc {
 namespace ir {

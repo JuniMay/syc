@@ -1,4 +1,4 @@
-#include "passes/phi_elim.h"
+#include "passes/asm/phi_elim.h"
 #include "backend/basic_block.h"
 #include "backend/instruction.h"
 #include "backend/operand.h"

@@ -1,4 +1,4 @@
-#include "passes/asm_dce.h"
+#include "passes/asm/dce.h"
 #include "backend/builder.h"
 #include "backend/context.h"
 #include "backend/function.h"

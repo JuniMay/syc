@@ -1,4 +1,4 @@
-#include "passes/ir_control_flow_analysis.h"
+#include "passes/ir/control_flow_analysis.h"
 
 namespace syc {
 namespace ir {

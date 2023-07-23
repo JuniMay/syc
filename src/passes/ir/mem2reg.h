@@ -1,10 +1,10 @@
-#ifndef SYC_PASSES_MEM2REG_H_
-#define SYC_PASSES_MEM2REG_H_
+#ifndef SYC_PASSES_IR_MEM2REG_H_
+#define SYC_PASSES_IR_MEM2REG_H_
 
 #include "common.h"
 #include "ir/builder.h"
 #include "ir/function.h"
-#include "passes/ir_control_flow_analysis.h"
+#include "passes/ir/control_flow_analysis.h"
 
 namespace syc {
 namespace ir {

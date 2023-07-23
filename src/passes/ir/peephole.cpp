@@ -1,4 +1,4 @@
-#include "passes/ir_peephole.h"
+#include "passes/ir/peephole.h"
 #include "ir/basic_block.h"
 #include "ir/builder.h"
 #include "ir/function.h"
