@@ -59,14 +59,16 @@ void insert_phi(
   ControlFlowAnalysisContext& cfa_ctx,
   Mem2regContext& mem2reg_ctx
 ) {
+  using namespace instruction;
   // Add all definition into corresponding worklist
   auto curr_bb = function->head_basic_block->next;
   while (curr_bb != function->tail_basic_block) {
     auto curr_instr = curr_bb->head_instruction->next;
 
     while (curr_instr != curr_bb->tail_instruction) {
-      if (curr_instr->is_store()) {
-        auto store = std::get<instruction::Store>(curr_instr->kind);
+      auto maybe_store = curr_instr->as<Store>();
+      if (maybe_store.has_value()) {
+        auto store = maybe_store.value();
         auto ptr_id = store.ptr_id;
         // For a to-be-converted variable, every block of its definition is only
         // added into the worklist once
@@ -122,6 +124,8 @@ void rename(
   ControlFlowAnalysisContext& cfa_ctx,
   Mem2regContext& mem2reg_ctx
 ) {
+  using namespace instruction;
+
   std::map<OperandID, size_t> def_cnt_map;
 
   auto curr_instr = basic_block->head_instruction->next;
@@ -129,8 +133,12 @@ void rename(
   while (curr_instr != basic_block->tail_instruction) {
     auto next_instr = curr_instr->next;
 
-    if (curr_instr->is_phi()) {
-      auto phi = std::get<instruction::Phi>(curr_instr->kind);
+    auto maybe_phi = curr_instr->as<Phi>();
+    auto maybe_load = curr_instr->as<Load>();
+    auto maybe_store = curr_instr->as<Store>();
+
+    if (maybe_phi.has_value()) {
+      auto phi = maybe_phi.value();
       auto variable_id = mem2reg_ctx.phi_map[curr_instr->id];
       auto dst_id = phi.dst_id;
 
@@ -138,8 +146,8 @@ void rename(
 
       mem2reg_ctx.rename_stack_map[variable_id].push(dst_id);
 
-    } else if (curr_instr->is_load()) {
-      auto load = std::get<instruction::Load>(curr_instr->kind);
+    } else if (maybe_load.has_value()) {
+      auto load = maybe_load.value();
 
       if (mem2reg_ctx.variable_set.count(load.ptr_id)) {
         auto operand_id = mem2reg_ctx.rename_stack_map[load.ptr_id].top();
@@ -156,8 +164,8 @@ void rename(
         curr_instr->remove(builder.context);
       }
 
-    } else if (curr_instr->is_store()) {
-      auto store = std::get<instruction::Store>(curr_instr->kind);
+    } else if (maybe_store.has_value()) {
+      auto store = maybe_store.value();
 
       if (mem2reg_ctx.variable_set.count(store.ptr_id)) {
         // push the value to the stack
@@ -191,7 +199,7 @@ void rename(
           basic_block->id, builder.context
         );
       } else {
-        auto phi = std::get<instruction::Phi>(curr_instr->kind);
+        auto phi = curr_instr->as<Phi>().value();
         auto phi_type = builder.context.get_operand(phi.dst_id)->type;
 
         if (phi_type->as<type::Integer>().has_value()) {

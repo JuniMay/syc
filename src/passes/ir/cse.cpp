@@ -18,9 +18,10 @@ void local_cse_function(FunctionPtr function, Builder& builder) {
 }
 
 void local_cse_basic_block(BasicBlockPtr basic_block, Builder& builder) {
+  using namespace instruction;
+
   std::map<
-    std::tuple<instruction::BinaryOp, OperandID, std::variant<int, OperandID>>,
-    OperandID>
+    std::tuple<BinaryOp, OperandID, std::variant<int, OperandID>>, OperandID>
     binary_expr_map;
   std::map<
     std::tuple<size_t, OperandID, std::vector<std::variant<int, OperandID>>>,
@@ -31,8 +32,11 @@ void local_cse_basic_block(BasicBlockPtr basic_block, Builder& builder) {
   while (curr_instruction != basic_block->tail_instruction) {
     auto next_instruction = curr_instruction->next;
 
-    if (curr_instruction->is_binary()) {
-      auto binary = std::get<instruction::Binary>(curr_instruction->kind);
+    auto maybe_binary = curr_instruction->as<Binary>();
+    auto maybe_getelementptr = curr_instruction->as<GetElementPtr>();
+
+    if (maybe_binary.has_value()) {
+      auto binary = maybe_binary.value();
       std::variant<int, OperandID> rhs_id_copy;
       if (builder.context.get_operand(binary.rhs_id)->is_constant()
           && builder.context.get_operand(binary.rhs_id)->is_int()) {
@@ -59,9 +63,8 @@ void local_cse_basic_block(BasicBlockPtr basic_block, Builder& builder) {
       } else {
         binary_expr_map[key] = binary.dst_id;
       }
-    } else if (curr_instruction->is_getelementptr()) {
-      auto getelementptr =
-        std::get<instruction::GetElementPtr>(curr_instruction->kind);
+    } else if (maybe_getelementptr.has_value()) {
+      auto getelementptr = maybe_getelementptr.value();
       std::vector<std::variant<int, OperandID>> index_id_list_copy;
       for (auto index_id : getelementptr.index_id_list) {
         auto index_operand = builder.context.get_operand(index_id);

@@ -322,9 +322,9 @@ void Instruction::remove(Context& context) {
 }
 
 bool Instruction::is_terminator() const {
-  return std::holds_alternative<instruction::Br>(this->kind) ||
-         std::holds_alternative<instruction::CondBr>(this->kind) ||
-         std::holds_alternative<instruction::Ret>(this->kind);
+  return as<instruction::Br>().has_value() ||
+         as<instruction::CondBr>().has_value() ||
+         as<instruction::Ret>().has_value();
 }
 
 bool Instruction::is_alloca() const {
