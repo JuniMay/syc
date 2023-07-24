@@ -29,23 +29,21 @@ void codegen(
     auto& ir_init_constant_kind = ir_init_constant->kind;
     auto ir_init_constant_type = ir_init_constant->type;
 
-    if (std::holds_alternative<ir::type::Integer>(*ir_init_constant_type)) {
+    if (ir_init_constant->type->as<ir::type::Integer>().has_value()) {
       int value = std::get<int>(ir_init_constant_kind);
       // bitwise conversion
       std::vector<uint32_t> asm_value = {*reinterpret_cast<uint32_t*>(&value)};
       auto asm_operand_id = builder.fetch_global(ir_global.name, asm_value);
       codegen_context.operand_map[ir_operand_id] = asm_operand_id;
 
-    } else if (std::holds_alternative<ir::type::Float>(*ir_init_constant_type
-               )) {
+    } else if (ir_init_constant_type->as<ir::type::Float>().has_value()) {
       float value = std::get<float>(ir_init_constant_kind);
       // bitwise conversion
       std::vector<uint32_t> asm_value = {*reinterpret_cast<uint32_t*>(&value)};
       auto asm_operand_id = builder.fetch_global(ir_global.name, asm_value);
       codegen_context.operand_map[ir_operand_id] = asm_operand_id;
 
-    } else if (std::holds_alternative<ir::type::Array>(*ir_init_constant_type
-               )) {
+    } else if (ir_init_constant_type->as<ir::type::Array>().has_value()) {
       if (std::holds_alternative<ir::operand::Zeroinitializer>(
             ir_init_constant_kind
           )) {
@@ -61,7 +59,7 @@ void codegen(
 
         std::function<void(ir::operand::ConstantPtr&)> recursive_func =
           [&](ir::operand::ConstantPtr& ir_constant) {
-            if (std::holds_alternative<ir::type::Array>(*ir_constant->type)) {
+            if (ir_constant->type->as<ir::type::Array>().has_value()) {
               auto& ir_constant_kind = ir_constant->kind;
               if (auto ir_constant_list = std::get_if<std::vector<ir::operand::ConstantPtr>>(&ir_constant_kind)) {
                 for (auto& ir_constant_element : *ir_constant_list) {
@@ -76,17 +74,14 @@ void codegen(
               }
             } else {
               auto ir_constant_type = ir_constant->type;
-              if (std::holds_alternative<ir::type::Integer>(*ir_constant_type
-                  )) {
+              if (ir_constant_type->as<ir::type::Integer>().has_value()) {
                 int value = std::get<int>(ir_constant->kind);
                 // bitwise conversion
                 uint32_t asm_value_element =
                   *reinterpret_cast<uint32_t*>(&value);
                 asm_value.push_back(asm_value_element);
 
-              } else if (std::holds_alternative<ir::type::Float>(
-                           *ir_constant_type
-                         )) {
+              } else if (ir_constant_type->as<ir::type::Float>().has_value()) {
                 float value = std::get<float>(ir_constant->kind);
                 // bitwise conversion
                 uint32_t asm_value_element =
@@ -170,7 +165,7 @@ void codegen_function(
     auto ir_operand = ir_context.get_operand(ir_operand_id);
     auto ir_operand_type = ir_operand->type;
 
-    if (std::holds_alternative<ir::type::Float>(*ir_operand_type)) {
+    if (ir_operand_type->as<ir::type::Float>().has_value()) {
       if (curr_float_reg <= 7) {
         auto asm_reg =
           builder.fetch_register(backend::Register{(backend::FloatRegister)(
@@ -640,8 +635,7 @@ void codegen_instruction(
 
         auto ir_dst = ir_context.get_operand(ir_dst_id);
 
-        bool load_address =
-          std::holds_alternative<ir::type::Pointer>(*ir_dst->type);
+        bool load_address = ir_dst->type->as<ir::type::Pointer>().has_value();
 
         auto asm_dst_id = codegen_operand(
           ir_dst_id, ir_context, builder, codegen_context, false, false
@@ -1621,12 +1615,12 @@ void codegen_instruction(
 
           asm_ptr_id = asm_add_dst_id;
 
-          if (std::holds_alternative<ir::type::Pointer>(*ir_basis_type)) {
+          if (ir_basis_type->as<ir::type::Pointer>().has_value()) {
             ir_basis_type =
-              std::get<ir::type::Pointer>(*ir_basis_type).value_type;
-          } else if (std::holds_alternative<ir::type::Array>(*ir_basis_type)) {
+              ir_basis_type->as<ir::type::Pointer>().value().value_type;
+          } else if (ir_basis_type->as<ir::type::Array>().has_value()) {
             ir_basis_type =
-              std::get<ir::type::Array>(*ir_basis_type).element_type;
+              ir_basis_type->as<ir::type::Array>().value().element_type;
           } else {
             break;
           }
@@ -1698,7 +1692,7 @@ AsmOperandID codegen_operand(
   auto& ir_operand_kind = ir_operand->kind;
   auto ir_operand_type = ir_operand->type;
 
-  bool is_float = std::holds_alternative<ir::type::Float>(*ir_operand_type);
+  bool is_float = ir_operand_type->as<ir::type::Float>().has_value();
 
   AsmOperandID asm_operand_id;
 
@@ -1838,8 +1832,7 @@ AsmOperandID codegen_operand(
 
         auto ir_operand = ir_context.get_operand(ir_operand_id);
 
-        bool is_float =
-          std::holds_alternative<ir::type::Float>(*ir_operand->type);
+        bool is_float = ir_operand->type->as<ir::type::Float>().has_value();
 
         auto asm_param_id = codegen_context.operand_map.at(ir_operand_id);
         auto asm_param = builder.context.get_operand(asm_param_id);

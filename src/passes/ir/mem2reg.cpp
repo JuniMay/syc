@@ -27,9 +27,9 @@ void mem2reg(Builder& builder) {
 
       auto allocated_type = alloca.allocated_type;
 
-      bool convert = std::holds_alternative<type::Integer>(*allocated_type) ||
-                     std::holds_alternative<type::Float>(*allocated_type) ||
-                     std::holds_alternative<type::Pointer>(*allocated_type);
+      bool convert = allocated_type->as<type::Integer>().has_value() ||
+                     allocated_type->as<type::Float>().has_value() ||
+                     allocated_type->as<type::Pointer>().has_value();
 
       // Only convert integer and float
       if (convert) {
@@ -97,7 +97,7 @@ void insert_phi(
         auto df_bb = builder.context.get_basic_block(df_id);
         builder.set_curr_basic_block(df_bb);
         auto dst_id = builder.fetch_arbitrary_operand(
-          std::get<type::Pointer>(*operand->type).value_type
+          operand->type->as<type::Pointer>().value().value_type
         );
         auto phi_instr = builder.fetch_phi_instruction(dst_id, {});
         builder.prepend_instruction_to_curr_basic_block(phi_instr);
@@ -194,12 +194,12 @@ void rename(
         auto phi = std::get<instruction::Phi>(curr_instr->kind);
         auto phi_type = builder.context.get_operand(phi.dst_id)->type;
 
-        if (std::holds_alternative<type::Integer>(*phi_type)) {
+        if (phi_type->as<type::Integer>().has_value()) {
           curr_instr->add_phi_operand(
             builder.fetch_constant_operand(phi_type, (int)0), basic_block->id,
             builder.context
           );
-        } else if (std::holds_alternative<type::Float>(*phi_type)) {
+        } else if (phi_type->as<type::Float>().has_value()) {
           curr_instr->add_phi_operand(
             builder.fetch_constant_operand(phi_type, (float)0), basic_block->id,
             builder.context

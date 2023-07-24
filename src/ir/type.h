@@ -24,10 +24,19 @@ struct Pointer {
   TypePtr value_type;
 };
 
-std::string to_string(const Type& type);
-std::string to_string(TypePtr type);
-
 }  // namespace type
+
+struct Type {
+  TypeKind kind;
+
+  Type(TypeKind kind) : kind(kind){};
+
+  std::string to_string() const;
+  size_t get_size() const;
+
+  template <typename T>
+  std::optional<T> as();
+};
 
 bool operator==(const Type& lhs, const Type& rhs);
 bool operator==(TypePtr lhs, TypePtr rhs);
@@ -35,8 +44,16 @@ bool operator==(TypePtr lhs, TypePtr rhs);
 bool operator!=(const Type& lhs, const Type& rhs);
 bool operator!=(TypePtr lhs, TypePtr rhs);
 
-size_t get_size(const Type& type);
 size_t get_size(TypePtr type);
+
+template <typename T>
+std::optional<T> Type::as() {
+  if (!std::holds_alternative<T>(this->kind)) {
+    return std::nullopt;
+  } else {
+    return std::get<T>(this->kind);
+  }
+}
 
 }  // namespace ir
 }  // namespace syc

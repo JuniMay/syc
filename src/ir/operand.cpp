@@ -11,7 +11,7 @@ std::string operand::Constant::to_string(bool with_type) const {
   std::stringstream buf;
 
   if (with_type) {
-    buf << type::to_string(this->type) << " ";
+    buf << this->type->to_string() << " ";
   }
 
   std::visit(
@@ -114,7 +114,7 @@ bool Operand::is_constant() const {
 }
 
 bool Operand::is_int() const {
-  return std::holds_alternative<type::Integer>(*(this->get_type()));
+  return this->get_type()->as<type::Integer>().has_value();
 }
 
 bool Operand::is_parameter() const {

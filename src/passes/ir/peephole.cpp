@@ -124,14 +124,18 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           auto tmp2 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
           curr_instruction->insert_next(builder.fetch_binary_instruction(
             instruction::BinaryOp::AShr, curr_dst->id, tmp2,
-            builder.fetch_constant_operand(builder.fetch_i32_type(), (int)log2(constant_value))
+            builder.fetch_constant_operand(
+              builder.fetch_i32_type(), (int)log2(constant_value)
+            )
           ));
           curr_instruction->insert_next(builder.fetch_binary_instruction(
             instruction::BinaryOp::Add, tmp2, tmp1, curr_lhs->id
           ));
           curr_instruction->insert_next(builder.fetch_binary_instruction(
             instruction::BinaryOp::LShr, tmp1, tmp0,
-            builder.fetch_constant_operand(builder.fetch_i32_type(), (int)(32 - log2(constant_value)))
+            builder.fetch_constant_operand(
+              builder.fetch_i32_type(), (int)(32 - log2(constant_value))
+            )
           ));
           curr_instruction->insert_next(builder.fetch_binary_instruction(
             instruction::BinaryOp::AShr, tmp0, curr_lhs->id,
@@ -345,10 +349,12 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
       }
     }
     // TODO: remove getelementptr type ptr, 0, 0
-    else if (std::holds_alternative<instruction::GetElementPtr>(curr_instruction->kind)) {
+    else if (std::holds_alternative<instruction::GetElementPtr>(
+               curr_instruction->kind
+             )) {
       auto curr_kind =
-      std::get<instruction::GetElementPtr>(curr_instruction->kind); 
-      auto curr_dst = builder.context.get_operand(curr_kind.dst_id); 
+        std::get<instruction::GetElementPtr>(curr_instruction->kind);
+      auto curr_dst = builder.context.get_operand(curr_kind.dst_id);
       auto curr_ptr = builder.context.get_operand(curr_kind.ptr_id);
       bool replacable = true;
       for (auto index_operand_id : curr_kind.index_id_list) {
@@ -365,31 +371,31 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
       }
       if (replacable) {
         auto bitcast_instruction = builder.fetch_cast_instruction(
-              instruction::CastOp::BitCast, curr_dst->id, curr_ptr->id
-            );
-          curr_instruction->insert_next(bitcast_instruction);
-          next_instruction = curr_instruction->next;
-          curr_instruction->remove(builder.context);
+          instruction::CastOp::BitCast, curr_dst->id, curr_ptr->id
+        );
+        curr_instruction->insert_next(bitcast_instruction);
+        next_instruction = curr_instruction->next;
+        curr_instruction->remove(builder.context);
       }
-    } else if (std::holds_alternative<instruction::Cast>(curr_instruction->kind)) {
-      auto curr_kind =
-      std::get<instruction::Cast>(curr_instruction->kind); 
-      auto curr_dst = builder.context.get_operand(curr_kind.dst_id); 
+    } else if (std::holds_alternative<instruction::Cast>(curr_instruction->kind
+               )) {
+      auto curr_kind = std::get<instruction::Cast>(curr_instruction->kind);
+      auto curr_dst = builder.context.get_operand(curr_kind.dst_id);
       auto curr_src = builder.context.get_operand(curr_kind.src_id);
       auto curr_op = curr_kind.op;
       if (curr_op == instruction::CastOp::BitCast 
-        && type::to_string(curr_dst->get_type()) == type::to_string(curr_src->get_type())) {
-          // bitcast dst, src are same type
-          // -> make all dst to src
-          auto use_id_list_copy = curr_dst->use_id_list;
-          for (auto use_instruction_id : use_id_list_copy) {
+        && *curr_dst->get_type() == *curr_src->get_type()) {
+        // bitcast dst, src are same type
+        // -> make all dst to src
+        auto use_id_list_copy = curr_dst->use_id_list;
+        for (auto use_instruction_id : use_id_list_copy) {
           auto instruction =
             builder.context.get_instruction(use_instruction_id);
           instruction->replace_operand(
             curr_dst->id, curr_src->id, builder.context
           );
-          }
-          curr_instruction->remove(builder.context);
+        }
+        curr_instruction->remove(builder.context);
       }
     }
 

@@ -6,9 +6,7 @@
 namespace syc {
 namespace ir {
 
-namespace type {
-
-std::string to_string(const Type& type) {
+std::string Type::to_string() const {
   using namespace type;
   std::stringstream ss;
   std::visit(
@@ -17,19 +15,13 @@ std::string to_string(const Type& type) {
       [&ss](const Integer& a) { ss << "i" << a.size; },
       [&ss](const Float& a) { ss << "float"; },
       [&ss](const Array& a) {
-        ss << "[" << a.length << " x " << to_string(*a.element_type) << "]";
+        ss << "[" << a.length << " x " << a.element_type->to_string() << "]";
       },
-      [&ss](const Pointer& a) { ss << to_string(*a.value_type) << "*"; }},
-    type
+      [&ss](const Pointer& a) { ss << a.value_type->to_string() << "*"; }},
+    kind
   );
   return ss.str();
 }
-
-std::string to_string(TypePtr type) {
-  return to_string(*type);
-}
-
-}  // namespace type
 
 bool operator==(const Type& lhs, const Type& rhs) {
   using namespace type;
@@ -46,7 +38,7 @@ bool operator==(const Type& lhs, const Type& rhs) {
       },
       [](const auto& a, const auto& b) { return false; },
     },
-    lhs, rhs
+    lhs.kind, rhs.kind
   );
 }
 
@@ -62,7 +54,7 @@ bool operator!=(TypePtr lhs, TypePtr rhs) {
   return !(lhs == rhs);
 }
 
-size_t get_size(const Type& type) {
+size_t Type::get_size() const {
   using namespace type;
   return std::visit(
     overloaded{
@@ -70,15 +62,16 @@ size_t get_size(const Type& type) {
       [](const Integer& a) -> size_t { return a.size; },
       [](const Float& a) -> size_t { return 32; },
       [](const Array& a) -> size_t {
-        return a.length * get_size(*a.element_type);
+        return a.length * a.element_type->get_size();
       },
-      [](const Pointer& a) -> size_t { return 64; }},
-    type
+      [](const Pointer& a) -> size_t { return 64; },
+    },
+    kind
   );
 }
 
 size_t get_size(TypePtr type) {
-  return get_size(*type);
+  return type->get_size();
 }
 
 }  // namespace ir
