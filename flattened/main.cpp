@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
 
   irgen(compunit, ir_builder);
 
-  if (options.optimization_level > 0) {
+  // if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
     ir::auto_inline(ir_builder);
     ir::global2local(ir_builder);
@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
     ir::copyprop(ir_builder);
     // TODO: implement phi instruction in unreach_elim
     // ir::unreach_elim(ir_builder);
-  }
+  // }
 
   if (options.ir_file.has_value()) {
     std::ofstream ir_file(options.ir_file.value());
@@ -86,11 +86,11 @@ int main(int argc, char* argv[]) {
   backend::peephole(asm_builder);
   backend::dce(asm_builder);
 
-  if (options.optimization_level > 0) {
+  // if (options.optimization_level >= 0) {
     // FIXME: `hidden_functional/search`
     backend::phi_elim(asm_builder);
     backend::peephole_second(asm_builder);
-  }
+  // }
 
   codegen_rest(ir_builder.context, asm_builder, codegen_context);
 
