@@ -8,6 +8,48 @@
 namespace syc {
 namespace ir {
 
+// magic number for division
+// from "Hacker's Delight", Henry S. Warren, Chapter 10.
+struct ms {
+  int M;  // Magic number
+  int s;  // and shift amount.
+};
+struct ms magic(int d) {  // Must have 2 <= d <= 2**31-1 or -2**31 <= d <= -2.
+  int p;
+  unsigned ad, anc, delta, q1, r1, q2, r2, t;
+  const unsigned two31 = 0x80000000;  // 2**31.
+  struct ms mag;
+  ad = abs(d);
+  t = two31 + ((unsigned)d >> 31);
+  anc = t - 1 - t % ad;   // Absolute value of nc.
+  p = 31;                 // Init. p.
+  q1 = two31 / anc;       // Init. q1 = 2**p/|nc|.
+  r1 = two31 - q1 * anc;  // Init. r1 = rem(2**p, |nc|).
+  q2 = two31 / ad;        // Init. q2 = 2**p/|d|.
+  r2 = two31 - q2 * ad;   // Init. r2 = rem(2**p, |d|).
+  do {
+    p = p + 1;
+    q1 = 2 * q1;      // Update q1 = 2**p/|nc|.
+    r1 = 2 * r1;      // Update r1 = rem(2**p, |nc|).
+    if (r1 >= anc) {  // (Must be an unsigned
+      q1 = q1 + 1;    // comparison here.)
+      r1 = r1 - anc;
+    }
+    q2 = 2 * q2;     // Update q2 = 2**p/|d|.
+    r2 = 2 * r2;     // Update r2 = rem(2**p, |d|).
+    if (r2 >= ad) {  // (Must be an unsigned
+      q2 = q2 + 1;   // comparison here.)
+      r2 = r2 - ad;
+    }
+    delta = ad - r2;
+  } while (q1 < delta || (q1 == delta && r1 == 0));
+  mag.M = q2 + 1;
+  if (d < 0)
+    mag.M = -mag.M;  // Magic number and
+  mag.s = p - 32;    // shift amount to return.
+  return mag;
+}
+
 void peephole(Builder& builder) {
   for (auto [function_name, function] : builder.context.function_table) {
     peephole_function(function, builder);
@@ -76,7 +118,9 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
         && curr_rhs->is_constant()) {
         auto constant = std::get<operand::ConstantPtr>(curr_rhs->kind);
         auto constant_value = std::get<int>(constant->kind);
-        if (constant_value == 1) {
+        if (constant_value == 0) {
+          throw std::runtime_error("division by zero");
+        } else if (constant_value == 1) {
           // div lhs 1, make all uses of dst to lhs
           auto use_id_list_copy = curr_dst->use_id_list;
           for (auto use_instruction_id : use_id_list_copy) {
@@ -120,7 +164,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
         } else if (constant_value > 2 && (constant_value & (constant_value - 1)) == 0) {
           // dest = div lhs, 2^k
           // ->
-          // t0 = sra lhs, 31
+          // t0 = sra lhs, k - 1
           // t1 = srl t0, 32 - k
           // t2 = add lhs, t1
           // dest = sra t2, k
@@ -144,8 +188,130 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           ));
           curr_instruction->insert_next(builder.fetch_binary_instruction(
             BinaryOp::AShr, tmp0, curr_lhs->id,
-            builder.fetch_constant_operand(builder.fetch_i32_type(), (int)31)
+            builder.fetch_constant_operand(builder.fetch_i32_type(), (int)(log2(constant_value) - 1))
           ));
+          next_instruction = curr_instruction->next;
+          curr_instruction->remove(builder.context);
+        } else if (constant_value >= 2) {
+          ms magic_number = magic(constant_value);
+          if (magic_number.s > 0) {
+            // if magic_number.s > 0
+            // dest = div lhs, c
+            // ->
+            // t0 = mul lhs, magic_number.M
+            // t1 = add t0, lhs
+            // t2 = sra t1, magic_number.s 
+            // t3 = srl lhs, 31
+            // dest = add t3, t2
+            auto tmp0 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+            auto tmp1 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+            auto tmp2 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+            auto tmp3 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              BinaryOp::Add, curr_dst->id, tmp3, tmp2
+            ));
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              BinaryOp::LShr, tmp3, curr_lhs->id,
+              builder.fetch_constant_operand(builder.fetch_i32_type(), (int)31)
+            ));
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              BinaryOp::AShr, tmp2, tmp1,
+              builder.fetch_constant_operand(builder.fetch_i32_type(), (int)magic_number.s)
+            ));
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              BinaryOp::Add, tmp1, tmp0, curr_lhs->id
+            ));
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              BinaryOp::Mul, tmp0, curr_lhs->id,
+              builder.fetch_constant_operand(builder.fetch_i32_type(), (int)magic_number.M)
+            ));
+          } else {
+            // if magic_number.s <= 0
+            // dest = div lhs, c
+            // ->
+            // t0 = mul lhs, magic_number.M
+            // t1 = add t0, lhs
+            // t2 = srl lhs, 31
+            // dest = add t2, t1
+            auto tmp0 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+            auto tmp1 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+            auto tmp2 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              instruction::BinaryOp::Add, curr_dst->id, tmp2, tmp1
+            ));
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              instruction::BinaryOp::LShr, tmp2, curr_lhs->id,
+              builder.fetch_constant_operand(builder.fetch_i32_type(), (int)31)
+            ));
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              instruction::BinaryOp::Add, tmp1, tmp0, curr_lhs->id
+            ));
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              instruction::BinaryOp::Mul, tmp0, curr_lhs->id,
+              builder.fetch_constant_operand(builder.fetch_i32_type(), (int)magic_number.M)
+            ));
+          }
+          next_instruction = curr_instruction->next;
+          curr_instruction->remove(builder.context);
+        } else if (constant_value <= -2) {
+          ms magic_number = magic(constant_value);
+          if (magic_number.s > 0) {
+            // if magic_number.s > 0
+            // dest = div lhs, c
+            // ->
+            // t0 = mul lhs, magic_number.M
+            // t1 = sub t0, lhs
+            // t2 = sra t1, magic_number.s 
+            // t3 = srl t2, 31
+            // dest = add t3, t2
+            auto tmp0 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+            auto tmp1 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+            auto tmp2 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+            auto tmp3 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              BinaryOp::Add, curr_dst->id, tmp3, tmp2
+            ));
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              BinaryOp::LShr, tmp3, tmp2,
+              builder.fetch_constant_operand(builder.fetch_i32_type(), (int)31)
+            ));
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              BinaryOp::AShr, tmp2, tmp1,
+              builder.fetch_constant_operand(builder.fetch_i32_type(), (int)magic_number.s)
+            ));
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              BinaryOp::Sub, tmp1, tmp0, curr_lhs->id
+            ));
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              BinaryOp::Mul, tmp0, curr_lhs->id,
+              builder.fetch_constant_operand(builder.fetch_i32_type(), (int)magic_number.M)
+            ));
+          } else {
+            // if magic_number.s <= 0
+            // dest = div lhs, c
+            // ->
+            // t0 = mul lhs, magic_number.M
+            // t1 = sub t0, lhs
+            // t2 = srl t1, 31
+            // dest = add t2, t1
+            auto tmp0 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+            auto tmp1 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+            auto tmp2 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              BinaryOp::Add, curr_dst->id, tmp2, tmp1
+            ));
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              BinaryOp::LShr, tmp2, tmp1,
+              builder.fetch_constant_operand(builder.fetch_i32_type(), (int)31)
+            ));
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              BinaryOp::Sub, tmp1, tmp0, curr_lhs->id
+            ));
+            curr_instruction->insert_next(builder.fetch_binary_instruction(
+              BinaryOp::Mul, tmp0, curr_lhs->id,
+              builder.fetch_constant_operand(builder.fetch_i32_type(), (int)magic_number.M)
+            ));
+          }
           next_instruction = curr_instruction->next;
           curr_instruction->remove(builder.context);
         }
@@ -156,7 +322,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
         && curr_rhs->is_constant()) {
         // dest = srem lhs, 2^k
         // ->
-        // t0 = sra lhs, 31
+        // t0 = sra lhs, k - 1
         // t1 = srl t0, 32 - k
         // t2 = add lhs, t1
         // t3 = and t2, 2^k - 1
@@ -188,7 +354,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           ));
           curr_instruction->insert_next(builder.fetch_binary_instruction(
             BinaryOp::AShr, tmp0, curr_lhs->id,
-            builder.fetch_constant_operand(builder.fetch_i32_type(), (int)31)
+            builder.fetch_constant_operand(builder.fetch_i32_type(), (int)(log2(constant_value) - 1))
           ));
           next_instruction = curr_instruction->next;
           curr_instruction->remove(builder.context);
