@@ -67,6 +67,8 @@ void math_opt_block(BasicBlockPtr basic_block, Builder& builder) {
         dst_operand_id = next_dst->id;
         count++;
         curr_instruction->remove(builder.context);
+      } else {
+        break;
       }
       curr_instruction = next_instruction;
       next_instruction = next_instruction->next;
