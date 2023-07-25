@@ -397,11 +397,33 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
 
   std::optional<BasicBlockID> get_basic_block_id_if_branch() const;
 
-  void replace_operand(OperandID old_operand_id, OperandID new_operand_id, Context& context);
+  void replace_operand(
+    OperandID old_operand_id,
+    OperandID new_operand_id,
+    Context& context
+  );
 
   bool is_phi() const;
 
   bool is_branch_or_jmp() const;
+
+  template <typename T>
+  std::optional<T> as() {
+    if (std::holds_alternative<T>(this->kind)) {
+      return std::get<T>(this->kind);
+    } else {
+      return std::nullopt;
+    }
+  }
+
+  template <typename T>
+  std::optional<std::reference_wrapper<T>> as_ref() {
+    if (std::holds_alternative<T>(this->kind)) {
+      return std::get<T>(this->kind);
+    } else {
+      return std::nullopt;
+    }
+  }
 };
 
 InstructionPtr create_instruction(

@@ -24,14 +24,17 @@ void peephole_second_function(FunctionPtr function, Builder& builder) {
 }
 
 void peephole_second_basic_block(BasicBlockPtr basic_block, Builder& builder) {
+  using namespace instruction;
+
   auto curr_instruction = basic_block->head_instruction->next;
   while (curr_instruction != basic_block->tail_instruction) {
     auto next_instruction = curr_instruction->next;
 
-    if (std::holds_alternative<instruction::J>(curr_instruction->kind)) {
+    auto maybe_j = curr_instruction->as<J>();
+    if (maybe_j.has_value()) {
       // remove: b label
       //         label:
-      const auto& kind = std::get<instruction::J>(curr_instruction->kind);
+      const auto& kind = maybe_j.value();
       auto next_bb_id =
         builder.context.get_basic_block(curr_instruction->parent_block_id)
           ->next->id;
