@@ -13,6 +13,7 @@
 #include "passes/asm/peephole_second.h"
 #include "passes/asm/phi_elim.h"
 #include "passes/ir/auto_inline.h"
+#include "passes/ir/copyprop.h"
 #include "passes/ir/cse.h"
 #include "passes/ir/load_elim.h"
 #include "passes/ir/mem2reg.h"
@@ -57,6 +58,7 @@ int main(int argc, char* argv[]) {
       ir::peephole(ir_builder);
       ir::unused_elim(ir_builder);
     }
+    ir::copyprop(ir_builder);
     // TODO: implement phi instruction in unreach_elim
     // ir::unreach_elim(ir_builder);
   }
