@@ -1,5 +1,5 @@
-#ifndef SYC_PASSES_PHI_ELIM_H_
-#define SYC_PASSES_PHI_ELIM_H_
+#ifndef SYC_PASSES_ASM_PHI_ELIM_H_
+#define SYC_PASSES_ASM_PHI_ELIM_H_
 
 #include "backend__builder.h"
 #include "backend__function.h"

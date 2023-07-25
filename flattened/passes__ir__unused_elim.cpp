@@ -1,4 +1,4 @@
-#include "passes__unused_elim.h"
+#include "passes__ir__unused_elim.h"
 #include "ir__basic_block.h"
 #include "ir__builder.h"
 #include "ir__function.h"

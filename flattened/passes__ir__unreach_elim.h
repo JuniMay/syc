@@ -1,5 +1,5 @@
-#ifndef SYC_PASSES_UNREACH_ELIM_H_
-#define SYC_PASSES_UNREACH_ELIM_H_
+#ifndef SYC_PASSES_IR_UNREACH_ELIM_H_
+#define SYC_PASSES_IR_UNREACH_ELIM_H_
 
 #include "ir__function.h"
 #include "ir__builder.h"
@@ -39,4 +39,4 @@ std::set<BasicBlockID> get_reachable_blocks(
 
 }  // namespace syc
 
-#endif  // SYC_PASSES_UNREACH_ELIM_H_
+#endif  // SYC_PASSES_IR_UNREACH_ELIM_H_

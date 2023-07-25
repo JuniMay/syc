@@ -1,4 +1,4 @@
-#include "passes__auto_inline.h"
+#include "passes__ir__auto_inline.h"
 
 namespace syc {
 namespace ir {
@@ -42,7 +42,9 @@ void auto_inline_instruction(InstructionPtr instruction, Builder& builder) {
     return;
   }
 
-  auto call = std::get<instruction::Call>(instruction->kind);
+  using namespace instruction;
+
+  auto call = instruction->as<Call>().value();
 
   auto function = builder.context.get_function(call.function_name);
 
@@ -124,7 +126,7 @@ void auto_inline_instruction(InstructionPtr instruction, Builder& builder) {
     std::cerr << "Error: Return instruction not found in the end of function "
               << function->name << std::endl;
   }
-  auto ret = std::get<instruction::Ret>(ret_instruction->kind);
+  auto ret = ret_instruction->as<Ret>().value();
   if (ret.maybe_value_id.has_value() && call.maybe_dst_id.has_value()) {
     OperandID ret_value_id = ret.maybe_value_id.value();
     if (context.operand_id_map.count(ret_value_id)) {

@@ -1,5 +1,5 @@
-#ifndef SYC_PASSES_STRAIGHTEN_H_
-#define SYC_PASSES_STRAIGHTEN_H_
+#ifndef SYC_PASSES_IR_STRAIGHTEN_H_
+#define SYC_PASSES_IR_STRAIGHTEN_H_
 
 #include "common.h"
 #include "ir__builder.h"

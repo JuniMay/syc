@@ -294,6 +294,22 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
     BasicBlockID incoming_block_id,
     Context& context
   );
+
+  template <typename T>
+  std::optional<std::reference_wrapper<T>> as_ref() {
+    if (std::holds_alternative<T>(this->kind)) {
+      return std::get<T>(this->kind);
+    }
+    return std::nullopt;
+  }
+
+  template <typename T>
+  std::optional<T> as() const {
+    if (std::holds_alternative<T>(this->kind)) {
+      return std::get<T>(this->kind);
+    }
+    return std::nullopt;
+  }
 };
 
 /// Create an instruction.

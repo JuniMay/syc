@@ -1,4 +1,4 @@
-#include "passes__linear_scan.h"
+#include "passes__asm__linear_scan.h"
 
 namespace syc {
 namespace backend {

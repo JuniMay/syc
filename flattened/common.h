@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <bitset>
+#include <cmath>
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -19,7 +20,6 @@
 #include <string>
 #include <variant>
 #include <vector>
-#include <cmath>
 
 template <class... Ts>
 struct overloaded : Ts... {
@@ -164,8 +164,10 @@ struct Label;
 
 };  // namespace type
 
-using Type = std::
+using TypeKind = std::
   variant<type::Void, type::Integer, type::Float, type::Array, type::Pointer>;
+
+struct Type;
 
 using TypePtr = std::shared_ptr<Type>;
 

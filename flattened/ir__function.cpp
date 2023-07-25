@@ -37,10 +37,10 @@ void Function::append_basic_block(BasicBlockPtr basic_block) {
 std::string Function::to_string(Context& context) {
   if (this->is_declare) {
     std::string result =
-      "declare " + type::to_string(return_type) + " @" + name + "(";
+      "declare " + return_type->to_string() + " @" + name + "(";
     for (auto operand_id : parameter_id_list) {
       auto operand = context.get_operand(operand_id);
-      result += type::to_string(operand->get_type()) + ", ";
+      result += operand->get_type()->to_string() + ", ";
     }
     if (parameter_id_list.size() > 0) {
       result.pop_back();
@@ -50,14 +50,13 @@ std::string Function::to_string(Context& context) {
     return result;
   }
 
-  std::string result =
-    "define " + type::to_string(return_type) + " @" + name + "(";
+  std::string result = "define " + return_type->to_string() + " @" + name + "(";
 
   for (auto operand_id : parameter_id_list) {
     auto operand = context.get_operand(operand_id);
 
     result +=
-      type::to_string(operand->get_type()) + " " + operand->to_string() + ", ";
+      operand->get_type()->to_string() + " " + operand->to_string() + ", ";
   }
 
   if (parameter_id_list.size() > 0) {

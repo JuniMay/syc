@@ -1,4 +1,4 @@
-#include "passes__load_elim.h"
+#include "passes__ir__load_elim.h"
 
 namespace syc {
 namespace ir {
@@ -18,13 +18,18 @@ void load_elim_function(FunctionPtr function, Builder& builder) {
 }
 
 void load_elim_basic_block(BasicBlockPtr basic_block, Builder& builder) {
+  using namespace instruction;
+
   std::map<OperandID, OperandID> loaded_id_map;
   auto curr_instruction = basic_block->head_instruction->next;
   while (curr_instruction != basic_block->tail_instruction) {
     auto next_instruction = curr_instruction->next;
 
-    if (curr_instruction->is_load()) {
-      auto load = std::get<instruction::Load>(curr_instruction->kind);
+    auto maybe_load = curr_instruction->as<Load>();
+    auto maybe_store = curr_instruction->as<Store>();
+
+    if (maybe_load.has_value()) {
+      auto load = maybe_load.value();
       auto dst = builder.context.get_operand(load.dst_id);
       auto ptr = builder.context.get_operand(load.ptr_id);
 
@@ -42,8 +47,8 @@ void load_elim_basic_block(BasicBlockPtr basic_block, Builder& builder) {
         loaded_id_map[ptr->id] = dst->id;
       }
 
-    } else if (curr_instruction->is_store()) {
-      auto store = std::get<instruction::Store>(curr_instruction->kind);
+    } else if (maybe_store.has_value()) {
+      auto store = maybe_store.value();
       auto ptr = builder.context.get_operand(store.ptr_id);
       auto value = builder.context.get_operand(store.value_id);
 

@@ -1,4 +1,4 @@
-#include "passes__ir_peephole.h"
+#include "passes__ir__peephole.h"
 #include "ir__basic_block.h"
 #include "ir__builder.h"
 #include "ir__function.h"
@@ -23,19 +23,24 @@ void peephole_function(FunctionPtr function, Builder& builder) {
 }
 
 void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
+  using namespace instruction;
+
   auto curr_instruction = basic_block->head_instruction->next;
   while (curr_instruction != basic_block->tail_instruction) {
     auto next_instruction = curr_instruction->next;
 
-    if (std::holds_alternative<instruction::Binary>(curr_instruction->kind)) {
-      const auto& curr_kind =
-        std::get<instruction::Binary>(curr_instruction->kind);
+    auto maybe_binary = curr_instruction->as<Binary>();
+    auto maybe_getelementptr = curr_instruction->as<GetElementPtr>();
+    auto maybe_cast = curr_instruction->as<Cast>();
+
+    if (maybe_binary.has_value()) {
+      auto curr_kind = maybe_binary.value();
       auto curr_op = curr_kind.op;
       auto curr_dst = builder.context.get_operand(curr_kind.dst_id);
       auto curr_lhs = builder.context.get_operand(curr_kind.lhs_id);
       auto curr_rhs = builder.context.get_operand(curr_kind.rhs_id);
 
-      if (curr_op == instruction::BinaryOp::Mul 
+      if (curr_op == BinaryOp::Mul 
         && curr_lhs->is_int()
         && curr_rhs->is_int()
         && curr_rhs->is_constant()) {
@@ -55,7 +60,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
         } else if (constant_value > 1 && (constant_value & (constant_value - 1)) == 0) {
           // dest = mul lhs, 2^k -> dest = shl lhs, k
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::Shl, curr_dst->id, curr_lhs->id,
+            BinaryOp::Shl, curr_dst->id, curr_lhs->id,
             builder.fetch_constant_operand(
               builder.fetch_i32_type(), (int)log2(constant_value)
             )
@@ -65,7 +70,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
         }
         // TODO: maybe optimize mul lhs, 2^k + 1
 
-      } else if (curr_op == instruction::BinaryOp::SDiv
+      } else if (curr_op == BinaryOp::SDiv
         && curr_lhs->is_int()
         && curr_rhs->is_int()
         && curr_rhs->is_constant()) {
@@ -85,7 +90,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
         } else if (constant_value == -1) {
           // div lhs, -1 -> dest = sub 0, lhs
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::Sub, curr_dst->id,
+            BinaryOp::Sub, curr_dst->id,
             builder.fetch_constant_operand(builder.fetch_i32_type(), (int)0),
             curr_lhs->id
           ));
@@ -100,14 +105,14 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           auto tmp0 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
           auto tmp1 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::AShr, curr_dst->id, tmp1,
+            BinaryOp::AShr, curr_dst->id, tmp1,
             builder.fetch_constant_operand(builder.fetch_i32_type(), (int)1)
           ));
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::Add, tmp1, tmp0, curr_lhs->id
+            BinaryOp::Add, tmp1, tmp0, curr_lhs->id
           ));
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::LShr, tmp0, curr_lhs->id,
+            BinaryOp::LShr, tmp0, curr_lhs->id,
             builder.fetch_constant_operand(builder.fetch_i32_type(), (int)31)
           ));
           next_instruction = curr_instruction->next;
@@ -123,25 +128,29 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           auto tmp1 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
           auto tmp2 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::AShr, curr_dst->id, tmp2,
-            builder.fetch_constant_operand(builder.fetch_i32_type(), (int)log2(constant_value))
+            BinaryOp::AShr, curr_dst->id, tmp2,
+            builder.fetch_constant_operand(
+              builder.fetch_i32_type(), (int)log2(constant_value)
+            )
           ));
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::Add, tmp2, tmp1, curr_lhs->id
+            BinaryOp::Add, tmp2, tmp1, curr_lhs->id
           ));
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::LShr, tmp1, tmp0,
-            builder.fetch_constant_operand(builder.fetch_i32_type(), (int)(32 - log2(constant_value)))
+            BinaryOp::LShr, tmp1, tmp0,
+            builder.fetch_constant_operand(
+              builder.fetch_i32_type(), (int)(32 - log2(constant_value))
+            )
           ));
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::AShr, tmp0, curr_lhs->id,
+            BinaryOp::AShr, tmp0, curr_lhs->id,
             builder.fetch_constant_operand(builder.fetch_i32_type(), (int)31)
           ));
           next_instruction = curr_instruction->next;
           curr_instruction->remove(builder.context);
         }
       } 
-      else if (curr_op == instruction::BinaryOp::SRem
+      else if (curr_op == BinaryOp::SRem
         && curr_lhs->is_int()
         && curr_rhs->is_int()
         && curr_rhs->is_constant()) {
@@ -160,32 +169,32 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           auto tmp2 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
           auto tmp3 = builder.fetch_arbitrary_operand(builder.fetch_i32_type());
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::Sub, curr_dst->id, tmp3, tmp1
+            BinaryOp::Sub, curr_dst->id, tmp3, tmp1
           ));
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::And, tmp3, tmp2,
+            BinaryOp::And, tmp3, tmp2,
             builder.fetch_constant_operand(
               builder.fetch_i32_type(), (int)constant_value - 1
             )
           ));
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::Add, tmp2, tmp1, curr_lhs->id
+            BinaryOp::Add, tmp2, tmp1, curr_lhs->id
           ));
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::LShr, tmp1, tmp0,
+            BinaryOp::LShr, tmp1, tmp0,
             builder.fetch_constant_operand(
               builder.fetch_i32_type(), (int)(32 - log2(constant_value))
             )
           ));
           curr_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::AShr, tmp0, curr_lhs->id,
+            BinaryOp::AShr, tmp0, curr_lhs->id,
             builder.fetch_constant_operand(builder.fetch_i32_type(), (int)31)
           ));
           next_instruction = curr_instruction->next;
           curr_instruction->remove(builder.context);
         }
       } 
-      else if (curr_op == instruction::BinaryOp::Sub
+      else if (curr_op == BinaryOp::Sub
         && curr_lhs->is_int()
         && curr_rhs->is_int()
         && curr_rhs->is_constant()) {
@@ -195,14 +204,14 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
         auto constant = std::get<operand::ConstantPtr>(curr_rhs->kind);
         auto constant_value = std::get<int>(constant->kind);
         curr_instruction->insert_next(builder.fetch_binary_instruction(
-          instruction::BinaryOp::Add, curr_dst->id, curr_lhs->id,
+          BinaryOp::Add, curr_dst->id, curr_lhs->id,
           builder.fetch_constant_operand(
             builder.fetch_i32_type(), (int)-constant_value
           )
         ));
         next_instruction = curr_instruction->next;
         curr_instruction->remove(builder.context);
-      } else if (curr_op == instruction::BinaryOp::Add
+      } else if (curr_op == BinaryOp::Add
         && curr_lhs->is_int()
         && curr_rhs->is_int()
         && curr_rhs->is_constant()) {
@@ -223,19 +232,18 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           curr_instruction->remove(builder.context);
         }
       }
-      if (std::holds_alternative<instruction::Binary>(next_instruction->kind)) {
-        const auto& next_kind =
-          std::get<instruction::Binary>(next_instruction->kind);
+      if (std::holds_alternative<Binary>(next_instruction->kind)) {
+        const auto& next_kind = std::get<Binary>(next_instruction->kind);
         auto next_op = next_kind.op;
         auto next_dst = builder.context.get_operand(next_kind.dst_id);
         auto next_lhs = builder.context.get_operand(next_kind.lhs_id);
         auto next_rhs = builder.context.get_operand(next_kind.rhs_id);
 
-        if (curr_op == instruction::BinaryOp::Add
+        if (curr_op == BinaryOp::Add
           && curr_lhs->is_int() 
           && curr_rhs->is_int()
           && curr_rhs->is_constant()
-          && next_op == instruction::BinaryOp::Add
+          && next_op == BinaryOp::Add
           && next_lhs->is_int()
           && next_rhs->is_int()
           && next_rhs->is_constant()
@@ -249,7 +257,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           auto constant_value0 = std::get<int>(constant0->kind);
           auto constant_value1 = std::get<int>(constant1->kind);
           auto instruction = builder.fetch_binary_instruction(
-            instruction::BinaryOp::Add, next_dst->id, curr_lhs->id,
+            BinaryOp::Add, next_dst->id, curr_lhs->id,
             builder.fetch_constant_operand(
               builder.fetch_i32_type(), (int)(constant_value0 + constant_value1)
             )
@@ -260,11 +268,11 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           curr_instruction = next_instruction;
           next_instruction = next_instruction->next;
           curr_instruction->remove(builder.context);
-        } else if (curr_op == instruction::BinaryOp::Sub
+        } else if (curr_op == BinaryOp::Sub
           && curr_lhs->is_int()
           && curr_rhs->is_int()
           && curr_rhs->is_constant()
-          && next_op == instruction::BinaryOp::Sub
+          && next_op == BinaryOp::Sub
           && next_lhs->is_int()
           && next_rhs->is_int()
           && next_rhs->is_constant()
@@ -278,7 +286,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           auto constant_value0 = std::get<int>(constant0->kind);
           auto constant_value1 = std::get<int>(constant1->kind);
           next_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::Sub, next_dst->id, curr_lhs->id,
+            BinaryOp::Sub, next_dst->id, curr_lhs->id,
             builder.fetch_constant_operand(
               builder.fetch_i32_type(), (int)(constant_value0 + constant_value1)
             )
@@ -287,11 +295,11 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           curr_instruction = next_instruction;
           next_instruction = next_instruction->next;
           curr_instruction->remove(builder.context);
-        } else if (curr_op == instruction::BinaryOp::Add
+        } else if (curr_op == BinaryOp::Add
           && curr_lhs->is_int()
           && curr_rhs->is_int()
           && curr_rhs->is_constant()
-          && next_op == instruction::BinaryOp::Sub
+          && next_op == BinaryOp::Sub
           && next_lhs->is_int()
           && next_rhs->is_int()
           && next_rhs->is_constant()
@@ -305,7 +313,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           auto constant_value0 = std::get<int>(constant0->kind);
           auto constant_value1 = std::get<int>(constant1->kind);
           next_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::Add, next_dst->id, curr_lhs->id,
+            BinaryOp::Add, next_dst->id, curr_lhs->id,
             builder.fetch_constant_operand(
               builder.fetch_i32_type(), (int)(constant_value0 - constant_value1)
             )
@@ -314,11 +322,11 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           curr_instruction = next_instruction;
           next_instruction = next_instruction->next;
           curr_instruction->remove(builder.context);
-        } else if (curr_op == instruction::BinaryOp::Sub
+        } else if (curr_op == BinaryOp::Sub
           && curr_lhs->is_int()
           && curr_rhs->is_int()
           && curr_rhs->is_constant()
-          && next_op == instruction::BinaryOp::Add
+          && next_op == BinaryOp::Add
           && next_lhs->is_int()
           && next_rhs->is_int()
           && next_rhs->is_constant()
@@ -332,7 +340,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           auto constant_value0 = std::get<int>(constant0->kind);
           auto constant_value1 = std::get<int>(constant1->kind);
           next_instruction->insert_next(builder.fetch_binary_instruction(
-            instruction::BinaryOp::Add, next_dst->id, curr_lhs->id,
+            BinaryOp::Add, next_dst->id, curr_lhs->id,
             builder.fetch_constant_operand(
               builder.fetch_i32_type(), (int)(constant_value1 - constant_value0)
             )
@@ -345,10 +353,9 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
       }
     }
     // TODO: remove getelementptr type ptr, 0, 0
-    else if (std::holds_alternative<instruction::GetElementPtr>(curr_instruction->kind)) {
-      auto curr_kind =
-      std::get<instruction::GetElementPtr>(curr_instruction->kind); 
-      auto curr_dst = builder.context.get_operand(curr_kind.dst_id); 
+    else if (maybe_getelementptr.has_value()) {
+      auto curr_kind = maybe_getelementptr.value();
+      auto curr_dst = builder.context.get_operand(curr_kind.dst_id);
       auto curr_ptr = builder.context.get_operand(curr_kind.ptr_id);
       bool replacable = true;
       for (auto index_operand_id : curr_kind.index_id_list) {
@@ -365,31 +372,29 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
       }
       if (replacable) {
         auto bitcast_instruction = builder.fetch_cast_instruction(
-              instruction::CastOp::BitCast, curr_dst->id, curr_ptr->id
-            );
-          curr_instruction->insert_next(bitcast_instruction);
-          next_instruction = curr_instruction->next;
-          curr_instruction->remove(builder.context);
+          CastOp::BitCast, curr_dst->id, curr_ptr->id
+        );
+        curr_instruction->insert_next(bitcast_instruction);
+        next_instruction = curr_instruction->next;
+        curr_instruction->remove(builder.context);
       }
-    } else if (std::holds_alternative<instruction::Cast>(curr_instruction->kind)) {
-      auto curr_kind =
-      std::get<instruction::Cast>(curr_instruction->kind); 
-      auto curr_dst = builder.context.get_operand(curr_kind.dst_id); 
+    } else if (maybe_cast.has_value()) {
+      auto curr_kind = maybe_cast.value();
+      auto curr_dst = builder.context.get_operand(curr_kind.dst_id);
       auto curr_src = builder.context.get_operand(curr_kind.src_id);
       auto curr_op = curr_kind.op;
-      if (curr_op == instruction::CastOp::BitCast 
-        && type::to_string(curr_dst->get_type()) == type::to_string(curr_src->get_type())) {
-          // bitcast dst, src are same type
-          // -> make all dst to src
-          auto use_id_list_copy = curr_dst->use_id_list;
-          for (auto use_instruction_id : use_id_list_copy) {
+      if (curr_op == CastOp::BitCast && *curr_dst->get_type() == *curr_src->get_type()) {
+        // bitcast dst, src are same type
+        // -> make all dst to src
+        auto use_id_list_copy = curr_dst->use_id_list;
+        for (auto use_instruction_id : use_id_list_copy) {
           auto instruction =
             builder.context.get_instruction(use_instruction_id);
           instruction->replace_operand(
             curr_dst->id, curr_src->id, builder.context
           );
-          }
-          curr_instruction->remove(builder.context);
+        }
+        curr_instruction->remove(builder.context);
       }
     }
 
