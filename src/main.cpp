@@ -21,6 +21,7 @@
 #include "passes/ir/straighten.h"
 #include "passes/ir/unreach_elim.h"
 #include "passes/ir/unused_elim.h"
+#include "passes/ir/math_opt.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -58,6 +59,7 @@ int main(int argc, char* argv[]) {
       ir::peephole(ir_builder);
       ir::unused_elim(ir_builder);
     }
+    ir::math_opt(ir_builder);
     ir::copyprop(ir_builder);
     // TODO: implement phi instruction in unreach_elim
     // ir::unreach_elim(ir_builder);

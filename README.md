@@ -85,11 +85,15 @@ Then just debug.
 - [x] Phi elimination.
   - Done in ASM.
   - [ ] Fix `hidden_functional/19_search`
-- [ ] Constant propagation
+- [x] Constant propagation
 - [ ] Strength reduction
   - [x] IR: integer multiplication to shift.
   - [x] IR: integer division by 2 to shift.
-  - [ ] IR: integer division by 2^k to shift.
+  - [x] IR: integer division by 2^k to shift.
 - [ ] `memcpy` for local arrays.
 - [ ] Loop invariant code motion
   - `performance/hoist`: sum is added 100 times and divided by 100.
+- [ ] global2local
+- [ ] unmodified variable to constant
+- [x] special: long add chain to mul 
+  - [x] Fix `performance/integer-divide-optimization`
