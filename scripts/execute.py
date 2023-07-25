@@ -534,6 +534,10 @@ def main():
             os.makedirs(args.output_dir)
 
         if args.native:
+            # wait for cooling
+            import time
+            time.sleep(30)
+            
             test_native(args.executable_path, args.testcase_dir,
                         args.output_dir, args.runtime_lib_dir, args.timeout,
                         args.opt_level, args.csv_file, args.performance)
