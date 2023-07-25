@@ -1,4 +1,4 @@
-#include "passes__cse.h"
+#include "passes__ir__cse.h"
 
 namespace syc {
 namespace ir {
@@ -18,8 +18,11 @@ void local_cse_function(FunctionPtr function, Builder& builder) {
 }
 
 void local_cse_basic_block(BasicBlockPtr basic_block, Builder& builder) {
-  std::map<std::tuple<instruction::BinaryOp, OperandID, 
-    std::variant<int, OperandID>>, OperandID> binary_expr_map;
+  using namespace instruction;
+
+  std::map<
+    std::tuple<BinaryOp, OperandID, std::variant<int, OperandID>>, OperandID>
+    binary_expr_map;
   std::map<
     std::tuple<size_t, OperandID, std::vector<std::variant<int, OperandID>>>,
     OperandID>
@@ -29,8 +32,11 @@ void local_cse_basic_block(BasicBlockPtr basic_block, Builder& builder) {
   while (curr_instruction != basic_block->tail_instruction) {
     auto next_instruction = curr_instruction->next;
 
-    if (curr_instruction->is_binary()) {
-      auto binary = std::get<instruction::Binary>(curr_instruction->kind);
+    auto maybe_binary = curr_instruction->as<Binary>();
+    auto maybe_getelementptr = curr_instruction->as<GetElementPtr>();
+
+    if (maybe_binary.has_value()) {
+      auto binary = maybe_binary.value();
       std::variant<int, OperandID> rhs_id_copy;
       if (builder.context.get_operand(binary.rhs_id)->is_constant()
           && builder.context.get_operand(binary.rhs_id)->is_int()) {
@@ -57,10 +63,8 @@ void local_cse_basic_block(BasicBlockPtr basic_block, Builder& builder) {
       } else {
         binary_expr_map[key] = binary.dst_id;
       }
-    } else if (curr_instruction->is_getelementptr()) {
-      auto getelementptr = std::get<instruction::GetElementPtr>(
-        curr_instruction->kind
-      );
+    } else if (maybe_getelementptr.has_value()) {
+      auto getelementptr = maybe_getelementptr.value();
       std::vector<std::variant<int, OperandID>> index_id_list_copy;
       for (auto index_id : getelementptr.index_id_list) {
         auto index_operand = builder.context.get_operand(index_id);
@@ -72,12 +76,9 @@ void local_cse_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           index_id_list_copy.push_back(index_id);
         }
       }
-      size_t type_index = getelementptr.basis_type->index();
-      auto key = std::make_tuple(
-        type_index,
-        getelementptr.ptr_id,
-        index_id_list_copy
-      );
+      size_t type_index = getelementptr.basis_type->kind.index();
+      auto key =
+        std::make_tuple(type_index, getelementptr.ptr_id, index_id_list_copy);
       if (getelementptr_expr_map.count(key)) {
         auto existed_operand_id = getelementptr_expr_map[key];
         auto dst = builder.context.get_operand(getelementptr.dst_id);

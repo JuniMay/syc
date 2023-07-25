@@ -1,5 +1,5 @@
-#ifndef SYC_PASSES_UNUSED_ELIM_H_
-#define SYC_PASSES_UNUSED_ELIM_H_
+#ifndef SYC_PASSES_IR_UNUSED_ELIM_H_
+#define SYC_PASSES_IR_UNUSED_ELIM_H_
 
 #include "common.h"
 #include "ir__builder.h"
@@ -17,4 +17,4 @@ void unused_elim_basic_block(BasicBlockPtr basic_block, Builder& builder);
 }  // namespace ir
 }  // namespace syc
 
-#endif  // SYC_PASSES_UNUSED_ELIM_H_
+#endif  // SYC_PASSES_IR_UNUSED_ELIM_H_

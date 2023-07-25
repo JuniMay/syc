@@ -1,4 +1,4 @@
-#include "passes__unreach_elim.h"
+#include "passes__ir__unreach_elim.h"
 
 namespace syc {
 

@@ -7,19 +7,22 @@
 #include "ir__builder.h"
 #include "ir__codegen.h"
 #include "ir__instruction.h"
-#include "passes__asm_dce.h"
-#include "passes__asm_peephole.h"
-#include "passes__asm_peephole_second.h"
-#include "passes__auto_inline.h"
-#include "passes__cse.h"
-#include "passes__ir_peephole.h"
-#include "passes__linear_scan.h"
-#include "passes__load_elim.h"
-#include "passes__mem2reg.h"
-#include "passes__phi_elim.h"
-#include "passes__straighten.h"
-#include "passes__unreach_elim.h"
-#include "passes__unused_elim.h"
+#include "passes__asm__dce.h"
+#include "passes__asm__linear_scan.h"
+#include "passes__asm__peephole.h"
+#include "passes__asm__peephole_second.h"
+#include "passes__asm__phi_elim.h"
+#include "passes__ir__auto_inline.h"
+#include "passes__ir__copyprop.h"
+#include "passes__ir__cse.h"
+#include "passes__ir__global2local.h"
+#include "passes__ir__load_elim.h"
+#include "passes__ir__mem2reg.h"
+#include "passes__ir__peephole.h"
+#include "passes__ir__straighten.h"
+#include "passes__ir__unreach_elim.h"
+#include "passes__ir__unused_elim.h"
+#include "passes__ir__math_opt.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -50,6 +53,8 @@ int main(int argc, char* argv[]) {
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
     ir::auto_inline(ir_builder);
+    ir::global2local(ir_builder);
+    ir::mem2reg(ir_builder);
     ir::straighten(ir_builder);
     ir::load_elim(ir_builder);
     for (int i = 0; i < 3; i++) {
@@ -57,6 +62,8 @@ int main(int argc, char* argv[]) {
       ir::peephole(ir_builder);
       ir::unused_elim(ir_builder);
     }
+    ir::math_opt(ir_builder);
+    ir::copyprop(ir_builder);
     // TODO: implement phi instruction in unreach_elim
     // ir::unreach_elim(ir_builder);
   }

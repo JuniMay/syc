@@ -1,5 +1,5 @@
-#ifndef SYC_PASSES_LINEAR_SCAN_H_
-#define SYC_PASSES_LINEAR_SCAN_H_
+#ifndef SYC_PASSES_ASM_LINEAR_SCAN_H_
+#define SYC_PASSES_ASM_LINEAR_SCAN_H_
 
 #include "backend__basic_block.h"
 #include "backend__builder.h"

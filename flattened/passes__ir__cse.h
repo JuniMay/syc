@@ -1,5 +1,5 @@
-#ifndef SYC_PASSES_CSE_H_
-#define SYC_PASSES_CSE_H_
+#ifndef SYC_PASSES_IR_CSE_H_
+#define SYC_PASSES_IR_CSE_H_
 
 #include "common.h"
 #include "ir__basic_block.h"
