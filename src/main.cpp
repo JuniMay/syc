@@ -15,6 +15,7 @@
 #include "passes/ir/auto_inline.h"
 #include "passes/ir/copyprop.h"
 #include "passes/ir/cse.h"
+#include "passes/ir/global2local.h"
 #include "passes/ir/load_elim.h"
 #include "passes/ir/mem2reg.h"
 #include "passes/ir/peephole.h"
@@ -51,6 +52,8 @@ int main(int argc, char* argv[]) {
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
     ir::auto_inline(ir_builder);
+    ir::global2local(ir_builder);
+    ir::mem2reg(ir_builder);
     ir::straighten(ir_builder);
     ir::load_elim(ir_builder);
     for (int i = 0; i < 3; i++) {
