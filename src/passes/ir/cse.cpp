@@ -19,6 +19,7 @@ void local_cse_function(FunctionPtr function, Builder& builder) {
 
 void local_cse_basic_block(BasicBlockPtr basic_block, Builder& builder) {
   using namespace instruction;
+  builder.set_curr_basic_block(basic_block);
 
   std::map<
     std::tuple<BinaryOp, OperandID, std::variant<int, OperandID>>, OperandID>

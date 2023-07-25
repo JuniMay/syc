@@ -19,6 +19,7 @@ void load_elim_function(FunctionPtr function, Builder& builder) {
 
 void load_elim_basic_block(BasicBlockPtr basic_block, Builder& builder) {
   using namespace instruction;
+  builder.set_curr_basic_block(basic_block);
 
   std::map<OperandID, OperandID> loaded_id_map;
   auto curr_instruction = basic_block->head_instruction->next;
