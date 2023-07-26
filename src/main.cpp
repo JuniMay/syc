@@ -17,12 +17,13 @@
 #include "passes/ir/cse.h"
 #include "passes/ir/global2local.h"
 #include "passes/ir/load_elim.h"
+#include "passes/ir/loop_opt.h"
+#include "passes/ir/math_opt.h"
 #include "passes/ir/mem2reg.h"
 #include "passes/ir/peephole.h"
 #include "passes/ir/straighten.h"
 #include "passes/ir/unreach_elim.h"
 #include "passes/ir/unused_elim.h"
-#include "passes/ir/math_opt.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -53,10 +54,15 @@ int main(int argc, char* argv[]) {
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
     ir::auto_inline(ir_builder);
-    // ir::global2local(ir_builder);
-    // ir::mem2reg(ir_builder);
-    ir::straighten(ir_builder);
+    // FIXME: Global2local cause extremely slow `performance/bitset`
+    ir::global2local(ir_builder);
+    ir::mem2reg(ir_builder);
     ir::load_elim(ir_builder);
+    ir::peephole(ir_builder);
+    ir::loop_opt(ir_builder);
+    // TODO: Refactor straighten
+    // ir::straighten(ir_builder);
+    ir::peephole(ir_builder);
     for (int i = 0; i < 3; i++) {
       ir::local_cse(ir_builder);
       ir::peephole(ir_builder);
@@ -64,7 +70,8 @@ int main(int argc, char* argv[]) {
     }
     ir::math_opt(ir_builder);
     ir::copyprop(ir_builder);
-    // TODO: implement phi instruction in unreach_elim
+
+    // TODO: Refactor unreach elim
     // ir::unreach_elim(ir_builder);
   }
 

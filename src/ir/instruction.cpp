@@ -321,6 +321,15 @@ void Instruction::remove(Context& context) {
   }
 }
 
+void Instruction::raw_remove() {
+  if (auto prev = this->prev.lock()) {
+    prev->next = this->next;
+  }
+  if (this->next) {
+    this->next->prev = this->prev;
+  }
+}
+
 bool Instruction::is_terminator() const {
   return as<instruction::Br>().has_value() ||
          as<instruction::CondBr>().has_value() ||
@@ -388,7 +397,9 @@ Instruction::Instruction(
 std::string Instruction::to_string(Context& context) {
   using namespace instruction;
 
-  return std::visit(
+  std::string result = "";
+
+  result = std::visit(
     overloaded{
       [&context](const Binary& instruction) {
         auto dst_str = context.get_operand(instruction.dst_id)->to_string();
@@ -760,6 +771,10 @@ std::string Instruction::to_string(Context& context) {
     },
     kind
   );
+
+  result += "\t; parent: " + std::to_string(this->parent_block_id);
+
+  return result;
 }
 
 }  // namespace ir

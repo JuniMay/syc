@@ -265,6 +265,9 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
   /// Remove the instruction from the linked list.
   void remove(Context& context);
 
+  /// Remove the instruction without updating the use-def chain.
+  void raw_remove();
+
   /// Convert the instruction to a string of IR form.
   std::string to_string(Context& context);
 
