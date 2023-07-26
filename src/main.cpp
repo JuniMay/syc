@@ -53,8 +53,8 @@ int main(int argc, char* argv[]) {
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
     ir::auto_inline(ir_builder);
-    ir::global2local(ir_builder);
-    ir::mem2reg(ir_builder);
+    // ir::global2local(ir_builder);
+    // ir::mem2reg(ir_builder);
     ir::straighten(ir_builder);
     ir::load_elim(ir_builder);
     for (int i = 0; i < 3; i++) {
