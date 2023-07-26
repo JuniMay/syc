@@ -9,7 +9,6 @@ void control_flow_analysis(
   ControlFlowAnalysisContext& cfa_ctx
 ) {
   cfa_ctx.idom_map.clear();
-  cfa_ctx.height_map.clear();
   cfa_ctx.dominance_frontier_map.clear();
 
   // Compute idom
