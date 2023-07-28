@@ -147,7 +147,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
       } else if (rd->is_vreg() 
         && rs1->is_zero() 
         && (op == Binary::ADD || op == Binary::ADDW)) {
-        if (rd->use_id_list.size() == 1) {
+        if (rd->def_id_list.size() == 1) {
           auto use_id_list_copy = rd->use_id_list;
           for (auto use_instruction_id : use_id_list_copy) {
             auto instruction =
@@ -159,7 +159,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
       } else if (rd->is_vreg() 
         && rs2->is_zero() 
         && (op == Binary::ADD || op == Binary::ADDW)) {
-        if (rd->use_id_list.size() == 1) {
+        if (rd->def_id_list.size() == 1) {
           auto use_id_list_copy = rd->use_id_list;
           for (auto use_instruction_id : use_id_list_copy) {
             auto instruction =

@@ -170,6 +170,9 @@ struct Builder {
     BasicBlockID block_id
   );
 
+  // Prepend instruction to current basic block
+  void prepend_instruction(InstructionPtr instruction);
+
   void append_instruction(InstructionPtr instruction);
 
   void set_curr_basic_block(BasicBlockPtr basic_block);

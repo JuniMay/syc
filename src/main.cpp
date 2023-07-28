@@ -88,12 +88,15 @@ int main(int argc, char* argv[]) {
 
   codegen(ir_builder.context, asm_builder, codegen_context);
 
-  backend::peephole(asm_builder);
+  // FIXME: this causes `functional/87_many_params` WA.
+  // backend::peephole(asm_builder);
   backend::dce(asm_builder);
 
   if (options.optimization_level > 0) {
-    // FIXME: `hidden_functional/search`
     backend::phi_elim(asm_builder);
+    // FIXME: this causes `hidden_functional/19_search` WA.
+    // backend::peephole(asm_builder);
+    backend::dce(asm_builder);
     backend::peephole_second(asm_builder);
   }
 
