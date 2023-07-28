@@ -26,6 +26,8 @@ void peephole_function(FunctionPtr function, Builder& builder) {
 void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
   using namespace instruction;
 
+  // TODO: reaching definition analysis
+
   auto curr_instruction = basic_block->head_instruction->next;
   while (curr_instruction != basic_block->tail_instruction) {
     auto next_instruction = curr_instruction->next;
@@ -40,7 +42,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
       auto imm = builder.context.get_operand(kind.imm_id);
 
       if (rd->is_vreg() && rs->is_vreg() && imm->is_zero() && (op == BinaryImm::ADDI || op == BinaryImm::ADDIW)) {
-        if (rd->def_id_list.size() == 1) {
+        if (rd->def_id_list.size() == 1 && rs->def_id_list.size() == 1) {
           // remove: addi(w) v0, v1, 0
           // make all the uses of v0 use v1 instead
           auto use_id_list_copy = rd->use_id_list;
@@ -68,8 +70,11 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
             next_instruction->replace_operand(
               load_imm->id, imm->id, builder.context
             );
+
             // remove current instruction
-            curr_instruction->remove(builder.context);
+            if (rd->use_id_list.size() == 0) {
+              curr_instruction->remove(builder.context);
+            }
           }
 
         } else if (next_instruction->as<Store>().has_value()) {
@@ -86,8 +91,11 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
             next_instruction->replace_operand(
               store_imm->id, imm->id, builder.context
             );
+
             // remove current instruction
-            curr_instruction->remove(builder.context);
+            if (rd->use_id_list.size() == 0) {
+              curr_instruction->remove(builder.context);
+            }
           }
         }
       }
@@ -121,7 +129,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
     if (maybe_binary.has_value()) {
       // remove: mul v0, zero, v1
       //         mul v0, v1, zero
-      // remove: add/sub(w) v0, zero, v1
+      // remove: add v0, zero, v1
       //         add/sub(w) v0, v1, zero
       const auto& kind = maybe_binary.value();
       auto op = kind.op;
@@ -129,9 +137,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
       auto rs1 = builder.context.get_operand(kind.rs1_id);
       auto rs2 = builder.context.get_operand(kind.rs2_id);
 
-      if (rd->is_vreg() 
-        && (rs1->is_zero() || rs2->is_zero()) 
-        && (op == Binary::MUL || op == Binary::MULW)) {
+      if (rd->is_vreg() && (rs1->is_zero() || rs2->is_zero()) && (op == Binary::MUL || op == Binary::MULW)) {
         if (rd->def_id_list.size() == 1) {
           auto use_id_list_copy = rd->use_id_list;
           for (auto use_instruction_id : use_id_list_copy) {
@@ -144,10 +150,8 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           }
           curr_instruction->remove(builder.context);
         }
-      } else if (rd->is_vreg() 
-        && rs1->is_zero() 
-        && (op == Binary::ADD || op == Binary::ADDW)) {
-        if (rd->def_id_list.size() == 1) {
+      } else if (rd->is_vreg() && rs1->is_zero() && (op == Binary::ADD || op == Binary::ADDW)) {
+        if (rd->def_id_list.size() == 1 && rs2->def_id_list.size() == 1) {
           auto use_id_list_copy = rd->use_id_list;
           for (auto use_instruction_id : use_id_list_copy) {
             auto instruction =
@@ -156,10 +160,8 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           }
           curr_instruction->remove(builder.context);
         }
-      } else if (rd->is_vreg() 
-        && rs2->is_zero() 
-        && (op == Binary::ADD || op == Binary::ADDW)) {
-        if (rd->def_id_list.size() == 1) {
+      } else if (rd->is_vreg() && rs2->is_zero() && (op == Binary::ADD || op == Binary::ADDW || op == Binary::SUB || op == Binary::SUBW)) {
+        if (rd->def_id_list.size() == 1 && rs1->def_id_list.size() == 1) {
           auto use_id_list_copy = rd->use_id_list;
           for (auto use_instruction_id : use_id_list_copy) {
             auto instruction =
