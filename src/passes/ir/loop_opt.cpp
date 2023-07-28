@@ -228,6 +228,10 @@ void code_motion(Builder& builder, LoopOptContext& loop_opt_ctx) {
 
     // Modify phi instructions
     auto curr_instr = header->head_instruction->next;
+
+    std::vector<InstructionPtr> moved_instr_list;
+    std::vector<InstructionPtr> kept_instr_list;
+
     while (curr_instr != header->tail_instruction && curr_instr->is_phi()) {
       auto next_instr = curr_instr->next;
 
@@ -269,14 +273,23 @@ void code_motion(Builder& builder, LoopOptContext& loop_opt_ctx) {
       // Remove old phi
       curr_instr->remove(builder.context);
 
-      // Insert new phi
-      builder.set_curr_basic_block(header);
-      builder.prepend_instruction_to_curr_basic_block(kept_phi_instr);
-
-      builder.set_curr_basic_block(preheader);
-      builder.prepend_instruction_to_curr_basic_block(moved_phi_instr);
+      kept_instr_list.push_back(kept_phi_instr);
+      moved_instr_list.push_back(moved_phi_instr);
 
       curr_instr = next_instr;
+    }
+
+    builder.set_curr_basic_block(header);
+    // reverse traversal
+    for (auto it = kept_instr_list.rbegin(); it != kept_instr_list.rend();
+         ++it) {
+      builder.prepend_instruction_to_curr_basic_block(*it);
+    }
+
+    builder.set_curr_basic_block(preheader);
+    for (auto it = moved_instr_list.rbegin(); it != moved_instr_list.rend();
+         ++it) {
+      builder.prepend_instruction_to_curr_basic_block(*it);
     }
 
     // Modify preds' succs and branches
