@@ -26,12 +26,30 @@ void phi_elim_function(FunctionPtr function, Builder& builder) {
 
     auto curr_instr = curr_bb->head_instruction->next;
 
+    std::set<OperandID> phi_def_set;
+    std::set<OperandID> conflict_set;
+
+    // Detect if there might be a conflict
+    while (curr_instr->is_phi() && curr_instr != curr_bb->tail_instruction) {
+      auto phi = curr_instr->as<instruction::Phi>().value();
+
+      for (auto [operand_id, _] : phi.incoming_list) {
+        if (phi_def_set.count(operand_id)) {
+          conflict_set.insert(operand_id);
+        }
+      }
+      phi_def_set.insert(phi.rd_id);
+
+      curr_instr = curr_instr->next;
+    }
+
     std::map<BasicBlockID, BasicBlockID> block_jmp_map;
 
     std::map<BasicBlockID, std::vector<InstructionPtr>> block_instr_map;
 
     std::map<OperandID, OperandID> operand_map;
 
+    curr_instr = curr_bb->head_instruction->next;
     while (curr_instr->is_phi() && curr_instr != curr_bb->tail_instruction) {
       auto next_instr = curr_instr->next;
 
@@ -39,17 +57,19 @@ void phi_elim_function(FunctionPtr function, Builder& builder) {
 
       auto phi_rd = builder.context.get_operand(phi.rd_id);
 
-      OperandID phi_tmp_rd_id;
+      OperandID phi_tmp_rd_id = phi_rd->id;
 
-      if (phi_rd->is_float()) {
-        phi_tmp_rd_id =
-          builder.fetch_virtual_register(VirtualRegisterKind::Float);
-      } else {
-        phi_tmp_rd_id =
-          builder.fetch_virtual_register(VirtualRegisterKind::General);
+      if (conflict_set.count(phi_rd->id)) {
+        if (phi_rd->is_float()) {
+          phi_tmp_rd_id =
+            builder.fetch_virtual_register(VirtualRegisterKind::Float);
+        } else {
+          phi_tmp_rd_id =
+            builder.fetch_virtual_register(VirtualRegisterKind::General);
+        }
+
+        operand_map[phi.rd_id] = phi_tmp_rd_id;
       }
-
-      operand_map[phi.rd_id] = phi_tmp_rd_id;
 
       for (const auto& [operand_id, pred_id] : phi.incoming_list) {
         auto operand = builder.context.get_operand(operand_id);
