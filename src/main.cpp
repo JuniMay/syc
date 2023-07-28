@@ -60,8 +60,9 @@ int main(int argc, char* argv[]) {
     ir::load_elim(ir_builder);
     ir::peephole(ir_builder);
     ir::loop_opt(ir_builder);
-    // TODO: Refactor straighten
-    // ir::straighten(ir_builder);
+    // TODO: Refactor unreach elim
+    // ir::unreach_elim(ir_builder);
+    ir::straighten(ir_builder);
     ir::peephole(ir_builder);
     for (int i = 0; i < 3; i++) {
       ir::local_cse(ir_builder);
@@ -70,9 +71,6 @@ int main(int argc, char* argv[]) {
     }
     ir::math_opt(ir_builder);
     ir::copyprop(ir_builder);
-
-    // TODO: Refactor unreach elim
-    // ir::unreach_elim(ir_builder);
   }
 
   if (options.ir_file.has_value()) {
