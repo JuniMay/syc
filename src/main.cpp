@@ -15,6 +15,7 @@
 #include "passes/ir/auto_inline.h"
 #include "passes/ir/copyprop.h"
 #include "passes/ir/cse.h"
+#include "passes/ir/dce.h"
 #include "passes/ir/global2local.h"
 #include "passes/ir/load_elim.h"
 #include "passes/ir/loop_opt.h"
@@ -22,8 +23,8 @@
 #include "passes/ir/mem2reg.h"
 #include "passes/ir/peephole.h"
 #include "passes/ir/straighten.h"
+#include "passes/ir/strength_reduce.h"
 #include "passes/ir/unreach_elim.h"
-#include "passes/ir/unused_elim.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -67,9 +68,10 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < 3; i++) {
       ir::local_cse(ir_builder);
       ir::peephole(ir_builder);
-      ir::unused_elim(ir_builder);
+      ir::dce(ir_builder);
     }
     ir::math_opt(ir_builder);
+    ir::strength_reduce(ir_builder);
     ir::copyprop(ir_builder);
   }
 

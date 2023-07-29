@@ -1,4 +1,4 @@
-#include "passes/ir/unused_elim.h"
+#include "passes/ir/dce.h"
 #include "ir/basic_block.h"
 #include "ir/builder.h"
 #include "ir/function.h"
@@ -8,21 +8,21 @@
 namespace syc {
 namespace ir {
 
-void unused_elim(Builder& builder) {
+void dce(Builder& builder) {
   for (auto [function_name, function] : builder.context.function_table) {
-    unused_elim_function(function, builder);
+    dce_function(function, builder);
   }
 }
 
-void unused_elim_function(FunctionPtr function, Builder& builder) {
+void dce_function(FunctionPtr function, Builder& builder) {
   auto curr_basic_block = function->head_basic_block->next;
   while (curr_basic_block != function->tail_basic_block) {
-    unused_elim_basic_block(curr_basic_block, builder);
+    dce_basic_block(curr_basic_block, builder);
     curr_basic_block = curr_basic_block->next;
   }
 }
 
-void unused_elim_basic_block(BasicBlockPtr basic_block, Builder& builder) {
+void dce_basic_block(BasicBlockPtr basic_block, Builder& builder) {
   builder.set_curr_basic_block(basic_block);
   auto curr_instruction = basic_block->head_instruction->next;
 
