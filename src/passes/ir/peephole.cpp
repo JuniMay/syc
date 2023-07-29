@@ -33,6 +33,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
     auto maybe_binary = curr_instruction->as<Binary>();
     auto maybe_getelementptr = curr_instruction->as<GetElementPtr>();
     auto maybe_cast = curr_instruction->as<Cast>();
+    auto maybe_phi = curr_instruction->as<Phi>();
 
     if (maybe_binary.has_value()) {
       auto curr_kind = maybe_binary.value();
@@ -150,8 +151,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           next_instruction = curr_instruction->next;
           curr_instruction->remove(builder.context);
         }
-      } 
-      else if (curr_op == BinaryOp::SRem
+      } else if (curr_op == BinaryOp::SRem
         && curr_lhs->is_int()
         && curr_rhs->is_int()
         && curr_rhs->is_constant()) {
@@ -194,8 +194,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           next_instruction = curr_instruction->next;
           curr_instruction->remove(builder.context);
         }
-      } 
-      else if (curr_op == BinaryOp::Sub
+      } else if (curr_op == BinaryOp::Sub
         && curr_lhs->is_int()
         && curr_rhs->is_int()
         && curr_rhs->is_constant()) {
@@ -352,9 +351,8 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           curr_instruction->remove(builder.context);
         }
       }
-    }
-    // TODO: remove getelementptr type ptr, 0, 0
-    else if (maybe_getelementptr.has_value()) {
+    } else if (maybe_getelementptr.has_value()) {
+      // TODO: remove getelementptr type ptr, 0, 0
       auto curr_kind = maybe_getelementptr.value();
       auto curr_dst = builder.context.get_operand(curr_kind.dst_id);
       auto curr_ptr = builder.context.get_operand(curr_kind.ptr_id);
@@ -394,6 +392,19 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           instruction->replace_operand(
             curr_dst->id, curr_src->id, builder.context
           );
+        }
+        curr_instruction->remove(builder.context);
+      }
+    } else if (maybe_phi.has_value()) {
+      auto phi = maybe_phi.value();
+
+      if (phi.incoming_list.size() == 1) {
+        auto [operand_id, block_id] = phi.incoming_list[0];
+        auto dst = builder.context.get_operand(phi.dst_id);
+        auto use_id_list_copy = dst->use_id_list;
+        for (auto instruction_id : use_id_list_copy) {
+          auto instruction = builder.context.get_instruction(instruction_id);
+          instruction->replace_operand(dst->id, operand_id, builder.context);
         }
         curr_instruction->remove(builder.context);
       }

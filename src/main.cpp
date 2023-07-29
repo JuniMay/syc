@@ -58,8 +58,8 @@ int main(int argc, char* argv[]) {
     ir::global2local(ir_builder);
     ir::mem2reg(ir_builder);
     ir::load_elim(ir_builder);
-    ir::peephole(ir_builder);
     ir::loop_opt(ir_builder);
+    ir::peephole(ir_builder);
     // TODO: Refactor unreach elim
     // ir::unreach_elim(ir_builder);
     ir::straighten(ir_builder);
