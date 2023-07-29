@@ -86,6 +86,8 @@ struct Operand {
   bool is_parameter() const;
 
   bool is_arbitrary() const;
+
+  bool is_zero() const;
 };
 
 }  // namespace ir

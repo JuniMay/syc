@@ -71,8 +71,9 @@ int main(int argc, char* argv[]) {
       ir::dce(ir_builder);
     }
     ir::math_opt(ir_builder);
-    ir::strength_reduce(ir_builder);
+    ir::dce(ir_builder);
     ir::copyprop(ir_builder);
+    ir::strength_reduce(ir_builder);
   }
 
   if (options.ir_file.has_value()) {
