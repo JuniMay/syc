@@ -77,6 +77,9 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
         }
       }
 
+      curr_dst_id = curr_instruction->as<Phi>()->dst_id;
+      instruction_key = curr_instruction->as<Phi>()->incoming_list;
+
       if (phi_expr_map.count(instruction_key) > 0) {
         // redundant phi instruction
         value_number_map[curr_dst_id] = phi_expr_map[instruction_key];
@@ -104,6 +107,11 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
           curr_rhs_id, value_number_map[curr_rhs_id], builder.context
         );
       }
+
+      curr_lhs_id = curr_instruction->as<Binary>()->lhs_id;
+      curr_rhs_id = curr_instruction->as<Binary>()->rhs_id;
+      curr_dst_id = curr_instruction->as<Binary>()->dst_id;
+      curr_op = curr_instruction->as<Binary>()->op;
 
       // generate instruction key
       std::variant<int, OperandID> lhs_id_copy;
@@ -162,6 +170,13 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
         curr_instruction->replace_operand(curr_rhs_id, value_number_map[curr_rhs_id], builder.context);
       }
 
+      curr_dst_id = curr_instruction->as<ICmp>()->dst_id;
+      curr_cond = curr_instruction->as<ICmp>()->cond;
+      curr_lhs_id = curr_instruction->as<ICmp>()->lhs_id;
+      curr_rhs_id = curr_instruction->as<ICmp>()->rhs_id;
+      curr_lhs_operand = builder.context.get_operand(curr_lhs_id);
+      curr_rhs_operand = builder.context.get_operand(curr_rhs_id);
+
       // generate instrction key
       std::variant<int, OperandID> lhs_id_copy;
       std::variant<int, OperandID> rhs_id_copy;
@@ -219,7 +234,11 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
           );
         }
       }
-      
+
+      curr_dst_id = curr_instruction->as<GetElementPtr>()->dst_id;
+      curr_ptr_id = curr_instruction->as<GetElementPtr>()->ptr_id;
+      curr_index_id_list = curr_instruction->as<GetElementPtr>()->index_id_list;
+
       // generate instruction value
       std::vector<std::variant<int, OperandID>> index_id_list_copy;
       for (auto curr_index_id : curr_index_id_list) {
@@ -264,7 +283,9 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
     //     );
     //   }
 
-    //   auto curr_ptr_operand = builder.context.get_operand(curr_ptr_id);
+    //   curr_ptr_id = curr_instruction->as<Store>()->ptr_id;
+    //   curr_value_id = curr_instruction->as<Store>()->value_id;
+    //   curr_ptr_operand = builder.context.get_operand(curr_ptr_id);
 
     //   // TODO: maybe we can optimize better??
     //   if (inv_getelementptr_expr_map.count(curr_ptr_id)) {
@@ -291,7 +312,11 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
     //     curr_instruction->replace_operand(
     //       curr_ptr_id, value_number_map[curr_ptr_id], builder.context
     //     );
+    //     curr_ptr_id = value_number_map[curr_ptr_id];
     //   }
+
+    //   curr_dst_id = curr_instruction->as<Load>()->dst_id;
+    //   curr_ptr_id = curr_instruction->as<Load>()->ptr_id;
 
     //   // get related gep expr from inv_getelementptr_expr_map
     //   std::tuple<syc::ir::OperandID, std::vector<std::variant<int, syc::ir::OperandID>>> related_gep_expr;
