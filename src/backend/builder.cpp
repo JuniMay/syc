@@ -515,6 +515,16 @@ InstructionPtr Builder::fetch_phi_instruction(
   return instruction;
 }
 
+InstructionPtr Builder::fetch_ecall_instruction() {
+  auto id = context.get_next_instruction_id();
+  auto kind = InstructionKind(instruction::Ecall{});
+  auto instruction = create_instruction(id, kind, curr_basic_block->id);
+
+  context.register_instruction(instruction);
+
+  return instruction;
+}
+
 void Builder::prepend_instruction(InstructionPtr instruction) {
   curr_basic_block->prepend_instruction(instruction);
   instruction->parent_block_id = curr_basic_block->id;

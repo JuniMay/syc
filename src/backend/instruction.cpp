@@ -1269,6 +1269,7 @@ std::string Instruction::to_string(Context& context) {
 
         return ss.str();
       },
+      [&context](const Ecall& instruction) -> std::string { return "ecall"; },
       [&context](const auto& instruction) -> std::string { return ""; },
     },
     kind

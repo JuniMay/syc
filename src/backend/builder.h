@@ -173,6 +173,8 @@ struct Builder {
     BasicBlockID block_id
   );
 
+  InstructionPtr fetch_ecall_instruction();
+
   // Prepend instruction to current basic block
   void prepend_instruction(InstructionPtr instruction);
 

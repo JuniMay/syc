@@ -379,6 +379,26 @@ void codegen_function_prolouge(
     entry_block->prepend_instruction(add_instruction);
     entry_block->prepend_instruction(li_instruction);
   }
+
+  if (function_name == "main") {
+    // add following instructions to main
+    // li a0, -20
+    // li a7, 34
+    // ecall
+    auto li_a0_instruction = builder.fetch_li_instruction(
+      builder.fetch_register(Register{GeneralRegister::A0}),
+      builder.fetch_immediate(-20)
+    );
+    auto li_a7_instruction = builder.fetch_li_instruction(
+      builder.fetch_register(Register{GeneralRegister::A7}),
+      builder.fetch_immediate(34)
+    );
+    auto ecall_instruction = builder.fetch_ecall_instruction();
+    
+    entry_block->prepend_instruction(ecall_instruction);
+    entry_block->prepend_instruction(li_a7_instruction);
+    entry_block->prepend_instruction(li_a0_instruction);
+  }
 }
 
 void codegen_function_epilouge(

@@ -356,6 +356,8 @@ struct Phi {
   std::vector<std::tuple<OperandID, BasicBlockID>> incoming_list;
 };
 
+struct Ecall {};
+
 }  // namespace instruction
 
 /// Machine instruction

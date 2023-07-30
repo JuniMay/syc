@@ -294,6 +294,7 @@ struct Ret;
 struct J;
 struct Dummy;
 struct Phi;
+struct Ecall;
 
 }  // namespace instruction
 
@@ -320,7 +321,8 @@ using InstructionKind = std::variant<
   instruction::Ret,
   instruction::J,
   instruction::Dummy,
-  instruction::Phi>;
+  instruction::Phi,
+  instruction::Ecall>;
 
 using InstructionID = size_t;
 
