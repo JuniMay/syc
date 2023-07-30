@@ -125,6 +125,13 @@ bool Operand::is_arbitrary() const {
   return std::holds_alternative<operand::Arbitrary>(kind);
 }
 
+bool Operand::is_zero() const {
+  if (this->is_constant()) {
+    return std::get<operand::ConstantPtr>(kind)->is_zero();
+  }
+  return false;
+}
+
 bool Operand::is_global() const {
   return std::holds_alternative<operand::Global>(kind);
 }

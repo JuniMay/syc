@@ -492,6 +492,11 @@ InstructionPtr Builder::fetch_phi_instruction(
   return instruction;
 }
 
+void Builder::prepend_instruction(InstructionPtr instruction) {
+  curr_basic_block->prepend_instruction(instruction);
+  instruction->parent_block_id = curr_basic_block->id;
+}
+
 void Builder::append_instruction(InstructionPtr instruction) {
   curr_basic_block->append_instruction(instruction);
   auto maybe_basic_block_id = instruction->get_basic_block_id_if_branch();

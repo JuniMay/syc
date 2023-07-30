@@ -87,6 +87,8 @@ struct Operand {
 
   bool is_arbitrary() const;
 
+  bool is_zero() const;
+
   bool is_global() const;
 };
 

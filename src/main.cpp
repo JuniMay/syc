@@ -15,6 +15,7 @@
 #include "passes/ir/auto_inline.h"
 #include "passes/ir/copyprop.h"
 #include "passes/ir/cse.h"
+#include "passes/ir/dce.h"
 #include "passes/ir/global2local.h"
 #include "passes/ir/load_elim.h"
 #include "passes/ir/loop_opt.h"
@@ -22,8 +23,8 @@
 #include "passes/ir/mem2reg.h"
 #include "passes/ir/peephole.h"
 #include "passes/ir/straighten.h"
+#include "passes/ir/strength_reduce.h"
 #include "passes/ir/unreach_elim.h"
-#include "passes/ir/unused_elim.h"
 #include "passes/ir/gvn.h"
 #include "utils.h"
 
@@ -61,8 +62,8 @@ int main(int argc, char* argv[]) {
     if(options.optimization_level > 1)
       ir::gvn(ir_builder);
     ir::load_elim(ir_builder);
-    ir::peephole(ir_builder);
     ir::loop_opt(ir_builder);
+    ir::peephole(ir_builder);
     // TODO: Refactor unreach elim
     ir::unreach_elim(ir_builder);
     ir::straighten(ir_builder);
@@ -70,11 +71,12 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < 3; i++) {
     //   ir::local_cse(ir_builder);
       ir::peephole(ir_builder);
-      ir::unused_elim(ir_builder);
+      ir::dce(ir_builder);
     }
     ir::math_opt(ir_builder);
+    ir::dce(ir_builder);
     ir::copyprop(ir_builder);
-    // ir::local_cse(ir_builder);
+    ir::strength_reduce(ir_builder);
   }
 
   if (options.ir_file.has_value()) {
@@ -96,8 +98,11 @@ int main(int argc, char* argv[]) {
   backend::dce(asm_builder);
 
   if (options.optimization_level > 0) {
-    // FIXME: `hidden_functional/search`
     backend::phi_elim(asm_builder);
+    for (int i = 0; i < 3; i++) {
+      backend::peephole(asm_builder);
+      backend::dce(asm_builder);
+    }
     backend::peephole_second(asm_builder);
   }
 
