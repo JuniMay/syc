@@ -12,11 +12,11 @@
 namespace syc {
 namespace ir {
 
-void gvn(Builder& builder);
+void gvn(Builder& builder, bool is_aggressive);
 
-void gvn_function(FunctionPtr function, Builder& builder);
+void gvn_function(FunctionPtr function, Builder& builder, bool is_aggressive);
 
-void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& builder);
+void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& builder, bool is_aggressive);
 
 }  // namespace ir
 }  // namespace syc

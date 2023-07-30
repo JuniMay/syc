@@ -58,7 +58,8 @@ int main(int argc, char* argv[]) {
     // FIXME: Global2local cause extremely slow `performance/bitset`
     ir::global2local(ir_builder);
     ir::mem2reg(ir_builder);
-    ir::gvn(ir_builder);
+    bool is_aggressive_gvn = false;
+    ir::gvn(ir_builder, is_aggressive_gvn);
     ir::load_elim(ir_builder);
     ir::loop_opt(ir_builder);
     ir::peephole(ir_builder);
