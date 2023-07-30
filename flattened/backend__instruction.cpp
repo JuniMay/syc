@@ -297,6 +297,314 @@ void Instruction::replace_operand(
   );
 }
 
+void Instruction::replace_def_operand(
+  OperandID old_operand_id,
+  OperandID new_operand_id,
+  Context& context
+) {
+  using namespace instruction;
+
+  if (old_operand_id == new_operand_id) {
+    return;
+  }
+
+  auto old_operand = context.get_operand(old_operand_id);
+  auto new_operand = context.get_operand(new_operand_id);
+
+  if (std::find(this->def_id_list.begin(), this->def_id_list.end(), old_operand_id) != this->def_id_list.end()) {
+    this->def_id_list.erase(std::find(
+      this->def_id_list.begin(), this->def_id_list.end(), old_operand_id
+    ));
+    this->def_id_list.push_back(new_operand_id);
+    old_operand->remove_def(this->id);
+    new_operand->add_def(this->id);
+  } else {
+    return;
+  }
+
+  std::visit(
+    overloaded{
+      [&](Load& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+      },
+      [&](FloatLoad& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+      },
+      [&](PseudoLoad& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+      },
+      [&](FloatPseudoLoad& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.rt_id == old_operand_id) {
+          instruction.rt_id = new_operand_id;
+        }
+      },
+      [&](PseudoStore& instruction) {
+        if (instruction.rt_id == old_operand_id) {
+          instruction.rt_id = new_operand_id;
+        }
+      },
+      [&](FloatPseudoStore& instruction) {
+        if (instruction.rt_id == old_operand_id) {
+          instruction.rt_id = new_operand_id;
+        }
+      },
+      [&](Store& instruction) {
+        // Do nothing.
+      },
+      [&](FloatStore& instruction) {
+        // Do nothing.
+      },
+      [&](FloatMove& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+      },
+      [&](FloatConvert& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+      },
+      [&](Binary& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+      },
+      [&](BinaryImm& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+      },
+      [&](FloatBinary& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+      },
+      [&](FloatMulAdd& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+      },
+      [&](FloatUnary& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+      },
+      [&](Lui& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+      },
+      [&](Li& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+      },
+      [&](Branch& instruction) {
+        // Do nothing.
+      },
+      [&](Phi& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+      },
+      [&](auto& instruction) {
+        // Do nothing.
+      }},
+    kind
+  );
+}
+
+void Instruction::replace_use_operand(
+  OperandID old_operand_id,
+  OperandID new_operand_id,
+  Context& context
+) {
+  using namespace instruction;
+
+  if (old_operand_id == new_operand_id) {
+    return;
+  }
+
+  auto old_operand = context.get_operand(old_operand_id);
+  auto new_operand = context.get_operand(new_operand_id);
+
+  if (std::find(this->use_id_list.begin(), this->use_id_list.end(), old_operand_id) != this->use_id_list.end()) {
+    this->use_id_list.erase(std::find(
+      this->use_id_list.begin(), this->use_id_list.end(), old_operand_id
+    ));
+    this->use_id_list.push_back(new_operand_id);
+    old_operand->remove_use(this->id);
+    new_operand->add_use(this->id);
+  } else {
+    return;
+  }
+
+  std::visit(
+    overloaded{
+      [&](Load& instruction) {
+        if (instruction.rs_id == old_operand_id) {
+          instruction.rs_id = new_operand_id;
+        }
+        if (instruction.imm_id == old_operand_id) {
+          instruction.imm_id = new_operand_id;
+        }
+      },
+      [&](FloatLoad& instruction) {
+        if (instruction.rs_id == old_operand_id) {
+          instruction.rs_id = new_operand_id;
+        }
+        if (instruction.imm_id == old_operand_id) {
+          instruction.imm_id = new_operand_id;
+        }
+      },
+      [&](PseudoLoad& instruction) {
+        if (instruction.symbol_id == old_operand_id) {
+          instruction.symbol_id = new_operand_id;
+        }
+      },
+      [&](FloatPseudoLoad& instruction) {
+        if (instruction.symbol_id == old_operand_id) {
+          instruction.symbol_id = new_operand_id;
+        }
+        if (instruction.rt_id == old_operand_id) {
+          instruction.rt_id = new_operand_id;
+        }
+      },
+      [&](PseudoStore& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.symbol_id == old_operand_id) {
+          instruction.symbol_id = new_operand_id;
+        }
+        if (instruction.rt_id == old_operand_id) {
+          instruction.rt_id = new_operand_id;
+        }
+      },
+      [&](FloatPseudoStore& instruction) {
+        if (instruction.rd_id == old_operand_id) {
+          instruction.rd_id = new_operand_id;
+        }
+        if (instruction.symbol_id == old_operand_id) {
+          instruction.symbol_id = new_operand_id;
+        }
+        if (instruction.rt_id == old_operand_id) {
+          instruction.rt_id = new_operand_id;
+        }
+      },
+      [&](Store& instruction) {
+        if (instruction.rs1_id == old_operand_id) {
+          instruction.rs1_id = new_operand_id;
+        }
+        if (instruction.rs2_id == old_operand_id) {
+          instruction.rs2_id = new_operand_id;
+        }
+        if (instruction.imm_id == old_operand_id) {
+          instruction.imm_id = new_operand_id;
+        }
+      },
+      [&](FloatStore& instruction) {
+        if (instruction.rs1_id == old_operand_id) {
+          instruction.rs1_id = new_operand_id;
+        }
+        if (instruction.rs2_id == old_operand_id) {
+          instruction.rs2_id = new_operand_id;
+        }
+        if (instruction.imm_id == old_operand_id) {
+          instruction.imm_id = new_operand_id;
+        }
+      },
+      [&](FloatMove& instruction) {
+        if (instruction.rs_id == old_operand_id) {
+          instruction.rs_id = new_operand_id;
+        }
+      },
+      [&](FloatConvert& instruction) {
+        if (instruction.rs_id == old_operand_id) {
+          instruction.rs_id = new_operand_id;
+        }
+      },
+      [&](Binary& instruction) {
+        if (instruction.rs1_id == old_operand_id) {
+          instruction.rs1_id = new_operand_id;
+        }
+        if (instruction.rs2_id == old_operand_id) {
+          instruction.rs2_id = new_operand_id;
+        }
+      },
+      [&](BinaryImm& instruction) {
+        if (instruction.rs_id == old_operand_id) {
+          instruction.rs_id = new_operand_id;
+        }
+        if (instruction.imm_id == old_operand_id) {
+          instruction.imm_id = new_operand_id;
+        }
+      },
+      [&](FloatBinary& instruction) {
+        if (instruction.rs1_id == old_operand_id) {
+          instruction.rs1_id = new_operand_id;
+        }
+        if (instruction.rs2_id == old_operand_id) {
+          instruction.rs2_id = new_operand_id;
+        }
+      },
+      [&](FloatMulAdd& instruction) {
+        if (instruction.rs1_id == old_operand_id) {
+          instruction.rs1_id = new_operand_id;
+        }
+        if (instruction.rs2_id == old_operand_id) {
+          instruction.rs2_id = new_operand_id;
+        }
+        if (instruction.rs3_id == old_operand_id) {
+          instruction.rs3_id = new_operand_id;
+        }
+      },
+      [&](FloatUnary& instruction) {
+        if (instruction.rs_id == old_operand_id) {
+          instruction.rs_id = new_operand_id;
+        }
+      },
+      [&](Lui& instruction) {
+        if (instruction.imm_id == old_operand_id) {
+          instruction.imm_id = new_operand_id;
+        }
+      },
+      [&](Li& instruction) {
+        if (instruction.imm_id == old_operand_id) {
+          instruction.imm_id = new_operand_id;
+        }
+      },
+      [&](Branch& instruction) {
+        if (instruction.rs1_id == old_operand_id) {
+          instruction.rs1_id = new_operand_id;
+        }
+        if (instruction.rs2_id == old_operand_id) {
+          instruction.rs2_id = new_operand_id;
+        }
+      },
+      [&](Phi& instruction) {
+        for (auto& [id, _] : instruction.incoming_list) {
+          if (id == old_operand_id) {
+            id = new_operand_id;
+          }
+        }
+      },
+      [&](auto& instruction) {
+        // Do nothing.
+      }},
+    kind
+  );
+}
+
 void Instruction::remove(Context& context) {
   for (auto def_id : this->def_id_list) {
     auto def = context.get_operand(def_id);

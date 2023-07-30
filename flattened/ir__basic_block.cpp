@@ -181,6 +181,9 @@ void BasicBlock::remove_succ(BasicBlockID succ_id) {
 }
 
 bool BasicBlock::has_terminator() const {
+  if (this->head_instruction->next == this->tail_instruction) {
+    return false;
+  }
   return this->tail_instruction->prev.lock()->is_terminator();
 }
 
