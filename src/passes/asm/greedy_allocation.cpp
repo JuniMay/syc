@@ -95,7 +95,7 @@ void calc_block_weight(
 
     // Calculate loop weight
     for (auto bb_id : loop_body_id_set) {
-      ga_ctx.block_weight_map[bb_id] *= 2.0f;
+      ga_ctx.block_weight_map[bb_id] *= 4.0f;
     }
   }
 }
