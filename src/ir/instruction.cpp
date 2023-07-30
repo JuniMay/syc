@@ -372,6 +372,10 @@ bool Instruction::is_getelementptr() const {
   return std::holds_alternative<instruction::GetElementPtr>(this->kind);
 }
 
+bool Instruction::is_icmp() const {
+  return std::holds_alternative<instruction::ICmp>(this->kind);
+}
+
 void Instruction::add_phi_operand(
   OperandID incoming_operand_id,
   BasicBlockID incoming_block_id,

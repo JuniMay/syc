@@ -24,6 +24,7 @@
 #include "passes/ir/straighten.h"
 #include "passes/ir/unreach_elim.h"
 #include "passes/ir/unused_elim.h"
+#include "passes/ir/gvn.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -57,20 +58,23 @@ int main(int argc, char* argv[]) {
     // FIXME: Global2local cause extremely slow `performance/bitset`
     ir::global2local(ir_builder);
     ir::mem2reg(ir_builder);
+    if(options.optimization_level > 1)
+      ir::gvn(ir_builder);
     ir::load_elim(ir_builder);
     ir::peephole(ir_builder);
     ir::loop_opt(ir_builder);
     // TODO: Refactor unreach elim
-    // ir::unreach_elim(ir_builder);
+    ir::unreach_elim(ir_builder);
     ir::straighten(ir_builder);
     ir::peephole(ir_builder);
     for (int i = 0; i < 3; i++) {
-      ir::local_cse(ir_builder);
+    //   ir::local_cse(ir_builder);
       ir::peephole(ir_builder);
       ir::unused_elim(ir_builder);
     }
     ir::math_opt(ir_builder);
     ir::copyprop(ir_builder);
+    // ir::local_cse(ir_builder);
   }
 
   if (options.ir_file.has_value()) {
@@ -88,7 +92,7 @@ int main(int argc, char* argv[]) {
 
   codegen(ir_builder.context, asm_builder, codegen_context);
 
-  backend::peephole(asm_builder);
+  // backend::peephole(asm_builder);
   backend::dce(asm_builder);
 
   if (options.optimization_level > 0) {

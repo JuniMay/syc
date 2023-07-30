@@ -125,6 +125,10 @@ bool Operand::is_arbitrary() const {
   return std::holds_alternative<operand::Arbitrary>(kind);
 }
 
+bool Operand::is_global() const {
+  return std::holds_alternative<operand::Global>(kind);
+}
+
 }  // namespace ir
 
 }  // namespace syc

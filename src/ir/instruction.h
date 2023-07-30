@@ -51,6 +51,11 @@ struct Binary {
   OperandID lhs_id;
   /// Right hand side operand ID.
   OperandID rhs_id;
+
+  bool operator==(const Binary& other) const {
+    return op == other.op && lhs_id == other.lhs_id
+           && rhs_id == other.rhs_id;
+  }
 };
 
 /// Opcode enum of the icmp instruction.
@@ -74,6 +79,11 @@ struct ICmp {
   OperandID lhs_id;
   /// Right hand side operand ID.
   OperandID rhs_id;
+
+  bool operator==(const ICmp& other) const {
+    return cond == other.cond && lhs_id == other.lhs_id
+           && rhs_id == other.rhs_id;
+  }
 };
 
 /// Opcode enum of the fcmp instruction.
@@ -97,6 +107,11 @@ struct FCmp {
   OperandID lhs_id;
   /// Right hand side operand ID.
   OperandID rhs_id;
+
+  bool operator==(const FCmp& other) const {
+    return cond == other.cond && lhs_id == other.lhs_id
+           && rhs_id == other.rhs_id;
+  }
 };
 
 /// Opcode enum of the cast instruction.
@@ -119,6 +134,10 @@ struct Cast {
   OperandID dst_id;
   /// Source operand ID.
   OperandID src_id;
+
+  bool operator==(const Cast& other) const {
+    return op == other.op && src_id == other.src_id;
+  }
 };
 
 /// Return instruction.
@@ -127,6 +146,10 @@ struct Cast {
 struct Ret {
   /// Return value operand ID.
   std::optional<OperandID> maybe_value_id;
+
+  bool operator==(const Ret& other) const {
+    return maybe_value_id == other.maybe_value_id;
+  }
 };
 
 /// Conditional branch instruction.
@@ -139,12 +162,22 @@ struct CondBr {
   BasicBlockID then_block_id;
   /// Block ID of the false branch.
   BasicBlockID else_block_id;
+
+  bool operator==(const CondBr& other) const {
+    return cond_id == other.cond_id
+           && then_block_id == other.then_block_id
+           && else_block_id == other.else_block_id;
+  }
 };
 
 /// Unconditional branch instruction.
 struct Br {
   /// Label ID of the branch.
   BasicBlockID block_id;
+
+  bool operator==(const Br& other) const {
+    return block_id == other.block_id;
+  }
 };
 
 /// Phi instruction.
@@ -155,6 +188,10 @@ struct Phi {
   ///
   /// This is a list of (operand ID, block ID) pairs.
   std::vector<std::tuple<OperandID, BasicBlockID>> incoming_list;
+
+  bool operator==(const Phi& other) const {
+    return incoming_list == other.incoming_list;
+  }
 };
 
 /// Allocate memory on the stack.
@@ -171,6 +208,14 @@ struct Alloca {
   std::optional<OperandID> maybe_addrspace_id;
   /// If the address is for parameter
   bool alloca_for_param;
+
+  bool operator==(const Alloca& other) const {
+    return allocated_type == other.allocated_type
+           && maybe_size_id == other.maybe_size_id
+           && maybe_align_id == other.maybe_align_id
+           && maybe_addrspace_id == other.maybe_addrspace_id
+           && alloca_for_param == other.alloca_for_param;
+  }
 };
 
 /// Load value from the given address/pointer.
@@ -181,6 +226,11 @@ struct Load {
   OperandID ptr_id;
   /// Alignment size of the loaded value.
   std::optional<OperandID> maybe_align_id;
+
+  bool operator==(const Load& other) const {
+    return ptr_id == other.ptr_id
+           && maybe_align_id == other.maybe_align_id;
+  }
 };
 
 /// Store value to the given address.
@@ -191,6 +241,11 @@ struct Store {
   OperandID ptr_id;
   /// Alignment size of the stored value.
   std::optional<OperandID> maybe_align_id;
+
+  bool operator==(const Store& other) const {
+    return value_id == other.value_id && ptr_id == other.ptr_id
+           && maybe_align_id == other.maybe_align_id;
+  }
 };
 
 /// Call instruction.
@@ -201,6 +256,11 @@ struct Call {
   std::string function_name;
   /// List of argument operand IDs.
   std::vector<OperandID> arg_id_list;
+
+  bool operator==(const Call& other) const {
+    return function_name == other.function_name
+           && arg_id_list == other.arg_id_list;
+  }
 };
 
 /// GetElementPtr instruction.
@@ -213,10 +273,19 @@ struct GetElementPtr {
   OperandID ptr_id;
   /// List of indices.
   std::vector<OperandID> index_id_list;
+
+  bool operator==(const GetElementPtr& other) const {
+    return basis_type == other.basis_type && ptr_id == other.ptr_id &&
+           index_id_list == other.index_id_list;
+  }
 };
 
 /// Dummy instruction for head/tail guard.
-struct Dummy {};
+struct Dummy {
+  bool operator==(const Dummy& other) const {
+    return true;
+  }
+};
 
 }  // namespace instruction
 
@@ -292,6 +361,8 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
 
   bool is_getelementptr() const;
 
+  bool is_icmp() const;
+
   void add_phi_operand(
     OperandID incoming_operand_id,
     BasicBlockID incoming_block_id,
@@ -312,6 +383,10 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
       return std::get<T>(this->kind);
     }
     return std::nullopt;
+  }
+
+  bool operator==(const Instruction& other) const {
+    return kind == other.kind;
   }
 };
 
