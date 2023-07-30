@@ -473,8 +473,6 @@ void greedy_allocation(FunctionPtr function, Builder& builder) {
 
   liveness_analysis(function, builder, la_ctx);
 
-  std::cout << la_ctx.dump(builder.context) << std::endl;
-
   // Clear alloc_map
   ga_ctx.alloc_map.clear();
 
