@@ -81,11 +81,27 @@ enum class FloatRegister {
 struct Register {
   std::variant<GeneralRegister, FloatRegister> reg;
 
-  bool is_general() const { return std::holds_alternative<GeneralRegister>(reg); }
+  bool is_general() const {
+    return std::holds_alternative<GeneralRegister>(reg);
+  }
   bool is_float() const { return std::holds_alternative<FloatRegister>(reg); }
 
   std::string to_string() const;
 };
+
+/// Hash for Register.
+struct RegisterHash {
+  std::size_t operator()(const Register& reg) const {
+    if (reg.is_general()) {
+      return (size_t)std::get<GeneralRegister>(reg.reg);
+    } else {
+      return (size_t)std::get<FloatRegister>(reg.reg) + 32;
+    }
+  }
+};
+
+bool operator==(const Register& lhs, const Register& rhs);
+bool operator<(const Register& lhs, const Register& rhs);
 
 /// Virtual register kind.
 enum class VirtualRegisterKind {
