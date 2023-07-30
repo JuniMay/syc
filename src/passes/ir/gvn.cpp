@@ -285,7 +285,7 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
 
       curr_ptr_id = curr_instruction->as<Store>()->ptr_id;
       curr_value_id = curr_instruction->as<Store>()->value_id;
-      curr_ptr_operand = builder.context.get_operand(curr_ptr_id);
+      auto curr_ptr_operand = builder.context.get_operand(curr_ptr_id);
 
       // TODO: maybe we can optimize better??
       if (inv_getelementptr_expr_map.count(curr_ptr_id)) {
