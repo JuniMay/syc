@@ -8,7 +8,6 @@
 #include "ir/codegen.h"
 #include "ir/instruction.h"
 #include "passes/asm/dce.h"
-#include "passes/asm/linear_scan.h"
 #include "passes/asm/peephole.h"
 #include "passes/asm/peephole_second.h"
 #include "passes/asm/phi_elim.h"

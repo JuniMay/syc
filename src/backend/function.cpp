@@ -32,12 +32,8 @@ std::string Function::to_string(Context& context) {
   return result;
 }
 
-void Function::insert_saved_general_register(int i) {
-  saved_general_register_list.insert(i);
-}
-
-void Function::insert_saved_float_register(int i) {
-  saved_float_register_list.insert(i);
+void Function::add_saved_register(Register reg) {
+  this->saved_register_set.insert(reg);
 }
 
 }  // namespace backend

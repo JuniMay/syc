@@ -3,6 +3,13 @@
 namespace syc {
 namespace backend {
 
+bool operator==(const Register& lhs, const Register& rhs) {
+  return RegisterHash()(lhs) == RegisterHash()(rhs);
+}
+bool operator<(const Register& lhs, const Register& rhs) {
+  return RegisterHash()(lhs) < RegisterHash()(rhs);
+}
+
 std::string Register::to_string() const {
   std::string result = "";
 
