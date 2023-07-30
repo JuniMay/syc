@@ -59,13 +59,12 @@ int main(int argc, char* argv[]) {
     // FIXME: Global2local cause extremely slow `performance/bitset`
     ir::global2local(ir_builder);
     ir::mem2reg(ir_builder);
-    if(options.optimization_level > 1)
-      ir::gvn(ir_builder);
+    ir::gvn(ir_builder);
     ir::load_elim(ir_builder);
     ir::loop_opt(ir_builder);
     ir::peephole(ir_builder);
     // TODO: Refactor unreach elim
-    ir::unreach_elim(ir_builder);
+    // ir::unreach_elim(ir_builder);
     ir::straighten(ir_builder);
     ir::peephole(ir_builder);
     for (int i = 0; i < 3; i++) {
