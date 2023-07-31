@@ -3,18 +3,18 @@
 namespace syc {
 namespace ir {
 
-void gvn(Builder& builder) {
+void gvn(Builder& builder, bool is_aggressive) {
   for (auto [function_name, function] : builder.context.function_table) {
-    gvn_function(function, builder);
+    gvn_function(function, builder, is_aggressive);
   }
 }
 
-void gvn_function(FunctionPtr function, Builder& builder) {
+void gvn_function(FunctionPtr function, Builder& builder, bool is_aggressive) {
   auto curr_basic_block = function->head_basic_block->next;
   if (curr_basic_block == function->tail_basic_block) {
     return;
   }
-  gvn_basic_block(function, curr_basic_block, builder);
+  gvn_basic_block(function, curr_basic_block, builder, is_aggressive);
 }
 
 using ValueNumMap = std::map<OperandID, OperandID>;
@@ -47,7 +47,7 @@ StoreExprMap store_expr_map;
 GetElementPtrExprMap getelementptr_expr_map;
 ICmpExprMap icmp_expr_map;
 
-void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& builder) {
+void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& builder, bool is_aggressive) {
   using namespace instruction;
   builder.set_curr_basic_block(basic_block);
   
@@ -267,7 +267,7 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
       }
       
     } 
-    else if (curr_instruction->is_store()) {
+    else if (is_aggressive && curr_instruction->is_store()) {
       auto curr_ptr_id = curr_instruction->as<Store>()->ptr_id;
       auto curr_value_id = curr_instruction->as<Store>()->value_id;
 
@@ -303,7 +303,7 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
       }
       
     } 
-    else if (curr_instruction->is_load()) {
+    else if (is_aggressive && curr_instruction->is_load()) {
       auto curr_dst_id = curr_instruction->as<Load>()->dst_id;
       auto curr_ptr_id = curr_instruction->as<Load>()->ptr_id;
 
@@ -425,7 +425,7 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
   auto cfa_ctx = ControlFlowAnalysisContext();
   control_flow_analysis(function, builder.context, cfa_ctx);
   for (auto child_bb : cfa_ctx.dom_tree[basic_block->id]) {
-    gvn_basic_block(function, builder.context.get_basic_block(child_bb), builder);
+    gvn_basic_block(function, builder.context.get_basic_block(child_bb), builder, is_aggressive);
   }
 
   // restore maps
