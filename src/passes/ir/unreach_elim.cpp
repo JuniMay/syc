@@ -66,6 +66,31 @@ void remove_unreach_block(
       now_bb->remove(builder.context);
     }
   }
+
+  // remove inexistent incoming blocks in all phi insts
+  for (auto now_bb = function->head_basic_block->next; // skip dummy basic block
+    now_bb != function->tail_basic_block;
+    now_bb = now_bb->next)
+  {
+    for (auto now_inst = now_bb->head_instruction->next;
+      now_inst != now_bb->tail_instruction;
+      now_inst = now_inst->next)
+    {
+      if(auto phi_inst = std::get_if<instruction::Phi>(&now_inst->kind))
+      {
+        phi_inst->incoming_list.erase(
+          std::remove_if(
+            phi_inst->incoming_list.begin(), phi_inst->incoming_list.end(), 
+            [&](std::tuple<OperandID, BasicBlockID> incoming){
+              return reached_blocks.count(std::get<1>(incoming)) == 0;
+            }
+          ),
+          phi_inst->incoming_list.end()
+        );
+      }
+    }
+  }
+
 }
 
 std::set<BasicBlockID> get_reachable_blocks(
