@@ -154,8 +154,8 @@ void GreedyAllocationContext::try_allocate(
 
     conflict_map[reg] = std::set<AllocID>();
 
-    // Check conflict if the register is an argument register
-    if (REG_ARGS.count(reg)) {
+    // Check conflict if the register might be used somewhere.
+    if (REG_ARGS.count(reg) || REG_TEMP.count(reg)) {
       auto reg_id = builder.fetch_register(reg);
       for (auto reg_range : la_ctx.live_range_map[reg_id]) {
         for (const auto& range : range_list) {
@@ -397,15 +397,15 @@ void GreedyAllocationContext::spill(
 
     if (operand->is_float()) {
       auto ftmp_index = 0;
-      while (ftmp_index < REG_TEMP_FLOAT.size()) {
-        if (used_tmpreg_map[instr->id].count(REG_TEMP_FLOAT[ftmp_index])) {
+      while (ftmp_index < REG_SPILL_FLOAT.size()) {
+        if (used_tmpreg_map[instr->id].count(REG_SPILL_FLOAT[ftmp_index])) {
           ftmp_index++;
         } else {
           break;
         }
       }
-      auto ftmp_id = builder.fetch_register(REG_TEMP_FLOAT[ftmp_index]);
-      used_tmpreg_map[instr->id].insert(REG_TEMP_FLOAT[ftmp_index]);
+      auto ftmp_id = builder.fetch_register(REG_SPILL_FLOAT[ftmp_index]);
+      used_tmpreg_map[instr->id].insert(REG_SPILL_FLOAT[ftmp_index]);
 
       if (check_itype_immediate(offset)) {
         auto fld_instr = builder.fetch_float_load_instruction(
@@ -415,13 +415,23 @@ void GreedyAllocationContext::spill(
         instr->replace_use_operand(operand->id, ftmp_id, builder.context);
         instr->insert_prev(fld_instr);
       } else {
-        auto t0_id = builder.fetch_register(Register{GeneralRegister::T0});
+        auto tmp_index = 0;
+        while (tmp_index < REG_SPILL_GENERAL.size()) {
+          if (used_tmpreg_map[instr->id].count(REG_SPILL_GENERAL[tmp_index])) {
+            tmp_index++;
+          } else {
+            break;
+          }
+        }
+        auto tmp_id = builder.fetch_register(REG_SPILL_GENERAL[tmp_index]);
+        used_tmpreg_map[instr->id].insert(REG_SPILL_GENERAL[tmp_index]);
+
         auto li_instr =
-          builder.fetch_li_instruction(t0_id, builder.fetch_immediate(offset));
+          builder.fetch_li_instruction(tmp_id, builder.fetch_immediate(offset));
         auto add_instr =
-          builder.fetch_binary_instruction(Binary::ADD, t0_id, sp_id, t0_id);
+          builder.fetch_binary_instruction(Binary::ADD, tmp_id, sp_id, tmp_id);
         auto fld_instr = builder.fetch_float_load_instruction(
-          FloatLoad::FLD, ftmp_id, t0_id, builder.fetch_immediate(0)
+          FloatLoad::FLD, ftmp_id, tmp_id, builder.fetch_immediate(0)
         );
 
         instr->replace_use_operand(operand->id, ftmp_id, builder.context);
@@ -431,15 +441,15 @@ void GreedyAllocationContext::spill(
       }
     } else {
       auto tmp_index = 0;
-      while (tmp_index < REG_TEMP_GENERAL.size()) {
-        if (used_tmpreg_map[instr->id].count(REG_TEMP_GENERAL[tmp_index])) {
+      while (tmp_index < REG_SPILL_GENERAL.size()) {
+        if (used_tmpreg_map[instr->id].count(REG_SPILL_GENERAL[tmp_index])) {
           tmp_index++;
         } else {
           break;
         }
       }
-      auto tmp_id = builder.fetch_register(REG_TEMP_GENERAL[tmp_index]);
-      used_tmpreg_map[instr->id].insert(REG_TEMP_GENERAL[tmp_index]);
+      auto tmp_id = builder.fetch_register(REG_SPILL_GENERAL[tmp_index]);
+      used_tmpreg_map[instr->id].insert(REG_SPILL_GENERAL[tmp_index]);
 
       if (check_itype_immediate(offset)) {
         auto ld_instr = builder.fetch_load_instruction(
@@ -520,7 +530,7 @@ void greedy_allocation(FunctionPtr function, Builder& builder) {
   }
 
   // Initialize occupied_map
-  for (auto reg : REG_SAVED) {
+  for (auto reg : REG_ALLOC) {
     ga_ctx.occupied_map[reg] = std::set<AllocID>();
     ga_ctx.occupied_range_map[reg] = std::set<AllocRange>();
   }

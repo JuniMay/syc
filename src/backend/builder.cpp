@@ -442,22 +442,10 @@ InstructionPtr Builder::fetch_call_instruction(std::string function_name) {
     instruction->add_use(operand_id);
   }
 
-  for (auto reg : REG_TEMP_GENERAL) {
+  for (auto reg : REG_TEMP) {
     auto operand_id = fetch_register(reg);
     context.operand_table[operand_id]->add_def(id);
     instruction->add_def(operand_id);
-
-    context.operand_table[operand_id]->add_use(id);
-    instruction->add_use(operand_id);
-  }
-
-  for (auto reg : REG_TEMP_FLOAT) {
-    auto operand_id = fetch_register(reg);
-    context.operand_table[operand_id]->add_def(id);
-    instruction->add_def(operand_id);
-
-    context.operand_table[operand_id]->add_use(id);
-    instruction->add_use(operand_id);
   }
 
   return instruction;

@@ -63,37 +63,20 @@ Then just debug.
 ## Todo List
 
 - [x] Try to use temporary register for temporary immediate loading.
-  - t0, t1, t2 is used in linear scan.
-  - t3 is used in codegen for temporary immediate loading, pseudo load/store and comparison.
-  - t4 is used in argument passing (temporarily store the new sp).
-  - t5 is used in phi elimination.
-  - t6 and all temporary floating-point registers are not used yet.
-- [x] Correct linear scan.
-- [x] Fix `hidden_functional/29_long_line` (register allocation)
-- [x] Fix `hidden_functional/30_many_dimensions` (segmentation fault)
-- [x] Fix `hidden_functional/38_light2d`
-  - Rounding mode of `fcvt` instruction.
-- [ ] Constant folding in AST
-  - Note that logical and/or cannot be folded because of short-circuit evaluation.
-  - [x] Constant folding for most expressions
-  - Fix `functional/82_long_func.sy` (constant array slices with variable indices - incorrectly returns  `true` when using `is_const`)
+  - t0, t1, ft0, ft1, ft2 is used in spilling virtual registers.
+  - t2 is used in codegen for temporary immediate loading, pseudo load/store and comparison.
 - [ ] Unreachable elimination.
   - [ ] Fix `functional/51_short_circuit`
   - [ ] Fix `functional/75_max_flow`
   - [ ] Fix `functional/82_long_func`
-- [x] Mem2reg.
-- [x] Phi elimination.
-  - Done in ASM.
-  - [ ] Fix `hidden_functional/19_search`
-- [x] Constant propagation
 - [ ] Strength reduction
   - [x] IR: integer multiplication to shift.
   - [x] IR: integer division by 2 to shift.
   - [x] IR: integer division by 2^k to shift.
-- [ ] `memcpy` for local arrays.
-- [ ] Loop invariant code motion
-  - `performance/hoist`: sum is added 100 times and divided by 100.
-- [ ] global2local
 - [ ] unmodified variable to constant
-- [x] special: long add chain to mul 
-  - [x] Fix `performance/integer-divide-optimization`
+- [ ] Loop optimization
+  - [x] Loop invariant code motion
+  - [ ] Loop induction variable optimization
+  - [ ] Unrolling
+  - [ ] Parallelization
+- [ ] Redundant code elimination after register allocation

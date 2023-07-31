@@ -33,7 +33,7 @@ std::string Function::to_string(Context& context) {
 }
 
 void Function::add_saved_register(Register reg) {
-  if (!REG_SAVED.count(reg)) {
+  if (!REG_CALLEE_SAVED.count(reg)) {
     return;
   }
   this->saved_register_set.insert(reg);
