@@ -1,8 +1,8 @@
 #ifndef SYC_BACKEND_FUNCTION_H_
 #define SYC_BACKEND_FUNCTION_H_
 
-#include "common.h"
 #include "backend/register.h"
+#include "common.h"
 
 namespace syc {
 namespace backend {
@@ -13,6 +13,7 @@ struct Function {
   std::size_t stack_frame_size;
   std::size_t align_frame_size;
 
+  /// Saved registers used in the function
   std::set<Register> saved_register_set;
 
   BasicBlockPtr head_basic_block;

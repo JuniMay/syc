@@ -32,7 +32,13 @@ OperandID Builder::fetch_virtual_register(VirtualRegisterKind kind) {
 }
 
 OperandID Builder::fetch_register(Register reg) {
-  return fetch_operand(reg, Modifier::None);
+  if (reg_operand_cache.count(reg)) {
+    return reg_operand_cache[reg];
+  } else {
+    auto operand_id = fetch_operand(reg, Modifier::None);
+    reg_operand_cache[reg] = operand_id;
+    return operand_id;
+  }
 }
 
 OperandID Builder::fetch_local_memory(int offset) {
@@ -424,6 +430,35 @@ InstructionPtr Builder::fetch_call_instruction(std::string function_name) {
   auto instruction = create_instruction(id, kind, curr_basic_block->id);
 
   context.register_instruction(instruction);
+
+  // Add all argument registers and temporaries as def and use.
+  // TODO: specify the used argument registers
+  for (auto reg : REG_ARGS) {
+    auto operand_id = fetch_register(reg);
+    context.operand_table[operand_id]->add_def(id);
+    instruction->add_def(operand_id);
+
+    context.operand_table[operand_id]->add_use(id);
+    instruction->add_use(operand_id);
+  }
+
+  for (auto reg : REG_TEMP_GENERAL) {
+    auto operand_id = fetch_register(reg);
+    context.operand_table[operand_id]->add_def(id);
+    instruction->add_def(operand_id);
+
+    context.operand_table[operand_id]->add_use(id);
+    instruction->add_use(operand_id);
+  }
+
+  for (auto reg : REG_TEMP_FLOAT) {
+    auto operand_id = fetch_register(reg);
+    context.operand_table[operand_id]->add_def(id);
+    instruction->add_def(operand_id);
+
+    context.operand_table[operand_id]->add_use(id);
+    instruction->add_use(operand_id);
+  }
 
   return instruction;
 }

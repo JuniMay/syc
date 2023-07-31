@@ -36,14 +36,15 @@ void dfn(BasicBlockPtr bb, Builder& builder, LivenessAnalysisContext& la_ctx) {
 
     for (auto operand_id : curr_instr->use_id_list) {
       auto operand = builder.context.get_operand(operand_id);
-      if (operand->is_vreg() && !la_ctx.live_def_map[bb->id].count(operand_id)) {
+      if ((operand->is_vreg() || operand->is_reg()) && 
+          !la_ctx.live_def_map[bb->id].count(operand_id)) {
         la_ctx.live_use_map[bb->id].insert(operand_id);
       }
     }
 
     for (auto operand_id : curr_instr->def_id_list) {
       auto operand = builder.context.get_operand(operand_id);
-      if (operand->is_vreg()) {
+      if ((operand->is_vreg() || operand->is_reg())) {
         la_ctx.live_def_map[bb->id].insert(operand_id);
       }
     }
@@ -170,7 +171,7 @@ void liveness_analysis(
 
     for (auto operand_id : la_ctx.live_out_map[curr_bb->id]) {
       auto operand = builder.context.get_operand(operand_id);
-      if (operand->is_vreg()) {
+      if (operand->is_vreg() || operand->is_reg()) {
         live_range_buffer[operand_id] =
           Range{entry_instr_num, exit_instr_num, 0, curr_bb->id};
       }
@@ -181,7 +182,7 @@ void liveness_analysis(
       for (auto operand_id : exit_instr->def_id_list) {
         auto operand = builder.context.get_operand(operand_id);
 
-        if (operand->is_vreg()) {
+        if (operand->is_vreg() || operand->is_reg()) {
           if (!live_range_buffer.count(operand_id)) {
             // This is a dead def
             // Add range { curr_instr_num, curr_instr_num } directly to live
@@ -205,7 +206,7 @@ void liveness_analysis(
       for (auto operand_id : exit_instr->use_id_list) {
         auto operand = builder.context.get_operand(operand_id);
 
-        if (operand->is_vreg()) {
+        if (operand->is_vreg() || operand->is_reg()) {
           if (!live_range_buffer.count(operand_id)) {
             // This is a new use
             // Add range { entry_instr_num, curr_instr_num } to the buffer

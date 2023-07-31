@@ -127,7 +127,11 @@ calc_alloc_priority(AllocID alloc_id, GreedyAllocationContext& ga_ctx) {
   );
 }
 
-void GreedyAllocationContext::try_allocate(AllocID alloc_id, Builder& builder) {
+void GreedyAllocationContext::try_allocate(
+  AllocID alloc_id,
+  Builder& builder,
+  LivenessAnalysisContext& la_ctx
+) {
   auto operand = builder.context.get_operand(alloc_operand_map[alloc_id]);
   auto range_list = alloc_range_map[alloc_id];
 
@@ -136,7 +140,9 @@ void GreedyAllocationContext::try_allocate(AllocID alloc_id, Builder& builder) {
   auto conflict_map =
     std::unordered_map<Register, std::set<AllocID>, RegisterHash>();
 
-  for (auto reg : REG_FOR_ALLOCATION) {
+  auto hard_conflict_set = std::set<Register>();
+
+  for (auto reg : REG_ALLOC) {
     if (reg.is_float() != operand->is_float()) {
       continue;
     }
@@ -147,6 +153,27 @@ void GreedyAllocationContext::try_allocate(AllocID alloc_id, Builder& builder) {
     bool is_conflict = false;
 
     conflict_map[reg] = std::set<AllocID>();
+
+    // Check conflict if the register is an argument register
+    if (REG_ARGS.count(reg)) {
+      auto reg_id = builder.fetch_register(reg);
+      for (auto reg_range : la_ctx.live_range_map[reg_id]) {
+        for (const auto& range : range_list) {
+          if (range.conflict(reg_range)) {
+            is_conflict = true;
+            hard_conflict_set.insert(reg);
+            break;
+          }
+        }
+        if (is_conflict) {
+          break;
+        }
+      }
+    }
+
+    if (is_conflict) {
+      continue;
+    }
 
     if (occupied_map[reg].empty()) {
       maybe_allocated_reg = reg;
@@ -194,6 +221,10 @@ void GreedyAllocationContext::try_allocate(AllocID alloc_id, Builder& builder) {
     Register min_weight_reg;
 
     for (const auto& [reg, conflict_list] : conflict_map) {
+      if (hard_conflict_set.count(reg)) {
+        continue;
+      }
+
       float weight = 0.0f;
       for (auto conflict_id : conflict_list) {
         weight += calc_spill_weight(conflict_id, *this);
@@ -366,15 +397,15 @@ void GreedyAllocationContext::spill(
 
     if (operand->is_float()) {
       auto ftmp_index = 0;
-      while (ftmp_index < REG_FOR_SPILL_FLOAT.size()) {
-        if (used_tmpreg_map[instr->id].count(REG_FOR_SPILL_FLOAT[ftmp_index])) {
+      while (ftmp_index < REG_TEMP_FLOAT.size()) {
+        if (used_tmpreg_map[instr->id].count(REG_TEMP_FLOAT[ftmp_index])) {
           ftmp_index++;
         } else {
           break;
         }
       }
-      auto ftmp_id = builder.fetch_register(REG_FOR_SPILL_FLOAT[ftmp_index]);
-      used_tmpreg_map[instr->id].insert(REG_FOR_SPILL_FLOAT[ftmp_index]);
+      auto ftmp_id = builder.fetch_register(REG_TEMP_FLOAT[ftmp_index]);
+      used_tmpreg_map[instr->id].insert(REG_TEMP_FLOAT[ftmp_index]);
 
       if (check_itype_immediate(offset)) {
         auto fld_instr = builder.fetch_float_load_instruction(
@@ -400,16 +431,15 @@ void GreedyAllocationContext::spill(
       }
     } else {
       auto tmp_index = 0;
-      while (tmp_index < REG_FOR_SPILL_GENERAL.size()) {
-        if (used_tmpreg_map[instr->id].count(REG_FOR_SPILL_GENERAL[tmp_index]
-            )) {
+      while (tmp_index < REG_TEMP_GENERAL.size()) {
+        if (used_tmpreg_map[instr->id].count(REG_TEMP_GENERAL[tmp_index])) {
           tmp_index++;
         } else {
           break;
         }
       }
-      auto tmp_id = builder.fetch_register(REG_FOR_SPILL_GENERAL[tmp_index]);
-      used_tmpreg_map[instr->id].insert(REG_FOR_SPILL_GENERAL[tmp_index]);
+      auto tmp_id = builder.fetch_register(REG_TEMP_GENERAL[tmp_index]);
+      used_tmpreg_map[instr->id].insert(REG_TEMP_GENERAL[tmp_index]);
 
       if (check_itype_immediate(offset)) {
         auto ld_instr = builder.fetch_load_instruction(
@@ -478,15 +508,19 @@ void greedy_allocation(FunctionPtr function, Builder& builder) {
 
   // Initialize alloc_ids
   for (auto [operand_id, live_range_list] : la_ctx.live_range_map) {
-    auto alloc_id = ga_ctx.get_next_alloc_id();
+    auto operand = builder.context.get_operand(operand_id);
 
-    ga_ctx.alloc_operand_map[alloc_id] = operand_id;
-    ga_ctx.alloc_range_map[alloc_id] = live_range_list;
-    ga_ctx.alloc_stage_map[alloc_id] = AllocStage::New;
+    if (operand->is_vreg()) {
+      auto alloc_id = ga_ctx.get_next_alloc_id();
+
+      ga_ctx.alloc_operand_map[alloc_id] = operand_id;
+      ga_ctx.alloc_range_map[alloc_id] = live_range_list;
+      ga_ctx.alloc_stage_map[alloc_id] = AllocStage::New;
+    }
   }
 
   // Initialize occupied_map
-  for (auto reg : REG_FOR_ALLOCATION) {
+  for (auto reg : REG_SAVED) {
     ga_ctx.occupied_map[reg] = std::set<AllocID>();
     ga_ctx.occupied_range_map[reg] = std::set<AllocRange>();
   }
@@ -508,16 +542,25 @@ void greedy_allocation(FunctionPtr function, Builder& builder) {
 
     auto alloc_id = prioritized_alloc.alloc_id;
 
-    if (ga_ctx.alloc_stage_map[alloc_id] == AllocStage::New) {
-      ga_ctx.try_allocate(alloc_id, builder);
-    } else if (ga_ctx.alloc_stage_map[alloc_id] == AllocStage::Assign) {
-      ga_ctx.try_allocate(alloc_id, builder);
-    } else if (ga_ctx.alloc_stage_map[alloc_id] == AllocStage::Split) {
-      ga_ctx.try_split(alloc_id, builder);
-    } else if (ga_ctx.alloc_stage_map[alloc_id] == AllocStage::Spill) {
-      ga_ctx.spill(alloc_id, function, builder, la_ctx);
-    } else {
-      // Do nothing
+    auto alloc_stage = ga_ctx.alloc_stage_map[alloc_id];
+
+    switch (alloc_stage) {
+      case AllocStage::New:
+      case AllocStage::Assign: {
+        ga_ctx.try_allocate(alloc_id, builder, la_ctx);
+        break;
+      }
+      case AllocStage::Split: {
+        ga_ctx.try_split(alloc_id, builder);
+        break;
+      }
+      case AllocStage::Spill: {
+        ga_ctx.spill(alloc_id, function, builder, la_ctx);
+        break;
+      }
+      default: {
+        // Do nothing
+      }
     }
   }
 

@@ -1,6 +1,7 @@
 #ifndef SYC_PASSES_ASM_GREEDY_ALLOCATION_H_
 #define SYC_PASSES_ASM_GREEDY_ALLOCATION_H_
 
+#include "backend/register.h"
 #include "common.h"
 #include "passes/asm/control_flow_analysis.h"
 #include "passes/asm/liveness_analysis.h"
@@ -10,34 +11,6 @@ namespace backend {
 
 /// AllocID is used if the ranges of a operand are splited
 using AllocID = size_t;
-
-#define PHYS_GENERAL_REG(X) (Register{GeneralRegister::X})
-#define PHYS_FLOAT_REG(X) (Register{FloatRegister::X})
-
-const std::set<Register> REG_FOR_ALLOCATION = {
-  PHYS_GENERAL_REG(S1),  PHYS_GENERAL_REG(S2),  PHYS_GENERAL_REG(S3),
-  PHYS_GENERAL_REG(S4),  PHYS_GENERAL_REG(S5),  PHYS_GENERAL_REG(S6),
-  PHYS_GENERAL_REG(S7),  PHYS_GENERAL_REG(S8),  PHYS_GENERAL_REG(S9),
-  PHYS_GENERAL_REG(S10), PHYS_GENERAL_REG(S11),
-
-  PHYS_FLOAT_REG(Fs1),   PHYS_FLOAT_REG(Fs2),   PHYS_FLOAT_REG(Fs3),
-  PHYS_FLOAT_REG(Fs4),   PHYS_FLOAT_REG(Fs5),   PHYS_FLOAT_REG(Fs6),
-  PHYS_FLOAT_REG(Fs7),   PHYS_FLOAT_REG(Fs8),   PHYS_FLOAT_REG(Fs9),
-  PHYS_FLOAT_REG(Fs10),  PHYS_FLOAT_REG(Fs11),
-};
-
-const std::vector<Register> REG_FOR_SPILL_GENERAL = {
-  PHYS_GENERAL_REG(T0), PHYS_GENERAL_REG(T1), PHYS_GENERAL_REG(T2),
-  PHYS_GENERAL_REG(T3), PHYS_GENERAL_REG(T4), PHYS_GENERAL_REG(T5),
-  PHYS_GENERAL_REG(T6),
-};
-
-const std::vector<Register> REG_FOR_SPILL_FLOAT = {
-  PHYS_FLOAT_REG(Ft0), PHYS_FLOAT_REG(Ft1),  PHYS_FLOAT_REG(Ft2),
-  PHYS_FLOAT_REG(Ft3), PHYS_FLOAT_REG(Ft4),  PHYS_FLOAT_REG(Ft5),
-  PHYS_FLOAT_REG(Ft6), PHYS_FLOAT_REG(Ft7),  PHYS_FLOAT_REG(Ft8),
-  PHYS_FLOAT_REG(Ft9), PHYS_FLOAT_REG(Ft10), PHYS_FLOAT_REG(Ft11),
-};
 
 enum class AllocStage {
   New = 5,
@@ -131,7 +104,7 @@ struct GreedyAllocationContext {
 
   GreedyAllocationContext() = default;
 
-  void try_allocate(AllocID, Builder&);
+  void try_allocate(AllocID, Builder&, LivenessAnalysisContext&);
   void try_split(AllocID, Builder&);
   void spill(AllocID, FunctionPtr, Builder&, LivenessAnalysisContext&);
   void modify_code(FunctionPtr, Builder&, LivenessAnalysisContext&);

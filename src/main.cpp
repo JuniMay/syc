@@ -16,6 +16,7 @@
 #include "passes/ir/cse.h"
 #include "passes/ir/dce.h"
 #include "passes/ir/global2local.h"
+#include "passes/ir/gvn.h"
 #include "passes/ir/load_elim.h"
 #include "passes/ir/loop_opt.h"
 #include "passes/ir/math_opt.h"
@@ -24,7 +25,6 @@
 #include "passes/ir/straighten.h"
 #include "passes/ir/strength_reduce.h"
 #include "passes/ir/unreach_elim.h"
-#include "passes/ir/gvn.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
     ir::straighten(ir_builder);
     ir::peephole(ir_builder);
     for (int i = 0; i < 3; i++) {
-    //   ir::local_cse(ir_builder);
+      // ir::local_cse(ir_builder);
       ir::peephole(ir_builder);
       ir::dce(ir_builder);
     }

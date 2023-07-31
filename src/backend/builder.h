@@ -22,6 +22,9 @@ struct Builder {
   /// Current basic block
   BasicBlockPtr curr_basic_block;
 
+  /// Make sure that same physical registers have the save operand_id
+  std::unordered_map<Register, OperandID, RegisterHash> reg_operand_cache;
+
   OperandID fetch_operand(OperandKind kind, Modifier modifier);
 
   OperandID fetch_immediate(
