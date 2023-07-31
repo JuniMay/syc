@@ -1,5 +1,5 @@
-#ifndef SYC_PASSES_COPYPROP_H_
-#define SYC_PASSES_COPYPROP_H_
+#ifndef SYC_PASSES_IR_COPYPROP_H_
+#define SYC_PASSES_IR_COPYPROP_H_
 
 #include "common.h"
 #include "ir__builder.h"
@@ -20,4 +20,4 @@ void copyprop_function(FunctionPtr function, Builder& builder);
 }  // namespace syc
 
 
-#endif  // SYC_PASSES_COPYPROP_H_
+#endif  // SYC_PASSES_IR_COPYPROP_H_

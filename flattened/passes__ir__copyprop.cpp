@@ -16,6 +16,7 @@ void copyprop_function(FunctionPtr function, Builder& builder) {
   using namespace instruction;
 
   auto curr_bb = function->head_basic_block->next;
+  builder.set_curr_basic_block(curr_bb);
   while (curr_bb != function->tail_basic_block) {
     auto curr_instr = curr_bb->head_instruction->next;
 

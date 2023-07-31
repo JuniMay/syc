@@ -1,5 +1,5 @@
 #include "ir__codegen.h"
-#include "passes__asm__linear_scan.h"
+#include "passes__asm__greedy_allocation.h"
 
 namespace syc {
 
@@ -230,7 +230,7 @@ void codegen_function_prolouge(
   auto ir_function = ir_context.get_function(function_name);
 
   auto asm_function = builder.context.get_function(function_name);
-  asm_function->saved_general_register_list.insert(0);
+  asm_function->add_saved_register(Register{GeneralRegister::S0});
 
   auto entry_block = asm_function->head_basic_block->next;
 
@@ -241,9 +241,7 @@ void codegen_function_prolouge(
 
   auto sp_id = builder.fetch_register(Register{GeneralRegister::Sp});
 
-  stack_frame_size +=
-    8 * (1 + asm_function->saved_general_register_list.size() +
-         asm_function->saved_float_register_list.size());
+  stack_frame_size += 8 * (1 + asm_function->saved_register_set.size());
 
   asm_function->stack_frame_size = stack_frame_size;
 
@@ -282,61 +280,59 @@ void codegen_function_prolouge(
 
   size_t curr_frame_pos = aligned_stack_frame_size - 16;
 
-  for (auto reg : asm_function->saved_general_register_list) {
-    auto reg_id = builder.fetch_register(map_general_register(reg));
+  for (auto reg : asm_function->saved_register_set) {
+    auto reg_id = builder.fetch_register(reg);
 
-    if (check_itype_immediate((int32_t)curr_frame_pos)) {
-      auto sd_instruction = builder.fetch_store_instruction(
-        instruction::Store::Op::SD, sp_id, reg_id,
-        builder.fetch_immediate((int32_t)curr_frame_pos)
-      );
-      entry_block->prepend_instruction(sd_instruction);
+    if (reg.is_general()) {
+      if (check_itype_immediate((int32_t)curr_frame_pos)) {
+        auto sd_instruction = builder.fetch_store_instruction(
+          instruction::Store::Op::SD, sp_id, reg_id,
+          builder.fetch_immediate((int32_t)curr_frame_pos)
+        );
+        entry_block->prepend_instruction(sd_instruction);
+      } else {
+        auto asm_tmp_id = builder.fetch_register(Register{GeneralRegister::T3});
+        auto li_instruction = builder.fetch_li_instruction(
+          asm_tmp_id, builder.fetch_immediate((int32_t)curr_frame_pos)
+        );
+        auto add_instruction = builder.fetch_binary_instruction(
+          instruction::Binary::Op::ADD, asm_tmp_id, sp_id, asm_tmp_id
+        );
+        auto sd_instruction = builder.fetch_store_instruction(
+          instruction::Store::Op::SD, asm_tmp_id, reg_id,
+          builder.fetch_immediate(0)
+        );
+
+        entry_block->prepend_instruction(sd_instruction);
+        entry_block->prepend_instruction(add_instruction);
+        entry_block->prepend_instruction(li_instruction);
+      }
     } else {
-      auto asm_tmp_id = builder.fetch_register(Register{GeneralRegister::T3});
-      auto li_instruction = builder.fetch_li_instruction(
-        asm_tmp_id, builder.fetch_immediate((int32_t)curr_frame_pos)
-      );
-      auto add_instruction = builder.fetch_binary_instruction(
-        instruction::Binary::Op::ADD, asm_tmp_id, sp_id, asm_tmp_id
-      );
-      auto sd_instruction = builder.fetch_store_instruction(
-        instruction::Store::Op::SD, asm_tmp_id, reg_id,
-        builder.fetch_immediate(0)
-      );
+      if (check_itype_immediate((int32_t)curr_frame_pos)) {
+        auto fsd_instruction = builder.fetch_float_store_instruction(
+          instruction::FloatStore::Op::FSD, sp_id, reg_id,
+          builder.fetch_immediate((int32_t)curr_frame_pos)
+        );
+        entry_block->prepend_instruction(fsd_instruction);
+      } else {
+        auto asm_tmp_id = builder.fetch_register(Register{GeneralRegister::T3});
+        auto li_instruction = builder.fetch_li_instruction(
+          asm_tmp_id, builder.fetch_immediate((int32_t)curr_frame_pos)
+        );
+        auto add_instruction = builder.fetch_binary_instruction(
+          instruction::Binary::Op::ADD, asm_tmp_id, sp_id, asm_tmp_id
+        );
+        auto fsd_instruction = builder.fetch_float_store_instruction(
+          instruction::FloatStore::Op::FSD, asm_tmp_id, reg_id,
+          builder.fetch_immediate(0)
+        );
 
-      entry_block->prepend_instruction(sd_instruction);
-      entry_block->prepend_instruction(add_instruction);
-      entry_block->prepend_instruction(li_instruction);
+        entry_block->prepend_instruction(fsd_instruction);
+        entry_block->prepend_instruction(add_instruction);
+        entry_block->prepend_instruction(li_instruction);
+      }
     }
-    curr_frame_pos -= 8;
-  }
 
-  for (auto reg : asm_function->saved_float_register_list) {
-    auto reg_id = builder.fetch_register(map_float_register(reg));
-
-    if (check_itype_immediate((int32_t)curr_frame_pos)) {
-      auto fsd_instruction = builder.fetch_float_store_instruction(
-        instruction::FloatStore::Op::FSD, sp_id, reg_id,
-        builder.fetch_immediate((int32_t)curr_frame_pos)
-      );
-      entry_block->prepend_instruction(fsd_instruction);
-    } else {
-      auto asm_tmp_id = builder.fetch_register(Register{GeneralRegister::T3});
-      auto li_instruction = builder.fetch_li_instruction(
-        asm_tmp_id, builder.fetch_immediate((int32_t)curr_frame_pos)
-      );
-      auto add_instruction = builder.fetch_binary_instruction(
-        instruction::Binary::Op::ADD, asm_tmp_id, sp_id, asm_tmp_id
-      );
-      auto fsd_instruction = builder.fetch_float_store_instruction(
-        instruction::FloatStore::Op::FSD, asm_tmp_id, reg_id,
-        builder.fetch_immediate(0)
-      );
-
-      entry_block->prepend_instruction(fsd_instruction);
-      entry_block->prepend_instruction(add_instruction);
-      entry_block->prepend_instruction(li_instruction);
-    }
     curr_frame_pos -= 8;
   }
 
@@ -410,60 +406,57 @@ void codegen_function_epilouge(
     asm_function->stack_frame_size + asm_function->align_frame_size;
   size_t curr_frame_pos = aligned_stack_frame_size - 16;
 
-  for (auto reg : asm_function->saved_general_register_list) {
-    auto reg_id = builder.fetch_register(map_general_register(reg));
+  for (auto reg : asm_function->saved_register_set) {
+    auto reg_id = builder.fetch_register(reg);
 
-    if (check_itype_immediate((int32_t)(curr_frame_pos))) {
-      auto ld_instruction = builder.fetch_load_instruction(
-        instruction::Load::Op::LD, reg_id, sp_id,
-        builder.fetch_immediate((int32_t)curr_frame_pos)
-      );
-      last_instruction->insert_prev(ld_instruction);
+    if (reg.is_general()) {
+      if (check_itype_immediate((int32_t)(curr_frame_pos))) {
+        auto ld_instruction = builder.fetch_load_instruction(
+          instruction::Load::Op::LD, reg_id, sp_id,
+          builder.fetch_immediate((int32_t)curr_frame_pos)
+        );
+        last_instruction->insert_prev(ld_instruction);
+      } else {
+        auto asm_tmp_id = builder.fetch_register(Register{GeneralRegister::T3});
+        auto li_instruction = builder.fetch_li_instruction(
+          asm_tmp_id, builder.fetch_immediate((int32_t)curr_frame_pos)
+        );
+        auto add_instruction = builder.fetch_binary_instruction(
+          instruction::Binary::Op::ADD, asm_tmp_id, sp_id, asm_tmp_id
+        );
+        auto ld_instruction = builder.fetch_load_instruction(
+          instruction::Load::Op::LD, reg_id, asm_tmp_id,
+          builder.fetch_immediate(0)
+        );
+
+        last_instruction->insert_prev(li_instruction);
+        last_instruction->insert_prev(add_instruction);
+        last_instruction->insert_prev(ld_instruction);
+      }
     } else {
-      auto asm_tmp_id = builder.fetch_register(Register{GeneralRegister::T3});
-      auto li_instruction = builder.fetch_li_instruction(
-        asm_tmp_id, builder.fetch_immediate((int32_t)curr_frame_pos)
-      );
-      auto add_instruction = builder.fetch_binary_instruction(
-        instruction::Binary::Op::ADD, asm_tmp_id, sp_id, asm_tmp_id
-      );
-      auto ld_instruction = builder.fetch_load_instruction(
-        instruction::Load::Op::LD, reg_id, asm_tmp_id,
-        builder.fetch_immediate(0)
-      );
+      if (check_itype_immediate((int32_t)(curr_frame_pos))) {
+        auto fsd_instruction = builder.fetch_float_load_instruction(
+          instruction::FloatLoad::Op::FLD, reg_id, sp_id,
+          builder.fetch_immediate((int32_t)curr_frame_pos)
+        );
+        last_instruction->insert_prev(fsd_instruction);
+      } else {
+        auto asm_tmp_id = builder.fetch_register(Register{GeneralRegister::T3});
+        auto li_instruction = builder.fetch_li_instruction(
+          asm_tmp_id, builder.fetch_immediate((int32_t)curr_frame_pos)
+        );
+        auto add_instruction = builder.fetch_binary_instruction(
+          instruction::Binary::Op::ADD, asm_tmp_id, sp_id, asm_tmp_id
+        );
+        auto fsd_instruction = builder.fetch_float_load_instruction(
+          instruction::FloatLoad::Op::FLD, reg_id, asm_tmp_id,
+          builder.fetch_immediate(0)
+        );
 
-      last_instruction->insert_prev(li_instruction);
-      last_instruction->insert_prev(add_instruction);
-      last_instruction->insert_prev(ld_instruction);
-    }
-    curr_frame_pos -= 8;
-  }
-
-  for (auto reg : asm_function->saved_float_register_list) {
-    auto reg_id = builder.fetch_register(map_float_register(reg));
-
-    if (check_itype_immediate((int32_t)(curr_frame_pos))) {
-      auto fsd_instruction = builder.fetch_float_load_instruction(
-        instruction::FloatLoad::Op::FLD, reg_id, sp_id,
-        builder.fetch_immediate((int32_t)curr_frame_pos)
-      );
-      last_instruction->insert_prev(fsd_instruction);
-    } else {
-      auto asm_tmp_id = builder.fetch_register(Register{GeneralRegister::T3});
-      auto li_instruction = builder.fetch_li_instruction(
-        asm_tmp_id, builder.fetch_immediate((int32_t)curr_frame_pos)
-      );
-      auto add_instruction = builder.fetch_binary_instruction(
-        instruction::Binary::Op::ADD, asm_tmp_id, sp_id, asm_tmp_id
-      );
-      auto fsd_instruction = builder.fetch_float_load_instruction(
-        instruction::FloatLoad::Op::FLD, reg_id, asm_tmp_id,
-        builder.fetch_immediate(0)
-      );
-
-      last_instruction->insert_prev(li_instruction);
-      last_instruction->insert_prev(add_instruction);
-      last_instruction->insert_prev(fsd_instruction);
+        last_instruction->insert_prev(li_instruction);
+        last_instruction->insert_prev(add_instruction);
+        last_instruction->insert_prev(fsd_instruction);
+      }
     }
     curr_frame_pos -= 8;
   }
@@ -1933,14 +1926,8 @@ bool check_itype_immediate(int32_t value) {
 /// Perform register allocation.
 void asm_register_allocation(AsmBuilder& builder) {
   for (auto& [function_name, function] : builder.context.function_table) {
-    auto linear_scan_context = backend::LinearScanContext();
-    backend::linear_scan(function, builder, linear_scan_context);
+    backend::greedy_allocation(function, builder);
   }
-}
-
-/// Perform instruction scheduling.
-void asm_instruction_scheduling(AsmContext& context) {
-  // TODO
 }
 
 }  // namespace syc

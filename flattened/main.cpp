@@ -8,19 +8,23 @@
 #include "ir__codegen.h"
 #include "ir__instruction.h"
 #include "passes__asm__dce.h"
-#include "passes__asm__linear_scan.h"
 #include "passes__asm__peephole.h"
 #include "passes__asm__peephole_second.h"
 #include "passes__asm__phi_elim.h"
 #include "passes__ir__auto_inline.h"
 #include "passes__ir__copyprop.h"
 #include "passes__ir__cse.h"
+#include "passes__ir__dce.h"
+#include "passes__ir__global2local.h"
+#include "passes__ir__gvn.h"
 #include "passes__ir__load_elim.h"
+#include "passes__ir__loop_opt.h"
+#include "passes__ir__math_opt.h"
 #include "passes__ir__mem2reg.h"
 #include "passes__ir__peephole.h"
 #include "passes__ir__straighten.h"
+#include "passes__ir__strength_reduce.h"
 #include "passes__ir__unreach_elim.h"
-#include "passes__ir__unused_elim.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -51,16 +55,27 @@ int main(int argc, char* argv[]) {
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
     ir::auto_inline(ir_builder);
-    ir::straighten(ir_builder);
+    // FIXME: Global2local cause extremely slow `performance/bitset`
+    ir::global2local(ir_builder);
+    ir::mem2reg(ir_builder);
+    bool is_aggressive_gvn = false;
+    ir::gvn(ir_builder, is_aggressive_gvn);
     ir::load_elim(ir_builder);
-    for (int i = 0; i < 3; i++) {
-      ir::local_cse(ir_builder);
-      ir::peephole(ir_builder);
-      ir::unused_elim(ir_builder);
-    }
-    ir::copyprop(ir_builder);
-    // TODO: implement phi instruction in unreach_elim
+    ir::loop_opt(ir_builder);
+    ir::peephole(ir_builder);
+    // TODO: Refactor unreach elim
     // ir::unreach_elim(ir_builder);
+    ir::straighten(ir_builder);
+    ir::peephole(ir_builder);
+    for (int i = 0; i < 3; i++) {
+      // ir::local_cse(ir_builder);
+      ir::peephole(ir_builder);
+      ir::dce(ir_builder);
+    }
+    ir::math_opt(ir_builder);
+    ir::dce(ir_builder);
+    ir::copyprop(ir_builder);
+    ir::strength_reduce(ir_builder);
   }
 
   if (options.ir_file.has_value()) {
@@ -78,12 +93,15 @@ int main(int argc, char* argv[]) {
 
   codegen(ir_builder.context, asm_builder, codegen_context);
 
-  backend::peephole(asm_builder);
+  // backend::peephole(asm_builder);
   backend::dce(asm_builder);
 
   if (options.optimization_level > 0) {
-    // FIXME: `hidden_functional/search`
     backend::phi_elim(asm_builder);
+    for (int i = 0; i < 3; i++) {
+      backend::peephole(asm_builder);
+      backend::dce(asm_builder);
+    }
     backend::peephole_second(asm_builder);
   }
 

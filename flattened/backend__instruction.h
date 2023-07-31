@@ -403,6 +403,18 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
     Context& context
   );
 
+  void replace_def_operand(
+    OperandID old_operand_id,
+    OperandID new_operand_id,
+    Context& context
+  );
+
+  void replace_use_operand(
+    OperandID old_operand_id,
+    OperandID new_operand_id,
+    Context& context
+  );
+
   bool is_phi() const;
 
   bool is_branch_or_jmp() const;

@@ -33,6 +33,15 @@ void auto_inline(Builder& builder) {
     }
   }
   for (auto function_name : to_be_removed) {
+    auto function = builder.context.get_function(function_name);
+
+    auto curr_basic_block = function->head_basic_block->next;
+    while (curr_basic_block != function->tail_basic_block) {
+      auto next_basic_block = curr_basic_block->next;
+      curr_basic_block->remove(builder.context);
+      curr_basic_block = next_basic_block;
+    }
+
     builder.context.function_table.erase(function_name);
   }
 }

@@ -1,7 +1,7 @@
-#include "passes__ir__control_flow_analysis.h"
+#include "passes__asm__control_flow_analysis.h"
 
 namespace syc {
-namespace ir {
+namespace backend {
 
 void control_flow_analysis(
   FunctionPtr function,
@@ -16,10 +16,10 @@ void control_flow_analysis(
 
   auto bb_id_set = std::set<BasicBlockID>();
   auto bb_id_postorder = std::vector<BasicBlockID>();
-  auto bb_id_visited = std::map<BasicBlockID, bool>();
+  auto bb_id_visited = std::unordered_map<BasicBlockID, bool>();
 
   size_t postorder_number = 0;
-  auto postorder_number_map = std::map<BasicBlockID, size_t>();
+  auto postorder_number_map = std::unordered_map<BasicBlockID, size_t>();
 
   auto curr_bb = function->head_basic_block->next;
   while (curr_bb != function->tail_basic_block) {
@@ -145,5 +145,5 @@ void control_flow_analysis(
   }
 }
 
-}  // namespace ir
+}  // namespace backend
 }  // namespace syc

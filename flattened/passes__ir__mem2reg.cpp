@@ -72,7 +72,8 @@ void insert_phi(
         auto ptr_id = store.ptr_id;
         // For a to-be-converted variable, every block of its definition is only
         // added into the worklist once
-        if (mem2reg_ctx.variable_set.count(ptr_id) && !mem2reg_ctx.def_map[ptr_id].count(curr_bb->id)) {
+        if (mem2reg_ctx.variable_set.count(ptr_id) 
+          && !mem2reg_ctx.def_map[ptr_id].count(curr_bb->id)) {
           mem2reg_ctx.def_map[ptr_id].insert(curr_bb->id);
           mem2reg_ctx.worklist_map[ptr_id].push(curr_bb->id);
         }
@@ -81,6 +82,8 @@ void insert_phi(
     }
     curr_bb = curr_bb->next;
   }
+
+  mem2reg_ctx.phi_map = {};
 
   for (auto& [operand_id, worklist] : mem2reg_ctx.worklist_map) {
     // Memory operand. The type is pointer.
@@ -138,13 +141,16 @@ void rename(
     auto maybe_store = curr_instr->as<Store>();
 
     if (maybe_phi.has_value()) {
-      auto phi = maybe_phi.value();
-      auto variable_id = mem2reg_ctx.phi_map[curr_instr->id];
-      auto dst_id = phi.dst_id;
+      if (mem2reg_ctx.phi_map.count(curr_instr->id)
+        && mem2reg_ctx.variable_set.count(mem2reg_ctx.phi_map[curr_instr->id])) {
+        auto phi = maybe_phi.value();
+        auto variable_id = mem2reg_ctx.phi_map[curr_instr->id];
+        auto dst_id = phi.dst_id;
 
-      def_cnt_map[variable_id] = 1;
+        def_cnt_map[variable_id] = 1;
 
-      mem2reg_ctx.rename_stack_map[variable_id].push(dst_id);
+        mem2reg_ctx.rename_stack_map[variable_id].push(dst_id);
+      }
 
     } else if (maybe_load.has_value()) {
       auto load = maybe_load.value();
@@ -192,6 +198,10 @@ void rename(
     auto curr_instr = succ_bb->head_instruction->next;
 
     while (curr_instr->is_phi()) {
+      if (!mem2reg_ctx.phi_map.count(curr_instr->id)) {
+        curr_instr = curr_instr->next;
+        continue;
+      }
       if (mem2reg_ctx.rename_stack_map[mem2reg_ctx.phi_map[curr_instr->id]].size() > 0) {
         curr_instr->add_phi_operand(
           mem2reg_ctx.rename_stack_map[mem2reg_ctx.phi_map[curr_instr->id]].top(
