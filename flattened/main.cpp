@@ -13,7 +13,6 @@
 #include "passes__asm__phi_elim.h"
 #include "passes__ir__auto_inline.h"
 #include "passes__ir__copyprop.h"
-#include "passes__ir__cse.h"
 #include "passes__ir__dce.h"
 #include "passes__ir__global2local.h"
 #include "passes__ir__gvn.h"
@@ -52,14 +51,19 @@ int main(int argc, char* argv[]) {
 
   irgen(compunit, ir_builder);
 
-  if (options.optimization_level > 0) {
+  bool aggressive_opt = false;
+
+  if (options.optimization_level > 0)
+    aggressive_opt = true;
+
+  if (options.optimization_level >= 0) {
     ir::mem2reg(ir_builder);
     ir::auto_inline(ir_builder);
     // FIXME: Global2local cause extremely slow `performance/bitset`
     ir::global2local(ir_builder);
     ir::mem2reg(ir_builder);
-    bool is_aggressive_gvn = false;
-    ir::gvn(ir_builder, is_aggressive_gvn);
+    if (options.optimization_level > 0)
+      ir::gvn(ir_builder, aggressive_opt);
     ir::load_elim(ir_builder);
     ir::loop_opt(ir_builder);
     ir::peephole(ir_builder);
@@ -68,7 +72,6 @@ int main(int argc, char* argv[]) {
     ir::straighten(ir_builder);
     ir::peephole(ir_builder);
     for (int i = 0; i < 3; i++) {
-      // ir::local_cse(ir_builder);
       ir::peephole(ir_builder);
       ir::dce(ir_builder);
     }
@@ -93,10 +96,10 @@ int main(int argc, char* argv[]) {
 
   codegen(ir_builder.context, asm_builder, codegen_context);
 
-  // backend::peephole(asm_builder);
+  backend::peephole(asm_builder);
   backend::dce(asm_builder);
 
-  if (options.optimization_level > 0) {
+  if (options.optimization_level >= 0) {
     backend::phi_elim(asm_builder);
     for (int i = 0; i < 3; i++) {
       backend::peephole(asm_builder);
