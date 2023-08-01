@@ -18,7 +18,7 @@
 #include "passes/ir/global2local.h"
 #include "passes/ir/gvn.h"
 #include "passes/ir/load_elim.h"
-#include "passes/ir/loop_opt.h"
+#include "passes/ir/loop_invariant_motion.h"
 #include "passes/ir/math_opt.h"
 #include "passes/ir/mem2reg.h"
 #include "passes/ir/peephole.h"
@@ -61,11 +61,10 @@ int main(int argc, char* argv[]) {
     ir::mem2reg(ir_builder);
     ir::gvn(ir_builder, aggressive_opt);
     ir::load_elim(ir_builder);
-    ir::loop_opt(ir_builder);
+    ir::loop_invariant_motion(ir_builder);
     ir::peephole(ir_builder);
     ir::unreach_elim(ir_builder);
     ir::straighten(ir_builder);
-    ir::peephole(ir_builder);
     for (int i = 0; i < 3; i++) {
       ir::peephole(ir_builder);
       ir::dce(ir_builder);
