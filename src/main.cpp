@@ -9,6 +9,7 @@
 #include "ir/instruction.h"
 #include "passes/asm/dce.h"
 #include "passes/asm/peephole.h"
+#include "passes/asm/peephole_final.h"
 #include "passes/asm/peephole_second.h"
 #include "passes/asm/phi_elim.h"
 #include "passes/ir/auto_inline.h"
@@ -56,7 +57,6 @@ int main(int argc, char* argv[]) {
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
     ir::auto_inline(ir_builder);
-    // FIXME: Global2local cause extremely slow `performance/bitset`
     ir::global2local(ir_builder);
     ir::mem2reg(ir_builder);
     ir::gvn(ir_builder, aggressive_opt);
@@ -104,6 +104,8 @@ int main(int argc, char* argv[]) {
   }
 
   codegen_rest(ir_builder.context, asm_builder, codegen_context);
+
+  backend::peephole_final(asm_builder);
 
   if (options.output_file.has_value()) {
     std::ofstream output_file(options.output_file.value());

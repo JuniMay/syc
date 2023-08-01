@@ -1791,6 +1791,7 @@ AsmOperandID codegen_operand(
           }
 
         } else {
+          // TODO: Support 64-bit immediate according to ir type.
           int value = std::get<int>(ir_constant->kind);
           if (force_keep_imm) {
             asm_operand_id = builder.fetch_immediate((int32_t)value);
