@@ -129,11 +129,13 @@ void phi_elim_function(FunctionPtr function, Builder& builder) {
 
         if (operand->is_immediate()) {
           if (phi_rd->is_float()) {
-            auto t5_id = builder.fetch_register(Register{GeneralRegister::T5});
-            auto li_instr = builder.fetch_li_instruction(t5_id, operand_id);
+            auto tmp_reg_id =
+              builder.fetch_virtual_register(VirtualRegisterKind::General);
+            auto li_instr =
+              builder.fetch_li_instruction(tmp_reg_id, operand_id);
             auto fmv_instr = builder.fetch_float_move_instruction(
               instruction::FloatMove::Fmt::S, instruction::FloatMove::Fmt::X,
-              phi_tmp_rd_id, t5_id
+              phi_tmp_rd_id, tmp_reg_id
             );
             block_instr_map[block_to_insert].push_back(li_instr);
             block_instr_map[block_to_insert].push_back(fmv_instr);
@@ -162,14 +164,14 @@ void phi_elim_function(FunctionPtr function, Builder& builder) {
               block_instr_map[block_to_insert].push_back(ld_instr);
             }
           } else {
-            auto asm_tmp_id = builder.fetch_register(backend::Register{
-              backend::GeneralRegister::T3});
+            auto tmp_reg_id =
+              builder.fetch_virtual_register(VirtualRegisterKind::General);
             auto li_instruction = builder.fetch_li_instruction(
-              asm_tmp_id, builder.fetch_immediate(offset)
+              tmp_reg_id, builder.fetch_immediate(offset)
             );
             auto add_instruction = builder.fetch_binary_instruction(
-              backend::instruction::Binary::Op::ADD, asm_tmp_id, asm_fp_id,
-              asm_tmp_id
+              backend::instruction::Binary::Op::ADD, tmp_reg_id, asm_fp_id,
+              tmp_reg_id
             );
 
             block_instr_map[block_to_insert].push_back(li_instruction);
@@ -177,13 +179,13 @@ void phi_elim_function(FunctionPtr function, Builder& builder) {
 
             if (phi_rd->is_float()) {
               auto fld_instr = builder.fetch_float_load_instruction(
-                instruction::FloatLoad::Op::FLD, phi_tmp_rd_id, asm_tmp_id,
+                instruction::FloatLoad::Op::FLD, phi_tmp_rd_id, tmp_reg_id,
                 builder.fetch_immediate(0)
               );
               block_instr_map[block_to_insert].push_back(fld_instr);
             } else {
               auto ld_instr = builder.fetch_load_instruction(
-                instruction::Load::Op::LD, phi_tmp_rd_id, asm_tmp_id,
+                instruction::Load::Op::LD, phi_tmp_rd_id, tmp_reg_id,
                 builder.fetch_immediate(0)
               );
               block_instr_map[block_to_insert].push_back(ld_instr);

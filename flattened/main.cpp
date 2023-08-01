@@ -9,6 +9,7 @@
 #include "ir__instruction.h"
 #include "passes__asm__dce.h"
 #include "passes__asm__peephole.h"
+#include "passes__asm__peephole_final.h"
 #include "passes__asm__peephole_second.h"
 #include "passes__asm__phi_elim.h"
 #include "passes__ir__auto_inline.h"
@@ -53,22 +54,18 @@ int main(int argc, char* argv[]) {
 
   bool aggressive_opt = false;
 
-  if (options.optimization_level > 0)
-    aggressive_opt = true;
+  if (options.optimization_level > 0) aggressive_opt = true;
 
   if (options.optimization_level >= 0) {
     ir::mem2reg(ir_builder);
     ir::auto_inline(ir_builder);
-    // FIXME: Global2local cause extremely slow `performance/bitset`
     ir::global2local(ir_builder);
     ir::mem2reg(ir_builder);
-    if (options.optimization_level > 0)
-      ir::gvn(ir_builder, aggressive_opt);
+    if (options.optimization_level > 0) ir::gvn(ir_builder, aggressive_opt);
     ir::load_elim(ir_builder);
     ir::loop_opt(ir_builder);
     ir::peephole(ir_builder);
-    // TODO: Refactor unreach elim
-    // ir::unreach_elim(ir_builder);
+    ir::unreach_elim(ir_builder);
     ir::straighten(ir_builder);
     ir::peephole(ir_builder);
     for (int i = 0; i < 3; i++) {
@@ -109,6 +106,8 @@ int main(int argc, char* argv[]) {
   }
 
   codegen_rest(ir_builder.context, asm_builder, codegen_context);
+
+  backend::peephole_final(asm_builder);
 
   if (options.output_file.has_value()) {
     std::ofstream output_file(options.output_file.value());

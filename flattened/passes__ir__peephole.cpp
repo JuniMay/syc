@@ -34,6 +34,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
     auto maybe_getelementptr = curr_instruction->as<GetElementPtr>();
     auto maybe_cast = curr_instruction->as<Cast>();
     auto maybe_phi = curr_instruction->as<Phi>();
+    auto maybe_store = curr_instruction->as<Store>();
 
     if (maybe_binary.has_value()) {
       auto curr_kind = maybe_binary.value();
@@ -136,6 +137,35 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           instruction->replace_operand(dst->id, operand_id, builder.context);
         }
         curr_instruction->remove(builder.context);
+      }
+    } else if (maybe_store.has_value()) {
+      // Adjacent load and store from/to the same address
+      auto store = maybe_store.value();
+      if (next_instruction != basic_block->tail_instruction) {
+        auto maybe_load = next_instruction->as<Load>();
+        if (maybe_load.has_value()) {
+          auto load = maybe_load.value();
+
+          auto store_ptr_id = store.ptr_id;
+          auto load_ptr_id = load.ptr_id;
+
+          auto store_src_id = store.value_id;
+          auto load_dst_id = load.dst_id;
+
+          if (store_ptr_id == load_ptr_id) {
+            auto load_dst = builder.context.get_operand(load_dst_id);
+            auto use_id_list_copy = load_dst->use_id_list;
+            for (auto instr_id : use_id_list_copy) {
+              auto instr = builder.context.get_instruction(instr_id);
+              instr->replace_operand(
+                load_dst_id, store_src_id, builder.context
+              );
+            }
+            // Remove the load instruction
+            next_instruction->remove(builder.context);
+            next_instruction = curr_instruction->next;
+          }
+        }
       }
     }
 
