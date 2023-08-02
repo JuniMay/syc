@@ -380,7 +380,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
 
         command = (f'clang -xc {testcase}.sy -include '
                    f'{runtime_lib_dir}/sylib.h '
-                   f'-S -emit-llvm -o {std_ir_path}')
+                   f'-S -emit-llvm -o {std_ir_path} -O3')
 
         exec_result = execute(command, exec_timeout)
         log(log_file, command, exec_result)

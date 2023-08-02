@@ -14,7 +14,9 @@ void gvn_function(FunctionPtr function, Builder& builder, bool is_aggressive) {
   if (curr_basic_block == function->tail_basic_block) {
     return;
   }
-  gvn_basic_block(function, curr_basic_block, builder, is_aggressive);
+  auto cfa_ctx = ControlFlowAnalysisContext();
+  control_flow_analysis(function, builder.context, cfa_ctx);
+  gvn_basic_block(function, curr_basic_block, builder, cfa_ctx, is_aggressive);
 }
 
 using ValueNumMap = std::map<OperandID, OperandID>;
@@ -47,7 +49,7 @@ StoreExprMap store_expr_map;
 GetElementPtrExprMap getelementptr_expr_map;
 ICmpExprMap icmp_expr_map;
 
-void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& builder, bool is_aggressive) {
+void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& builder, ControlFlowAnalysisContext cfa_ctx, bool is_aggressive) {
   using namespace instruction;
   builder.set_curr_basic_block(basic_block);
   
@@ -422,10 +424,8 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
   }
 
   // recursively gvn for children basic blocks
-  auto cfa_ctx = ControlFlowAnalysisContext();
-  control_flow_analysis(function, builder.context, cfa_ctx);
   for (auto child_bb : cfa_ctx.dom_tree[basic_block->id]) {
-    gvn_basic_block(function, builder.context.get_basic_block(child_bb), builder, is_aggressive);
+    gvn_basic_block(function, builder.context.get_basic_block(child_bb), builder, cfa_ctx, is_aggressive);
   }
 
   // restore maps
