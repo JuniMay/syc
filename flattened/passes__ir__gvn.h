@@ -16,7 +16,7 @@ void gvn(Builder& builder, bool is_aggressive);
 
 void gvn_function(FunctionPtr function, Builder& builder, bool is_aggressive);
 
-void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& builder, bool is_aggressive);
+void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& builder, ControlFlowAnalysisContext cfa_ctx, bool is_aggressive);
 
 }  // namespace ir
 }  // namespace syc

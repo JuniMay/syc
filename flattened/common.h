@@ -18,6 +18,7 @@
 #include <stack>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <variant>
 #include <vector>
 

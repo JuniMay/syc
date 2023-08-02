@@ -1,5 +1,5 @@
-#ifndef SYC_PASSES_IR_LOOP_OPT_H_
-#define SYC_PASSES_IR_LOOP_OPT_H_
+#ifndef SYC_PASSES_IR_LOOP_ANALYSIS_H_
+#define SYC_PASSES_IR_LOOP_ANALYSIS_H_
 
 #include "common.h"
 #include "passes__ir__control_flow_analysis.h"
@@ -10,7 +10,7 @@ namespace ir {
 struct LoopInfo {
   BasicBlockID header_id;
   std::set<BasicBlockID> body_id_set;
-  std::set<BasicBlockID> exit_id_set;
+  std::set<BasicBlockID> exiting_id_set;
 
   bool operator<(const LoopInfo& other) const {
     return header_id < other.header_id;
@@ -23,15 +23,11 @@ struct LoopOptContext {
   LoopOptContext() = default;
 };
 
-void loop_opt(Builder& builder);
-
 void detect_natural_loop(
   FunctionPtr function,
   Builder& builder,
   LoopOptContext& loop_opt_ctx
 );
-
-void code_motion(Builder& builder, LoopOptContext& loop_opt_ctx);
 
 }  // namespace ir
 }  // namespace syc

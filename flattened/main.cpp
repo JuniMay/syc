@@ -15,13 +15,16 @@
 #include "passes__ir__auto_inline.h"
 #include "passes__ir__copyprop.h"
 #include "passes__ir__dce.h"
+#include "passes__ir__func_ret_opt.h"
 #include "passes__ir__global2local.h"
 #include "passes__ir__gvn.h"
 #include "passes__ir__load_elim.h"
-#include "passes__ir__loop_opt.h"
+#include "passes__ir__loop_indvar_simplify.h"
+#include "passes__ir__loop_invariant_motion.h"
 #include "passes__ir__math_opt.h"
 #include "passes__ir__mem2reg.h"
 #include "passes__ir__peephole.h"
+#include "passes__ir__purity_opt.h"
 #include "passes__ir__straighten.h"
 #include "passes__ir__strength_reduce.h"
 #include "passes__ir__unreach_elim.h"
@@ -58,16 +61,17 @@ int main(int argc, char* argv[]) {
 
   if (options.optimization_level >= 0) {
     ir::mem2reg(ir_builder);
+    ir::func_ret_opt(ir_builder);
+    ir::purity_opt(ir_builder);
     ir::auto_inline(ir_builder);
     ir::global2local(ir_builder);
     ir::mem2reg(ir_builder);
     if (options.optimization_level > 0) ir::gvn(ir_builder, aggressive_opt);
     ir::load_elim(ir_builder);
-    ir::loop_opt(ir_builder);
+    ir::loop_invariant_motion(ir_builder);
     ir::peephole(ir_builder);
     ir::unreach_elim(ir_builder);
     ir::straighten(ir_builder);
-    ir::peephole(ir_builder);
     for (int i = 0; i < 3; i++) {
       ir::peephole(ir_builder);
       ir::dce(ir_builder);
@@ -76,6 +80,7 @@ int main(int argc, char* argv[]) {
     ir::dce(ir_builder);
     ir::copyprop(ir_builder);
     ir::strength_reduce(ir_builder);
+    ir::loop_indvar_simplify(ir_builder);
   }
 
   if (options.ir_file.has_value()) {
