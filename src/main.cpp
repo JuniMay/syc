@@ -24,6 +24,7 @@
 #include "passes/ir/mem2reg.h"
 #include "passes/ir/peephole.h"
 #include "passes/ir/straighten.h"
+#include "passes/ir/purity_opt.h"
 #include "passes/ir/strength_reduce.h"
 #include "passes/ir/unreach_elim.h"
 #include "utils.h"
@@ -57,6 +58,7 @@ int main(int argc, char* argv[]) {
 
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
+    ir::purity_opt(ir_builder);
     ir::auto_inline(ir_builder);
     ir::global2local(ir_builder);
     ir::mem2reg(ir_builder);
