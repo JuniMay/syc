@@ -84,4 +84,4 @@ Then just debug.
 - [ ] if condition simplification
   - [ ] if (a / c0 >= c1) -> if (a > c0 * c1 - 1)
 - [ ] loop interchange for `performance/01_mmx.sy`
-- [ ] 
+- [ ] function common subexpression elimination
