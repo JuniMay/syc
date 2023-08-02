@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
 
   irgen(compunit, ir_builder);
 
-  bool aggressive_opt = false;
+  bool aggressive_opt = true;
 
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);

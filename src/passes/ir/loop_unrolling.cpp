@@ -70,7 +70,7 @@ bool loop_unrolling_helper(
     return false;
   }
 
-  if (loop_info.body_id_set.size() > 20) {
+  if (loop_info.body_id_set.size() > 30) {
     return false;
   }
 
