@@ -25,6 +25,7 @@
 #include "passes/ir/straighten.h"
 #include "passes/ir/strength_reduce.h"
 #include "passes/ir/unreach_elim.h"
+#include "passes/ir/tco.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -72,6 +73,13 @@ int main(int argc, char* argv[]) {
     ir::math_opt(ir_builder);
     ir::dce(ir_builder);
     ir::copyprop(ir_builder);
+    ir::strength_reduce(ir_builder);
+    ir::tco(ir_builder);
+    ir::loop_invariant_motion(ir_builder);
+    for (int i = 0; i < 3; i++) {
+      ir::peephole(ir_builder);
+      ir::dce(ir_builder);
+    }
     ir::strength_reduce(ir_builder);
   }
 

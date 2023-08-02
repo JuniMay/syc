@@ -34,6 +34,10 @@ void Function::append_basic_block(BasicBlockPtr basic_block) {
   }
 }
 
+void Function::prepend_basic_block(BasicBlockPtr basic_block) {
+  this->head_basic_block->insert_next(basic_block);
+}
+
 std::string Function::to_string(Context& context) {
   if (this->is_declare) {
     std::string result =

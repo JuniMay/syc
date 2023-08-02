@@ -40,6 +40,9 @@ struct Function {
   /// Append basic block to the end of the function.
   void append_basic_block(BasicBlockPtr basic_block);
 
+  /// Prepend basic block to the beginning of the function.
+  void prepend_basic_block(BasicBlockPtr basic_block);
+
   /// Convert the function and its basic blocks to a string in IR form.
   std::string to_string(Context& context);
 
