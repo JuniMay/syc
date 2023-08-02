@@ -294,13 +294,14 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
         // get related gep expr from inv_getelementptr_expr_map
         auto related_gep_expr = inv_getelementptr_expr_map[curr_ptr_id];
         store_expr_map[related_gep_expr] = curr_value_id;
-      } 
-      else if (curr_ptr_operand->is_global()) {
+      } else if (curr_ptr_operand->is_global()) {
         // global variable, treat as a gep expr with no index
         auto related_gep_expr = std::make_tuple(curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
         store_expr_map[related_gep_expr] = curr_value_id;
-      } 
-      else {
+      } else if (is_aggressive) {
+        auto related_gep_expr = std::make_tuple(curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
+        store_expr_map[related_gep_expr] = curr_value_id;
+      } else {
         throw std::runtime_error("store instruction without gep pointer");
       }
       
@@ -325,21 +326,23 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
       auto curr_ptr_operand = builder.context.get_operand(curr_ptr_id);
       if (inv_getelementptr_expr_map.count(curr_ptr_id) > 0) {
         related_gep_expr = inv_getelementptr_expr_map[curr_ptr_id];
-      } 
-      else if (curr_ptr_operand->is_global()) {
+      } else if (curr_ptr_operand->is_global()) {
         // global variable, treat as a gep expr with no index
         related_gep_expr = std::make_tuple(curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
-      } 
-      else {
+      } else if (is_aggressive) {
+        related_gep_expr = std::make_tuple(curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
+      } else {
         throw std::runtime_error("load instruction without gep pointer");
       } 
 
-      // comment this for more aggressive optimization
-      auto related_gep_operand = builder.context.get_operand(std::get<0>(related_gep_expr));
-      if (related_gep_operand->is_global()) {
-        std::cout << "global variable load" << related_gep_operand->to_string() << std::endl;
-        curr_instruction = next_instruction;
-        continue;
+      // more aggressive optimization
+      if (!is_aggressive) {
+        auto related_gep_operand = builder.context.get_operand(std::get<0>(related_gep_expr));
+        if (related_gep_operand->is_global()) {
+          std::cout << "global variable load" << related_gep_operand->to_string() << std::endl;
+          curr_instruction = next_instruction;
+          continue;
+        }
       }
 
       if (store_expr_map.count(related_gep_expr) > 0) {
