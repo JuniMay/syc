@@ -18,6 +18,7 @@
 #include "passes/ir/global2local.h"
 #include "passes/ir/gvn.h"
 #include "passes/ir/load_elim.h"
+#include "passes/ir/loop_indvar_simplify.h"
 #include "passes/ir/loop_invariant_motion.h"
 #include "passes/ir/math_opt.h"
 #include "passes/ir/mem2reg.h"
@@ -73,6 +74,7 @@ int main(int argc, char* argv[]) {
     ir::dce(ir_builder);
     ir::copyprop(ir_builder);
     ir::strength_reduce(ir_builder);
+    ir::loop_indvar_simplify(ir_builder);
   }
 
   if (options.ir_file.has_value()) {
