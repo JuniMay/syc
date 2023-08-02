@@ -69,7 +69,7 @@ Then just debug.
   - [ ] Fix `functional/51_short_circuit`
   - [ ] Fix `functional/75_max_flow`
   - [ ] Fix `functional/82_long_func`
-- [ ] Strength reduction
+- [x] Strength reduction
   - [x] IR: integer multiplication to shift.
   - [x] IR: integer division by 2 to shift.
   - [x] IR: integer division by 2^k to shift.
@@ -80,3 +80,8 @@ Then just debug.
   - [ ] Unrolling
   - [ ] Parallelization
 - [ ] Redundant code elimination after register allocation
+- [ ] additional ir peephole for add %i, 0
+- [ ] if condition simplification
+  - [ ] if (a / c0 >= c1) -> if (a > c0 * c1 - 1)
+- [ ] loop interchange for `performance/01_mmx.sy`
+- [ ] 
