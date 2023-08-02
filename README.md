@@ -80,3 +80,7 @@ Then just debug.
   - [ ] Unrolling
   - [ ] Parallelization
 - [ ] Redundant code elimination after register allocation
+- [ ] Loop variable induction
+  - [x] Basic for gep instruction
+  - [ ] Non-zero initial value
+  - [ ] More instructions
