@@ -23,6 +23,8 @@ bool is_pure(
   PurityOptContext& purity_ctx,
   size_t depth
 ) {
+  // TODO: Mutual recursion
+
   using namespace instruction;
 
   if (purity_ctx.purity_result.count(function->name)) {
@@ -82,6 +84,21 @@ void purity_opt_function(
         auto callee = builder.context.get_function(maybe_call->function_name);
         if (!is_pure(callee, builder, purity_ctx)) {
           continue;
+        }
+
+        if (maybe_call.value().maybe_dst_id.has_value()) {
+          auto dst =
+            builder.context.get_operand(maybe_call.value().maybe_dst_id.value()
+            );
+
+          if (dst->use_id_list.size() == 0) {
+            // Remove the call instruction
+            auto prev = instr->prev.lock();
+            instr->remove(builder.context);
+            instr = prev;
+
+            continue;
+          }
         }
 
         auto key =

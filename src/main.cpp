@@ -15,6 +15,7 @@
 #include "passes/ir/auto_inline.h"
 #include "passes/ir/copyprop.h"
 #include "passes/ir/dce.h"
+#include "passes/ir/func_ret_opt.h"
 #include "passes/ir/global2local.h"
 #include "passes/ir/gvn.h"
 #include "passes/ir/load_elim.h"
@@ -23,8 +24,8 @@
 #include "passes/ir/math_opt.h"
 #include "passes/ir/mem2reg.h"
 #include "passes/ir/peephole.h"
-#include "passes/ir/straighten.h"
 #include "passes/ir/purity_opt.h"
+#include "passes/ir/straighten.h"
 #include "passes/ir/strength_reduce.h"
 #include "passes/ir/unreach_elim.h"
 #include "utils.h"
@@ -58,6 +59,7 @@ int main(int argc, char* argv[]) {
 
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
+    ir::func_ret_opt(ir_builder);
     ir::purity_opt(ir_builder);
     ir::auto_inline(ir_builder);
     ir::global2local(ir_builder);
