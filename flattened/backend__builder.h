@@ -164,7 +164,10 @@ struct Builder {
     std::vector<std::tuple<OperandID, BasicBlockID>> incoming_list
   );
 
-  InstructionPtr fetch_call_instruction(std::string function_name);
+  InstructionPtr fetch_call_instruction(
+    std::string function_name,
+    std::set<Register> used_arg_reg_set
+  );
 
   InstructionPtr fetch_branch_instruction(
     instruction::Branch::Op op,

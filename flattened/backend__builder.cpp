@@ -424,7 +424,10 @@ Builder::fetch_li_instruction(OperandID rd_id, OperandID imm_id) {
   return instruction;
 }
 
-InstructionPtr Builder::fetch_call_instruction(std::string function_name) {
+InstructionPtr Builder::fetch_call_instruction(
+  std::string function_name,
+  std::set<Register> used_arg_reg_set
+) {
   auto id = context.get_next_instruction_id();
   auto kind = InstructionKind(instruction::Call{function_name});
   auto instruction = create_instruction(id, kind, curr_basic_block->id);
@@ -432,12 +435,14 @@ InstructionPtr Builder::fetch_call_instruction(std::string function_name) {
   context.register_instruction(instruction);
 
   // Add all argument registers and temporaries as def and use.
-  // TODO: specify the used argument registers
   for (auto reg : REG_ARGS) {
     auto operand_id = fetch_register(reg);
     context.operand_table[operand_id]->add_def(id);
     instruction->add_def(operand_id);
+  }
 
+  for (auto reg : used_arg_reg_set) {
+    auto operand_id = fetch_register(reg);
     context.operand_table[operand_id]->add_use(id);
     instruction->add_use(operand_id);
   }

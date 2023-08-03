@@ -55,18 +55,16 @@ int main(int argc, char* argv[]) {
 
   irgen(compunit, ir_builder);
 
-  bool aggressive_opt = false;
+  bool aggressive_opt = true;
 
-  if (options.optimization_level > 0) aggressive_opt = true;
-
-  if (options.optimization_level >= 0) {
+  if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
     ir::func_ret_opt(ir_builder);
     ir::purity_opt(ir_builder);
     ir::auto_inline(ir_builder);
     ir::global2local(ir_builder);
     ir::mem2reg(ir_builder);
-    if (options.optimization_level > 0) ir::gvn(ir_builder, aggressive_opt);
+    ir::gvn(ir_builder, aggressive_opt);
     ir::load_elim(ir_builder);
     ir::loop_invariant_motion(ir_builder);
     ir::peephole(ir_builder);
@@ -101,7 +99,7 @@ int main(int argc, char* argv[]) {
   backend::peephole(asm_builder);
   backend::dce(asm_builder);
 
-  if (options.optimization_level >= 0) {
+  if (options.optimization_level > 0) {
     backend::phi_elim(asm_builder);
     for (int i = 0; i < 3; i++) {
       backend::peephole(asm_builder);

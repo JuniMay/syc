@@ -52,6 +52,9 @@ bool is_pure(
         if (callee->is_declare) {
           return false;
         }
+        if (callee->name == function->name) {
+          continue;
+        }
         if (!is_pure(callee, builder, purity_ctx, depth + 1)) {
           purity_ctx.purity_result[function->name] = false;
           return false;
