@@ -1,6 +1,7 @@
 
 python3 ./scripts/execute.py --flatten-dir './flattened' --no-compile --no-test
 tar -czvf ./flattened.tar.gz ./flattened
+git stash
 git checkout submit
 rm -rf ./flattened
 tar -xzvf ./flattened.tar.gz

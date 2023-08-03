@@ -1320,6 +1320,8 @@ void codegen_instruction(
         std::vector<AsmOperandID> asm_arg_id_list;
         std::vector<AsmOperandID> asm_stack_arg_id_list;
 
+        std::set<backend::Register> used_arg_reg_set;
+
         for (auto ir_arg_id : call.arg_id_list) {
           auto asm_arg_id = codegen_operand(
             ir_arg_id, ir_context, builder, codegen_context, false, true
@@ -1331,10 +1333,11 @@ void codegen_instruction(
 
           if (asm_arg->is_float()) {
             if (curr_float_reg <= 7) {
-              auto asm_reg_id = builder.fetch_register(backend::Register{
-                (backend::FloatRegister)(
-                  (int)(backend::FloatRegister::Fa0) + curr_float_reg
-                )});
+              auto reg = backend::Register{(backend::FloatRegister)(
+                (int)(backend::FloatRegister::Fa0) + curr_float_reg
+              )};
+              used_arg_reg_set.insert(reg);
+              auto asm_reg_id = builder.fetch_register(reg);
 
               // Pseudo fmv.s
               auto fsgnjs_instruction = builder.fetch_float_binary_instruction(
@@ -1351,10 +1354,11 @@ void codegen_instruction(
             }
           } else {
             if (curr_general_reg <= 7) {
-              auto asm_reg_id = builder.fetch_register(backend::Register{
-                (backend::GeneralRegister)(
-                  (int)(backend::GeneralRegister::A0) + curr_general_reg
-                )});
+              auto reg = backend::Register{(backend::GeneralRegister)(
+                (int)(backend::GeneralRegister::A0) + curr_general_reg
+              )};
+              used_arg_reg_set.insert(reg);
+              auto asm_reg_id = builder.fetch_register(reg);
 
               // mv
               auto addi_instruction = builder.fetch_binary_imm_instruction(
@@ -1485,7 +1489,7 @@ void codegen_instruction(
         }
 
         auto call_instruction =
-          builder.fetch_call_instruction(call.function_name);
+          builder.fetch_call_instruction(call.function_name, used_arg_reg_set);
 
         builder.append_instruction(call_instruction);
 
