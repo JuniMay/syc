@@ -91,6 +91,8 @@ int main(int argc, char* argv[]) {
       ir::dce(ir_builder);
     }
     ir::math_opt(ir_builder);
+    ir::straighten(ir_builder);
+    ir::peephole(ir_builder);
     ir::dce(ir_builder);
     ir::copyprop(ir_builder);
     ir::strength_reduce(ir_builder);
