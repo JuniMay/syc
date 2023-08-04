@@ -123,6 +123,8 @@ void detect_natural_loop(
       }
     }
   }
+
+  loop_opt_ctx.dom_map = std::move(dom_map);
 }
 
 }  // namespace ir

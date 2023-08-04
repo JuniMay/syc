@@ -19,6 +19,7 @@ struct LoopInfo {
 
 struct LoopOptContext {
   std::map<BasicBlockID, LoopInfo> loop_info_map;
+  std::map<BasicBlockID, std::set<BasicBlockID>> dom_map;
 
   LoopOptContext() = default;
 };

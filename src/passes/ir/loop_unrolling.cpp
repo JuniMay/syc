@@ -45,7 +45,7 @@ void loop_unrolling_function(FunctionPtr function, Builder& builder) {
     );
 
     for (auto loop_info : loop_info_list) {
-      unroll |= loop_unrolling_helper(loop_info, builder);
+      unroll |= loop_unrolling_helper(loop_info, builder, loop_opt_ctx);
       if (unroll) {
         break;
       }
@@ -53,7 +53,11 @@ void loop_unrolling_function(FunctionPtr function, Builder& builder) {
   }
 }
 
-bool loop_unrolling_helper(LoopInfo& loop_info, Builder& builder) {
+bool loop_unrolling_helper(
+  LoopInfo& loop_info,
+  Builder& builder,
+  LoopOptContext& loop_opt_ctx
+) {
   using namespace instruction;
 
   if (loop_info.exiting_id_set.size() != 1) {
@@ -255,6 +259,10 @@ bool loop_unrolling_helper(LoopInfo& loop_info, Builder& builder) {
       }
     }
 
+    if (unclosed_operand_id_set.size() > 0) {
+      return false;
+    }
+
     for (int loop_index = iv_st + iv_stride; loop_index <= iv_ed;
          loop_index += iv_stride) {
       // Map basic blocks
@@ -282,9 +290,24 @@ bool loop_unrolling_helper(LoopInfo& loop_info, Builder& builder) {
             if (instr->is_phi()) {
               auto phi = instr->as<Phi>().value();
               for (auto [operand_id, block_id] : phi.incoming_list) {
+                auto operand = builder.context.get_operand(operand_id);
                 if (loop_info.body_id_set.count(block_id)) {
-                  curr_loop_unroll_ctx.operand_id_map[phi.dst_id] =
-                    prev_loop_unroll_ctx.operand_id_map[operand_id];
+                  if (operand->maybe_def_id.has_value()) {
+                    auto def_instr = builder.context.get_instruction(
+                      operand->maybe_def_id.value()
+                    );
+                    if (!loop_info.body_id_set.count(def_instr->parent_block_id
+                        )) {
+                      curr_loop_unroll_ctx.operand_id_map[phi.dst_id] =
+                        operand_id;
+                    } else {
+                      curr_loop_unroll_ctx.operand_id_map[phi.dst_id] =
+                        prev_loop_unroll_ctx.operand_id_map.at(operand_id);
+                    }
+                  } else {
+                    curr_loop_unroll_ctx.operand_id_map[phi.dst_id] =
+                      operand_id;
+                  }
                 }
               }
             } else {
@@ -318,7 +341,7 @@ bool loop_unrolling_helper(LoopInfo& loop_info, Builder& builder) {
       curr_loop_unroll_ctx.basic_block_id_map.clear();
 
       curr_loop_unroll_ctx.basic_block_id_map[header_bb->id] =
-        prev_loop_unroll_ctx.basic_block_id_map[header_bb->id];
+        prev_loop_unroll_ctx.basic_block_id_map.at(header_bb->id);
     }
 
     // Patch back the initial condbr
@@ -373,9 +396,20 @@ bool loop_unrolling_helper(LoopInfo& loop_info, Builder& builder) {
       auto phi = instr->as<Phi>().value();
 
       for (auto [operand_id, block_id] : phi.incoming_list) {
+        auto operand = builder.context.get_operand(operand_id);
         if (loop_info.body_id_set.count(block_id)) {
-          prev_loop_unroll_ctx.operand_id_map[phi.dst_id] =
-            prev_loop_unroll_ctx.operand_id_map[operand_id];
+          if (operand->maybe_def_id.has_value()) {
+            auto def_instr =
+              builder.context.get_instruction(operand->maybe_def_id.value());
+            if (!loop_info.body_id_set.count(def_instr->parent_block_id)) {
+              prev_loop_unroll_ctx.operand_id_map[phi.dst_id] = operand_id;
+            } else {
+              prev_loop_unroll_ctx.operand_id_map[phi.dst_id] =
+                prev_loop_unroll_ctx.operand_id_map.at(operand_id);
+            }
+          } else {
+            prev_loop_unroll_ctx.operand_id_map[phi.dst_id] = operand_id;
+          }
         }
       }
 
@@ -416,6 +450,9 @@ bool loop_unrolling_helper(LoopInfo& loop_info, Builder& builder) {
         if (loop_info.body_id_set.count(use_instr->parent_block_id)) {
           continue;
         }
+        // DEBUG
+        std::cout << "REPLACING " << operand_id << " WITH " << new_operand_id
+                  << std::endl;
         use_instr->replace_operand(operand_id, new_operand_id, builder.context);
       }
     }

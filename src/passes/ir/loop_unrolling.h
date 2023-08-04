@@ -19,7 +19,11 @@ void loop_unrolling(Builder& builder);
 
 void loop_unrolling_function(FunctionPtr function, Builder& builder);
 
-bool loop_unrolling_helper(LoopInfo& loop_info, Builder& builder);
+bool loop_unrolling_helper(
+  LoopInfo& loop_info,
+  Builder& builder,
+  LoopOptContext& loop_opt_ctx
+);
 
 OperandID clone_operand(
   OperandID operand_id,
