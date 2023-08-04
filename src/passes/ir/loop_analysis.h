@@ -11,6 +11,7 @@ struct LoopInfo {
   BasicBlockID header_id;
   std::set<BasicBlockID> body_id_set;
   std::set<BasicBlockID> exiting_id_set;
+  std::set<BasicBlockID> exit_id_set;
 
   bool operator<(const LoopInfo& other) const {
     return header_id < other.header_id;
@@ -28,6 +29,11 @@ void detect_natural_loop(
   FunctionPtr function,
   Builder& builder,
   LoopOptContext& loop_opt_ctx
+);
+
+void lcssa_transform(
+  FunctionPtr function,
+  Builder& builder
 );
 
 }  // namespace ir

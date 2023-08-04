@@ -13,6 +13,7 @@ void loop_unrolling(Builder& builder) {
     if (function->is_declare) {
       continue;
     }
+    lcssa_transform(function, builder);
     loop_unrolling_function(function, builder);
   }
 }
@@ -60,10 +61,11 @@ bool loop_unrolling_helper(
 ) {
   using namespace instruction;
 
-  if (loop_info.exiting_id_set.size() != 1) {
+  if (loop_info.exiting_id_set.size() > 1 || loop_info.exit_id_set.size() > 1) {
     return false;
   }
 
+  // Constraint, header bb is the exiting bb.
   if (!loop_info.exiting_id_set.count(loop_info.header_id)) {
     return false;
   }
@@ -229,8 +231,6 @@ bool loop_unrolling_helper(
     curr_loop_unroll_ctx.loop_info = loop_info;
     prev_loop_unroll_ctx.loop_info = loop_info;
 
-    std::unordered_set<OperandID> unclosed_operand_id_set;
-
     // Map header id
     auto new_header_bb = builder.fetch_basic_block();
     curr_loop_unroll_ctx.basic_block_id_map[header_bb->id] = new_header_bb->id;
@@ -246,21 +246,8 @@ bool loop_unrolling_helper(
         if (instr->maybe_def_id.has_value()) {
           prev_loop_unroll_ctx.operand_id_map[instr->maybe_def_id.value()] =
             instr->maybe_def_id.value();
-
-          auto def_operand =
-            builder.context.get_operand(instr->maybe_def_id.value());
-          for (auto use_id : def_operand->use_id_list) {
-            auto use_instr = builder.context.get_instruction(use_id);
-            if (!loop_info.body_id_set.count(use_instr->parent_block_id)) {
-              unclosed_operand_id_set.insert(def_operand->id);
-            }
-          }
         }
       }
-    }
-
-    if (unclosed_operand_id_set.size() > 0) {
-      return false;
     }
 
     for (int loop_index = iv_st + iv_stride; loop_index <= iv_ed;
@@ -275,10 +262,12 @@ bool loop_unrolling_helper(
         new_bb_list.push_back(new_bb);
       }
 
+      BasicBlockID old_header_bb_id;
+
       for (auto bb_id : loop_info.body_id_set) {
         auto bb = builder.context.get_basic_block(bb_id);
         auto unroll_bb = builder.context.get_basic_block(
-          curr_loop_unroll_ctx.basic_block_id_map[bb_id]
+          curr_loop_unroll_ctx.basic_block_id_map.at(bb_id)
         );
 
         builder.set_curr_basic_block(unroll_bb);
@@ -316,8 +305,9 @@ bool loop_unrolling_helper(
               builder.append_instruction(new_instr);
             }
           }
-
-          // Map header bb
+          // Actually record the exiting bb
+          old_header_bb_id = unroll_bb->id;
+          // Map header bb, the mapped header is for next iteration
           auto new_header_bb = builder.fetch_basic_block();
           curr_loop_unroll_ctx.basic_block_id_map[header_bb->id] =
             new_header_bb->id;
@@ -329,6 +319,25 @@ bool loop_unrolling_helper(
             auto new_instr =
               clone_instruction(instr, builder, curr_loop_unroll_ctx);
             builder.append_instruction(new_instr);
+          }
+        }
+      }
+
+      // Patch exit bb
+      auto exit_bb =
+        builder.context.get_basic_block(*loop_info.exit_id_set.begin());
+
+      for (auto instr = exit_bb->head_instruction->next;
+           instr != exit_bb->tail_instruction && instr->is_phi();
+           instr = instr->next) {
+        auto phi = instr->as<Phi>().value();
+        auto incoming_list_copy = phi.incoming_list;
+        for (auto [operand_id, block_id] : incoming_list_copy) {
+          if (loop_info.body_id_set.count(block_id)) {
+            instr->add_phi_operand(
+              curr_loop_unroll_ctx.operand_id_map.at(operand_id),
+              old_header_bb_id, builder.context
+            );
           }
         }
       }
@@ -429,6 +438,25 @@ bool loop_unrolling_helper(
       }
     }
 
+    // Patch the last jump (from exiting block, i.e. header bb) to the exit bb
+    auto exit_bb =
+      builder.context.get_basic_block(*loop_info.exit_id_set.begin());
+
+    for (auto instr = exit_bb->head_instruction->next;
+         instr != exit_bb->tail_instruction && instr->is_phi();
+         instr = instr->next) {
+      auto phi = instr->as<Phi>().value();
+      auto incoming_list_copy = phi.incoming_list;
+      for (auto [operand_id, block_id] : incoming_list_copy) {
+        if (loop_info.body_id_set.count(block_id)) {
+          instr->add_phi_operand(
+            prev_loop_unroll_ctx.operand_id_map.at(operand_id),
+            new_header_bb_id, builder.context
+          );
+        }
+      }
+    }
+
     auto new_br_instr = builder.fetch_br_instruction(else_bb_id);
     builder.append_instruction(new_br_instr);
 
@@ -437,23 +465,6 @@ bool loop_unrolling_helper(
       for (auto bb : new_bb_list) {
         insert_pos_bb->insert_next(bb);
         insert_pos_bb = bb;
-      }
-    }
-
-    // replace unclosed operands
-    for (auto operand_id : unclosed_operand_id_set) {
-      auto operand = builder.context.get_operand(operand_id);
-      auto new_operand_id = prev_loop_unroll_ctx.operand_id_map.at(operand_id);
-      auto use_id_list_copy = operand->use_id_list;
-      for (auto use_id : use_id_list_copy) {
-        auto use_instr = builder.context.get_instruction(use_id);
-        if (loop_info.body_id_set.count(use_instr->parent_block_id)) {
-          continue;
-        }
-        // DEBUG
-        std::cout << "REPLACING " << operand_id << " WITH " << new_operand_id
-                  << std::endl;
-        use_instr->replace_operand(operand_id, new_operand_id, builder.context);
       }
     }
 
