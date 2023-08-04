@@ -18,77 +18,84 @@ void loop_unrolling(Builder& builder) {
 }
 
 void loop_unrolling_function(FunctionPtr function, Builder& builder) {
-  auto loop_opt_ctx = LoopOptContext();
-  detect_natural_loop(function, builder, loop_opt_ctx);
+  builder.switch_function(function->name);
 
-  for (auto [_, loop_info] : loop_opt_ctx.loop_info_map) {
-    // std::cout << "header: " << loop_info.header_id << std::endl;
-    // std::cout << "body: ";
-    // for (auto body_id : loop_info.body_id_set) {
-    //   std::cout << body_id << " ";
-    // }
-    // std::cout << std::endl;
-    // std::cout << "exiting: ";
-    // for (auto exiting_id : loop_info.exiting_id_set) {
-    //   std::cout << exiting_id << " ";
-    // }
-    // std::cout << std::endl;
-    loop_unrolling_helper(loop_info, builder);
+  bool unroll = true;
+
+  while (unroll) {
+    unroll = false;
+    auto loop_opt_ctx = LoopOptContext();
+    detect_natural_loop(function, builder, loop_opt_ctx);
+
+    if (loop_opt_ctx.loop_info_map.size() > 50) {
+      break;
+    }
+
+    // Sort loop_info_map by body size
+    std::vector<LoopInfo> loop_info_list;
+    for (auto [_, loop_info] : loop_opt_ctx.loop_info_map) {
+      loop_info_list.push_back(loop_info);
+    }
+
+    std::sort(
+      loop_info_list.begin(), loop_info_list.end(),
+      [](const LoopInfo& lhs, const LoopInfo& rhs) {
+        return lhs.body_id_set.size() < rhs.body_id_set.size();
+      }
+    );
+
+    for (auto loop_info : loop_info_list) {
+      unroll |= loop_unrolling_helper(loop_info, builder);
+      if (unroll) {
+        break;
+      }
+    }
   }
 }
 
-void loop_unrolling_helper(LoopInfo& loop_info, Builder& builder) {
+bool loop_unrolling_helper(LoopInfo& loop_info, Builder& builder) {
   using namespace instruction;
 
-  // // Check if there are no branches in the loop
-  // for (auto body_id : loop_info.body_id_set) {
-  //   auto bb = builder.context.get_basic_block(body_id);
-  //   if (bb->succ_list.size() > 1) {
-  //     // If more than one succ point to the bb inside the loop, then there is
-  //     // a branch inside the loop
-  //     // Check how many succs are inside the loop body.
-  //     size_t inside_succ_cnt = 0;
-  //     for (auto succ_id : bb->succ_list) {
-  //       if (loop_info.body_id_set.count(succ_id)) {
-  //         inside_succ_cnt++;
-  //       }
-  //     }
-  //     if (inside_succ_cnt > 1) {
-  //       return;
-  //     }
-  //   }
-  // }
-  
-  // find loop index operand
-  // 1. Appear in the phi instruction of the loop header, with one value coming
-  // from inside the loop and the other is constant.
-  // 2. The value coming from inside the loop is defined by add 1 / sub 1 instruciton.
-  // 3. The value coming from inside the loop is used by an icmp instruction.
+  if (loop_info.exiting_id_set.size() != 1) {
+    return false;
+  }
+
+  if (!loop_info.exiting_id_set.count(loop_info.header_id)) {
+    return false;
+  }
+
+  if (loop_info.body_id_set.size() > 20) {
+    return false;
+  }
+
   auto header_bb = builder.context.get_basic_block(loop_info.header_id);
 
-  OperandID loop_operand_id;
-  OperandID icmp_operand_id; 
-  int start_value;
-  int end_value;
+  OperandID loop_iv_id;
+  OperandID loop_cond_id;
+
+  int iv_st;
+  int iv_ed;
+  int iv_stride;
+
   bool do_loop_unrolling = false;
 
   for (auto instr = header_bb->head_instruction->next;
        instr != header_bb->tail_instruction && instr->is_phi();
        instr = instr->next) {
-    
-    std::optional<OperandID> maybe_loop_operand_id = std::nullopt;
-    std::optional<OperandID> maybe_icmp_operand_id = std::nullopt;
-    std::optional<int> maybe_start_value = std::nullopt;
-    std::optional<int> maybe_end_value = std::nullopt;
-    
+    std::optional<OperandID> maybe_loop_iv_id = std::nullopt;
+    std::optional<OperandID> maybe_loop_cond_id = std::nullopt;
+    std::optional<int> maybe_iv_st = std::nullopt;
+    std::optional<int> maybe_iv_ed = std::nullopt;
+
     auto phi = instr->as<Phi>().value();
+
     if (phi.incoming_list.size() != 2) {
       continue;
-      // break; // give up
     }
 
     std::optional<OperandID> maybe_alternate_id;
     std::optional<OperandID> maybe_start_id;
+
     for (auto [operand_id, block_id] : phi.incoming_list) {
       if (loop_info.body_id_set.count(block_id)) {
         maybe_alternate_id = operand_id;
@@ -99,11 +106,7 @@ void loop_unrolling_helper(LoopInfo& loop_info, Builder& builder) {
     }
 
     if (!maybe_alternate_id || !maybe_start_id) {
-      // if (maybe_alternate_id) {
-      //   break; // give up
-      // } else {
-        continue;
-      // }
+      continue;
     }
 
     auto alternative_id = maybe_alternate_id.value();
@@ -112,7 +115,6 @@ void loop_unrolling_helper(LoopInfo& loop_info, Builder& builder) {
     auto alternative_operand = builder.context.get_operand(alternative_id);
     if (!alternative_operand->maybe_def_id.has_value()) {
       continue;
-      // break; // give up
     }
 
     auto def_instr =
@@ -123,7 +125,7 @@ void loop_unrolling_helper(LoopInfo& loop_info, Builder& builder) {
 
     if (maybe_binary.has_value()) {
       auto binary = maybe_binary.value();
-
+      // TODO: support more indvars
       if (binary.op == BinaryOp::Add) {
         auto dst_id = binary.dst_id;
         auto lhs_id = binary.lhs_id;
@@ -135,28 +137,27 @@ void loop_unrolling_helper(LoopInfo& loop_info, Builder& builder) {
           auto constant = std::get<operand::ConstantPtr>(
             builder.context.get_operand(rhs_id)->kind
           );
-          auto step = std::get<int>(constant->kind);
-          // TODO: add more step cases
-          if (step == 1) {
-            maybe_loop_operand_id = phi.dst_id;
-            auto start_constant = std::get<operand::ConstantPtr>(
-              builder.context.get_operand(start_id)->kind
-            );
-            maybe_start_value = std::get<int>(start_constant->kind);
-          }
+          iv_stride = std::get<int>(constant->kind);
+          maybe_loop_iv_id = phi.dst_id;
+          auto start_constant = std::get<operand::ConstantPtr>(
+            builder.context.get_operand(start_id)->kind
+          );
+          maybe_iv_st = std::get<int>(start_constant->kind);
         }
+      } else {
+        continue;
       }
-    } 
-    // else {
-    //   break; // give up
-    // }
+    }
 
     // check icmp instruction
     auto phi_dst_operand = builder.context.get_operand(phi.dst_id);
-    for (auto use_inst_id : phi_dst_operand->use_id_list) {
-      auto use_inst = builder.context.get_instruction(use_inst_id);
-      if (use_inst->is_icmp()) {
-        auto icmp = use_inst->as<ICmp>().value();
+    for (auto use_instr_id : phi_dst_operand->use_id_list) {
+      auto use_instr = builder.context.get_instruction(use_instr_id);
+      if (use_instr->parent_block_id != loop_info.header_id) {
+        continue;
+      }
+      if (use_instr->is_icmp()) {
+        auto icmp = use_instr->as<ICmp>().value();
         // TODO: add more icmp cases
         if (icmp.cond == ICmpCond::Slt) {
           auto lhs_id = icmp.lhs_id;
@@ -164,9 +165,9 @@ void loop_unrolling_helper(LoopInfo& loop_info, Builder& builder) {
           auto rhs = builder.context.get_operand(rhs_id);
           if (rhs->is_constant()) {
             auto constant = std::get<operand::ConstantPtr>(rhs->kind);
-            auto end_value = std::get<int>(constant->kind);
-            maybe_end_value = end_value - 1;
-            maybe_icmp_operand_id = icmp.dst_id;
+            auto iv_ed = std::get<int>(constant->kind);
+            maybe_iv_ed = iv_ed - 1;
+            maybe_loop_cond_id = icmp.dst_id;
           }
         } else if (icmp.cond == ICmpCond::Sle) {
           auto lhs_id = icmp.lhs_id;
@@ -174,207 +175,254 @@ void loop_unrolling_helper(LoopInfo& loop_info, Builder& builder) {
           auto rhs = builder.context.get_operand(rhs_id);
           if (rhs->is_constant()) {
             auto constant = std::get<operand::ConstantPtr>(rhs->kind);
-            auto end_value = std::get<int>(constant->kind);
-            maybe_end_value = end_value;
-            maybe_icmp_operand_id = icmp.dst_id;
+            auto iv_ed = std::get<int>(constant->kind);
+            maybe_iv_ed = iv_ed;
+            maybe_loop_cond_id = icmp.dst_id;
           }
+        } else {
+          continue;
         }
       }
     }
 
     // if all three conditions are satisfied, then we can do loop unrolling
-    if (maybe_loop_operand_id.has_value() && maybe_start_value.has_value() && maybe_end_value.has_value()) {
-      loop_operand_id = maybe_loop_operand_id.value();
-      icmp_operand_id = maybe_icmp_operand_id.value();
-      start_value = maybe_start_value.value();
-      end_value = maybe_end_value.value();
+    if (maybe_loop_iv_id.has_value() && maybe_iv_st.has_value() && maybe_iv_ed.has_value()) {
+      loop_iv_id = maybe_loop_iv_id.value();
+      loop_cond_id = maybe_loop_cond_id.value();
+      iv_st = maybe_iv_st.value();
+      iv_ed = maybe_iv_ed.value();
       do_loop_unrolling = true;
       break;
-    } 
-    // else if (maybe_loop_operand_id || maybe_start_value || maybe_end_value) {
-    //   // give up
-    //   break;
-    // }
+    }
+  }
+
+  if ((iv_ed - iv_st) / iv_stride > 300 || iv_ed - iv_st <= 0) {
+    return false;
   }
 
   if (do_loop_unrolling) {
-    // debug
-    std::cout << "loop unrolling %" << loop_operand_id << " from " << start_value << " to " << end_value << std::endl;
     // remove phi, icmp, br instructions
-    auto phi_operand = builder.context.get_operand(loop_operand_id);
-    auto phi_instruction = builder.context.get_instruction(phi_operand->maybe_def_id.value());
-    auto icmp_operand = builder.context.get_operand(icmp_operand_id);
-    auto icmp_instruction = builder.context.get_instruction(icmp_operand->maybe_def_id.value());
+    auto loop_iv_operand = builder.context.get_operand(loop_iv_id);
+    auto loop_iv_def_instr =
+      builder.context.get_instruction(loop_iv_operand->maybe_def_id.value());
+    auto loop_cond_operand = builder.context.get_operand(loop_cond_id);
+    auto loop_cond_def_instr =
+      builder.context.get_instruction(loop_cond_operand->maybe_def_id.value());
+
     builder.set_curr_basic_block(header_bb);
 
-    if (icmp_operand->use_id_list.size() != 1) {
-      throw std::runtime_error("icmp use id list size is not 1");
-    }
+    auto br_instr = header_bb->tail_instruction->prev.lock();
+    auto then_bb_id = br_instr->as<CondBr>()->then_block_id;
+    auto else_bb_id = br_instr->as<CondBr>()->else_block_id;
 
-    auto br_instruction_id = icmp_operand->use_id_list[0];
-    auto br_instruction = builder.context.get_instruction(br_instruction_id);
-    auto then_bb_id = br_instruction->as<CondBr>().value().then_block_id;
     auto then_bb = builder.context.get_basic_block(then_bb_id);
-    auto else_bb_id = br_instruction->as<CondBr>().value().else_block_id;
     auto else_bb = builder.context.get_basic_block(else_bb_id);
-    // std::cout << "then_bb_id: " << then_bb_id << std::endl;
-    // std::cout << "else_bb_id: " << else_bb_id << std::endl;
-
-    BasicBlockPtr next_first_bb = nullptr;
-    BasicBlockPtr first_bb = nullptr;
 
     std::vector<BasicBlockPtr> new_bb_list;
+    auto curr_loop_unroll_ctx = LoopUnrollingContext();
+    auto prev_loop_unroll_ctx = LoopUnrollingContext();
 
-    LoopUnrollingContext context = LoopUnrollingContext();
-    LoopUnrollingContext last_context;
-    context.loop_info = loop_info;
+    curr_loop_unroll_ctx.loop_info = loop_info;
+    prev_loop_unroll_ctx.loop_info = loop_info;
 
-    // TODO: its a hack, need to fix
-    for (int loop_index = start_value; loop_index <= end_value; loop_index++) {
-      // std::cout << "loop_index: " << loop_index << std::endl;
-      auto loop_index_operand = builder.fetch_constant_operand(
-        builder.fetch_i32_type(), loop_index
-      );
-      auto loop_index_id = loop_index_operand;
-      // context.operand_id_map[loop_operand_id] = loop_index_id;
+    std::unordered_set<OperandID> unclosed_operand_id_set;
 
-      if (next_first_bb == nullptr) {
-        // if it's the first iteration, fetch the next first basic block
-        next_first_bb = builder.fetch_basic_block();
-        new_bb_list.push_back(next_first_bb);
-        first_bb = next_first_bb;
-      }
+    // Map header id
+    auto new_header_bb = builder.fetch_basic_block();
+    curr_loop_unroll_ctx.basic_block_id_map[header_bb->id] = new_header_bb->id;
+    new_bb_list.push_back(new_header_bb);
 
-      bool is_first = true;
-      for (auto loopbody_bb_id : loop_info.body_id_set) {
-        if (loopbody_bb_id == loop_info.header_id) {
-          // simulate header basic block phi instruction
-          for (auto curr_inst = header_bb->head_instruction->next;
-               curr_inst != header_bb->tail_instruction && curr_inst->is_phi();
-               curr_inst = curr_inst->next) {
+    BasicBlockPtr insert_pos_bb = nullptr;
 
-            auto phi = curr_inst->as<Phi>().value();
-            auto phi_operand_id = phi.dst_id;
-            if (phi_operand_id == loop_operand_id) {
-              context.operand_id_map[loop_operand_id] = loop_index_id;
-            } else {
-              if (phi.incoming_list.size() != 2) {
-                throw std::runtime_error("loop unrolling: phi incoming list size is not 2");
-              }
+    // Get initial mapping
+    for (auto bb_id : loop_info.body_id_set) {
+      auto bb = builder.context.get_basic_block(bb_id);
+      for (auto instr = bb->head_instruction->next;
+           instr != bb->tail_instruction; instr = instr->next) {
+        if (instr->maybe_def_id.has_value()) {
+          prev_loop_unroll_ctx.operand_id_map[instr->maybe_def_id.value()] =
+            instr->maybe_def_id.value();
 
-              OperandID outside_operand;
-              OperandID inside_operand;
-              for (auto [incoming_operand_id, incoming_bb_id] : phi.incoming_list) {
-                if (loop_info.body_id_set.count(incoming_bb_id) == 0) {
-                  // coming from outside the loop
-                  outside_operand = incoming_operand_id;
-                } else {
-                  // coming from inside the loop
-                  inside_operand = incoming_operand_id;
-                }
-              }
-
-              if (is_first) {
-                context.operand_id_map[phi_operand_id] = outside_operand;
-              } else {
-                context.operand_id_map[phi_operand_id] = last_context.operand_id_map[inside_operand];
-              }
+          auto def_operand =
+            builder.context.get_operand(instr->maybe_def_id.value());
+          for (auto use_id : def_operand->use_id_list) {
+            auto use_instr = builder.context.get_instruction(use_id);
+            if (!loop_info.body_id_set.count(use_instr->parent_block_id)) {
+              unclosed_operand_id_set.insert(def_operand->id);
             }
           }
+        }
+      }
+    }
+
+    for (int loop_index = iv_st + iv_stride; loop_index <= iv_ed;
+         loop_index += iv_stride) {
+      // Map basic blocks
+      for (auto bb_id : loop_info.body_id_set) {
+        if (bb_id == header_bb->id) {
           continue;
         }
-        BasicBlockPtr copied_loopbody_bb = nullptr;
-        if (is_first) {
-          copied_loopbody_bb = next_first_bb;
-          is_first = false;
-        } else {
-          copied_loopbody_bb = builder.fetch_basic_block();
-          new_bb_list.push_back(copied_loopbody_bb);
-        }
-        context.basic_block_id_map[loopbody_bb_id] = copied_loopbody_bb->id;
+        auto new_bb = builder.fetch_basic_block();
+        curr_loop_unroll_ctx.basic_block_id_map[bb_id] = new_bb->id;
+        new_bb_list.push_back(new_bb);
       }
 
-      if (loop_index != end_value) {
-        // if it's not the last iteration, fetch the next first basic block
-        next_first_bb = builder.fetch_basic_block();
-        new_bb_list.push_back(next_first_bb);
-        context.basic_block_id_map[header_bb->id] = next_first_bb->id;
-      } else {
-        // if it's the last iteration, jump to the original else block
-        context.basic_block_id_map[header_bb->id] = else_bb_id;
-      }
-
-      // Clone instructions
-      for (auto loopbody_bb_id : loop_info.body_id_set) {
-        if (loopbody_bb_id == loop_info.header_id) {
-          continue;
-        }
-        auto loopbody_bb = builder.context.get_basic_block(loopbody_bb_id);
-        auto copied_loopbody_bb = builder.context.get_basic_block(
-          context.basic_block_id_map[loopbody_bb_id]
+      for (auto bb_id : loop_info.body_id_set) {
+        auto bb = builder.context.get_basic_block(bb_id);
+        auto unroll_bb = builder.context.get_basic_block(
+          curr_loop_unroll_ctx.basic_block_id_map[bb_id]
         );
-        builder.set_curr_basic_block(copied_loopbody_bb);
-        auto curr_instruction = loopbody_bb->head_instruction->next;
-        while (curr_instruction != loopbody_bb->tail_instruction) {
-          // std::cout << "curr_instruction: " << curr_instruction->to_string(builder.context) << std::endl;
-          if (curr_instruction->is_ret()) {
-            throw std::runtime_error("ret instruction in loop unrolling");
+
+        builder.set_curr_basic_block(unroll_bb);
+
+        if (bb->id == header_bb->id) {
+          // Skip phi instruction and re-map
+          for (auto instr = bb->head_instruction->next;
+               instr != bb->tail_instruction; instr = instr->next) {
+            if (instr->is_phi()) {
+              auto phi = instr->as<Phi>().value();
+              for (auto [operand_id, block_id] : phi.incoming_list) {
+                if (loop_info.body_id_set.count(block_id)) {
+                  curr_loop_unroll_ctx.operand_id_map[phi.dst_id] =
+                    prev_loop_unroll_ctx.operand_id_map[operand_id];
+                }
+              }
+            } else {
+              auto new_instr =
+                clone_instruction(instr, builder, curr_loop_unroll_ctx);
+              builder.append_instruction(new_instr);
+            }
           }
 
-          auto new_instruction =
-            clone_instruction(curr_instruction, builder, context);
-          if (new_instruction == nullptr) {
-            curr_instruction = curr_instruction->next;
-            continue;
+          // Map header bb
+          auto new_header_bb = builder.fetch_basic_block();
+          curr_loop_unroll_ctx.basic_block_id_map[header_bb->id] =
+            new_header_bb->id;
+          new_bb_list.push_back(new_header_bb);
+        } else {
+          // Directly map
+          for (auto instr = bb->head_instruction->next;
+               instr != bb->tail_instruction; instr = instr->next) {
+            auto new_instr =
+              clone_instruction(instr, builder, curr_loop_unroll_ctx);
+            builder.append_instruction(new_instr);
           }
-          
-          builder.append_instruction(new_instruction);
-
-          curr_instruction = curr_instruction->next;
         }
       }
 
-      last_context = context;
-      context = LoopUnrollingContext();
-      context.loop_info = loop_info;
+      prev_loop_unroll_ctx.operand_id_map = curr_loop_unroll_ctx.operand_id_map;
+      prev_loop_unroll_ctx.basic_block_id_map =
+        curr_loop_unroll_ctx.basic_block_id_map;
+
+      curr_loop_unroll_ctx.operand_id_map.clear();
+      curr_loop_unroll_ctx.basic_block_id_map.clear();
+
+      curr_loop_unroll_ctx.basic_block_id_map[header_bb->id] =
+        prev_loop_unroll_ctx.basic_block_id_map[header_bb->id];
     }
 
-    // put the new basic blocks into the function
-    auto curr_bb = header_bb;
-    for (auto new_bb : new_bb_list) {
-      curr_bb->insert_next(new_bb);
-      curr_bb = new_bb;
-    }
+    // Patch back the initial condbr
+    for (auto bb_id : loop_info.body_id_set) {
+      auto bb = builder.context.get_basic_block(bb_id);
+      for (auto instr = bb->head_instruction->next;
+           instr != bb->tail_instruction; instr = instr->next) {
+        if (instr->is_br()) {
+          auto& br = instr->as_ref<Br>().value().get();
+          if (br.block_id == header_bb->id) {
+            br.block_id = new_header_bb->id;
+            new_header_bb->add_use(instr->id);
+            header_bb->remove_use(instr->id);
+            insert_pos_bb = bb;
+            bb->remove_succ(header_bb->id);
+            bb->add_succ(new_header_bb->id);
+            new_header_bb->add_pred(bb->id);
+          }
+        } else if (instr->as<CondBr>().has_value()) {
+          auto& cond_br = instr->as_ref<CondBr>().value().get();
+          if (cond_br.then_block_id == header_bb->id) {
+            cond_br.then_block_id = new_header_bb->id;
+            new_header_bb->add_use(instr->id);
+            header_bb->remove_use(instr->id);
+            insert_pos_bb = bb;
+            bb->remove_succ(header_bb->id);
+            bb->add_succ(new_header_bb->id);
+            new_header_bb->add_pred(bb->id);
 
-    // retarget br instruction to the first basic block
-    builder.set_curr_basic_block(header_bb);
-    auto new_br_instruction = builder.fetch_br_instruction(first_bb->id);
-    br_instruction->remove(builder.context);
-    builder.append_instruction(new_br_instruction);
-
-    // remove old loop body basic blocks
-    for (auto loopbody_bb_id : loop_info.body_id_set) {
-      if (loopbody_bb_id == loop_info.header_id) {
-        continue;
+          } else if (cond_br.else_block_id == header_bb->id) {
+            cond_br.else_block_id = new_header_bb->id;
+            new_header_bb->add_use(instr->id);
+            header_bb->remove_use(instr->id);
+            insert_pos_bb = bb;
+            bb->remove_succ(header_bb->id);
+            bb->add_succ(new_header_bb->id);
+            new_header_bb->add_pred(bb->id);
+          }
+        }
       }
-      auto loopbody_bb = builder.context.get_basic_block(loopbody_bb_id);
-      loopbody_bb->succ_list.clear();
-      loopbody_bb->pred_list.clear();
-      loopbody_bb->use_id_list.clear();
-      loopbody_bb->remove(builder.context);
     }
-    // phi_instruction->remove(builder.context);
-    icmp_instruction->remove(builder.context);
 
-    builder.set_curr_basic_block(header_bb);
-    // remove all phi instructions in the loop header basic block
-    for (auto curr_inst = header_bb->head_instruction->next;
-         curr_inst != header_bb->tail_instruction && curr_inst->is_phi();
-         curr_inst = curr_inst->next) {
-      // std::cout << "curr_inst: " << curr_inst->to_string(builder.context) << std::endl;
-      curr_inst->remove(builder.context);
+    // One last header
+    auto new_header_bb_id =
+      prev_loop_unroll_ctx.basic_block_id_map.at(header_bb->id);
+    new_header_bb = builder.context.get_basic_block(new_header_bb_id);
+    builder.set_curr_basic_block(new_header_bb);
+
+    for (auto instr = header_bb->head_instruction->next;
+         instr != header_bb->tail_instruction && instr->is_phi();
+         instr = instr->next) {
+      auto phi = instr->as<Phi>().value();
+
+      for (auto [operand_id, block_id] : phi.incoming_list) {
+        if (loop_info.body_id_set.count(block_id)) {
+          prev_loop_unroll_ctx.operand_id_map[phi.dst_id] =
+            prev_loop_unroll_ctx.operand_id_map[operand_id];
+        }
+      }
+
+      for (auto [operand_id, block_id] : phi.incoming_list) {
+        if (!loop_info.body_id_set.count(block_id)) {
+          auto phi_dst = builder.context.get_operand(phi.dst_id);
+          auto use_id_list_copy = phi_dst->use_id_list;
+          for (auto use_id : use_id_list_copy) {
+            auto use_instr = builder.context.get_instruction(use_id);
+            if (loop_info.body_id_set.count(use_instr->parent_block_id)) {
+              use_instr->replace_operand(
+                phi.dst_id, operand_id, builder.context
+              );
+            }
+          }
+        }
+      }
     }
+
+    auto new_br_instr = builder.fetch_br_instruction(else_bb_id);
+    builder.append_instruction(new_br_instr);
+
+    // Modify code, append blocks
+    if (insert_pos_bb != nullptr) {
+      for (auto bb : new_bb_list) {
+        insert_pos_bb->insert_next(bb);
+        insert_pos_bb = bb;
+      }
+    }
+
+    // replace unclosed operands
+    for (auto operand_id : unclosed_operand_id_set) {
+      auto operand = builder.context.get_operand(operand_id);
+      auto new_operand_id = prev_loop_unroll_ctx.operand_id_map.at(operand_id);
+      auto use_id_list_copy = operand->use_id_list;
+      for (auto use_id : use_id_list_copy) {
+        auto use_instr = builder.context.get_instruction(use_id);
+        if (loop_info.body_id_set.count(use_instr->parent_block_id)) {
+          continue;
+        }
+        use_instr->replace_operand(operand_id, new_operand_id, builder.context);
+      }
+    }
+
+    return true;
   }
+  return false;
 }
 
 OperandID clone_operand(
@@ -387,9 +435,9 @@ OperandID clone_operand(
   }
   auto operand = builder.context.get_operand(operand_id);
   if (operand->maybe_def_id.has_value()) {
-    auto def_inst_id = operand->maybe_def_id.value();
-    auto def_inst = builder.context.get_instruction(def_inst_id);
-    auto def_parent_bb_id = def_inst->parent_block_id;
+    auto def_instr_id = operand->maybe_def_id.value();
+    auto def_instr = builder.context.get_instruction(def_instr_id);
+    auto def_parent_bb_id = def_instr->parent_block_id;
     if (!context.loop_info.body_id_set.count(def_parent_bb_id)) {
       // if the operand is not defined in the loop body, don't clone it
       return operand_id;
@@ -466,10 +514,15 @@ InstructionPtr clone_instruction(
       [&](const CondBr& condbr) -> InstructionPtr {
         auto cond_id = clone_operand(condbr.cond_id, builder, context);
 
-        auto then_block_id =
-          context.basic_block_id_map.at(condbr.then_block_id);
-        auto else_block_id =
-          context.basic_block_id_map.at(condbr.else_block_id);
+        auto then_block_id = condbr.then_block_id;
+        auto else_block_id = condbr.else_block_id;
+
+        if (context.basic_block_id_map.count(then_block_id)) {
+          then_block_id = context.basic_block_id_map.at(then_block_id);
+        }
+        if (context.basic_block_id_map.count(else_block_id)) {
+          else_block_id = context.basic_block_id_map.at(else_block_id);
+        }
 
         auto new_instruction = builder.fetch_condbr_instruction(
           cond_id, then_block_id, else_block_id
@@ -481,7 +534,11 @@ InstructionPtr clone_instruction(
         return new_instruction;
       },
       [&](const Br& br) -> InstructionPtr {
-        auto block_id = context.basic_block_id_map.at(br.block_id);
+        auto block_id = br.block_id;
+
+        if (context.basic_block_id_map.count(block_id)) {
+          block_id = context.basic_block_id_map.at(block_id);
+        }
 
         auto new_instruction = builder.fetch_br_instruction(block_id);
 
@@ -496,9 +553,16 @@ InstructionPtr clone_instruction(
         std::vector<std::tuple<OperandID, BasicBlockID>> incoming_list;
         for (auto [incoming_operand_id, incoming_block_id] :
              phi.incoming_list) {
+          auto new_incoming_block_id = incoming_block_id;
+
+          if (context.basic_block_id_map.count(incoming_block_id)) {
+            new_incoming_block_id =
+              context.basic_block_id_map.at(incoming_block_id);
+          }
+
           incoming_list.push_back(std::make_tuple(
             clone_operand(incoming_operand_id, builder, context),
-            context.basic_block_id_map.at(incoming_block_id)
+            new_incoming_block_id
           ));
         }
 
