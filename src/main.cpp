@@ -21,6 +21,7 @@
 #include "passes/ir/load_elim.h"
 #include "passes/ir/loop_indvar_simplify.h"
 #include "passes/ir/loop_invariant_motion.h"
+#include "passes/ir/loop_unrolling.h"
 #include "passes/ir/math_opt.h"
 #include "passes/ir/mem2reg.h"
 #include "passes/ir/peephole.h"
@@ -77,8 +78,22 @@ int main(int argc, char* argv[]) {
     ir::math_opt(ir_builder);
     ir::dce(ir_builder);
     ir::copyprop(ir_builder);
-    ir::strength_reduce(ir_builder);
     ir::loop_indvar_simplify(ir_builder);
+    // if (options.optimization_level > 1)
+    ir::loop_unrolling(ir_builder);
+    ir::gvn(ir_builder, aggressive_opt);
+    ir::load_elim(ir_builder);
+    ir::peephole(ir_builder);
+    ir::unreach_elim(ir_builder);
+    ir::straighten(ir_builder);
+    // for (int i = 0; i < 3; i++) {
+    //   ir::peephole(ir_builder);
+    //   ir::dce(ir_builder);
+    // }
+    // ir::math_opt(ir_builder);
+    // ir::dce(ir_builder);
+    // ir::copyprop(ir_builder);
+    // ir::strength_reduce(ir_builder);
   }
 
   if (options.ir_file.has_value()) {

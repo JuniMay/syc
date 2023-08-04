@@ -23,7 +23,8 @@ void straighten_function(FunctionPtr function, Builder& builder) {
 
     if (curr_bb->succ_list.size() == 1) {
       auto succ_bb = builder.context.get_basic_block(curr_bb->succ_list[0]);
-      if (succ_bb->pred_list.size() != 1) {
+      // TODO: For tail block, fuse forward
+      if (succ_bb->pred_list.size() != 1 || succ_bb->next == function->tail_basic_block) {
         maybe_fuse = false;
       }
     } else {
@@ -73,11 +74,12 @@ void straighten_function(FunctionPtr function, Builder& builder) {
     for (auto use_id : use_id_list_copy) {
       auto use = builder.context.get_instruction(use_id);
       if (use->is_phi()) {
-        auto& phi = use->as_ref<instruction::Phi>().value().get();
-        for (auto& [operand_id, bb_id] : phi.incoming_list) {
-          if (bb_id == succ_bb->id) {
-            bb_id = curr_bb->id;
-          }
+        auto maybe_operand_id =
+          use->remove_phi_operand(succ_bb->id, builder.context);
+        if (maybe_operand_id.has_value()) {
+          use->add_phi_operand(
+            maybe_operand_id.value(), curr_bb->id, builder.context
+          );
         }
       }
     }
