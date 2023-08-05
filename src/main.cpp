@@ -84,6 +84,7 @@ int main(int argc, char* argv[]) {
     ir::gvn(ir_builder, aggressive_opt);
     ir::copyprop(ir_builder);
     ir::load_elim(ir_builder);
+    ir::loop_invariant_motion(ir_builder);
     ir::peephole(ir_builder);
     ir::unreach_elim(ir_builder);
     ir::straighten(ir_builder);
