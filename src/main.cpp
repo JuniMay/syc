@@ -12,6 +12,7 @@
 #include "passes/asm/peephole_final.h"
 #include "passes/asm/peephole_second.h"
 #include "passes/asm/phi_elim.h"
+#include "passes/asm/addr_simplification.h"
 #include "passes/ir/auto_inline.h"
 #include "passes/ir/copyprop.h"
 #include "passes/ir/dce.h"
@@ -56,7 +57,7 @@ int main(int argc, char* argv[]) {
 
   irgen(compunit, ir_builder);
 
-  bool aggressive_opt = true;
+  bool aggressive_opt = false;
 
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
@@ -127,6 +128,7 @@ int main(int argc, char* argv[]) {
       backend::dce(asm_builder);
     }
     backend::peephole_second(asm_builder);
+    backend::addr_simplification(asm_builder);
   }
 
   codegen_rest(ir_builder.context, asm_builder, codegen_context);

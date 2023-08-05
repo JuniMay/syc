@@ -1284,5 +1284,21 @@ bool Instruction::is_branch_or_jmp() const {
          std::holds_alternative<instruction::Branch>(this->kind);
 }
 
+bool Instruction::is_binary() const {
+  return std::holds_alternative<instruction::Binary>(this->kind);
+}
+
+bool Instruction::is_binary_imm() const {
+  return std::holds_alternative<instruction::BinaryImm>(this->kind);
+}
+
+bool Instruction::is_load() const {
+  return std::holds_alternative<instruction::Load>(this->kind);
+}
+
+bool Instruction::is_store() const {
+  return std::holds_alternative<instruction::Store>(this->kind);
+}
+
 }  // namespace backend
 }  // namespace syc

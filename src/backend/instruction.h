@@ -419,6 +419,14 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
 
   bool is_branch_or_jmp() const;
 
+  bool is_binary() const;
+
+  bool is_binary_imm() const;
+
+  bool is_store() const;
+
+  bool is_load() const;
+
   template <typename T>
   std::optional<T> as() {
     if (std::holds_alternative<T>(this->kind)) {
