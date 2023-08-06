@@ -24,7 +24,10 @@ void addr_simplification_function(FunctionPtr function, Builder& builder) {
   }
 }
 
-void addr_simplification_basic_block(BasicBlockPtr basic_block, Builder& builder) {
+void addr_simplification_basic_block(
+  BasicBlockPtr basic_block,
+  Builder& builder
+) {
   using namespace instruction;
 
   auto curr_instruction = basic_block->head_instruction->next;
@@ -44,14 +47,15 @@ void addr_simplification_basic_block(BasicBlockPtr basic_block, Builder& builder
         if (rd_operand->def_id_list.size() == 1 && rs_operand->is_sp()) {
           auto imm = std::get<Immediate>(imm_operand->kind);
           auto imm_value = imm.value;
-          // std::cout << "find addi " << rd_id << ", sp, " << "imm" << std::endl;
+          // std::cout << "find addi " << rd_id << ", sp, " << "imm" <<
+          // std::endl;
           bool do_remove = true;
           auto use_id_list_copy = rd_operand->use_id_list;
           for (InstructionID use : use_id_list_copy) {
             // std::cout << "use: " << use << std::endl;
             auto use_inst = builder.context.get_instruction(use);
             if (use_inst->is_load()) {
-              std::cout << "replace load" << std::endl;
+              // std::cout << "replace load" << std::endl;
               auto use_ld_inst = std::get<Load>(use_inst->kind);
               auto use_ld_rd = use_ld_inst.rd_id;
               auto use_ld_rs = use_ld_inst.rs_id;
@@ -63,35 +67,46 @@ void addr_simplification_basic_block(BasicBlockPtr basic_block, Builder& builder
 
               auto old_imm = std::get<Immediate>(use_ld_imm_operand->kind);
               auto old_imm_value = old_imm.value;
-              
+
               auto new_imm_value = add_immediate(old_imm_value, imm_value);
               auto new_imm = builder.fetch_immediate(new_imm_value);
-              auto new_rs_operand = builder.fetch_register(
-                backend::Register{backend::GeneralRegister::Sp}
-              );
+              auto new_rs_operand = builder.fetch_register(backend::Register{
+                backend::GeneralRegister::Sp});
 
-              use_inst->replace_operand(use_ld_rs, new_rs_operand, builder.context);
+              use_inst->replace_operand(
+                use_ld_rs, new_rs_operand, builder.context
+              );
               use_inst->replace_operand(use_ld_imm, new_imm, builder.context);
             } else if (use_inst->is_store()) {
-              std::cout << "replace store" << std::endl;
+              // std::cout << "replace store" << std::endl;
               auto use_st_inst = std::get<Store>(use_inst->kind);
-              auto use_st_rs = use_st_inst.rs1_id;
-              auto use_st_imm = use_st_inst.imm_id;
+              auto use_st_rs1_id = use_st_inst.rs1_id;
+              auto use_st_imm_id = use_st_inst.imm_id;
 
-              auto use_st_rs_operand = builder.context.get_operand(use_st_rs);
-              auto use_st_imm_operand = builder.context.get_operand(use_st_imm);
+              if (use_st_rs1_id != rd_operand->id) {
+                do_remove = false;
+                continue;
+              }
+
+              auto use_st_rs1_operand =
+                builder.context.get_operand(use_st_rs1_id);
+              auto use_st_imm_operand =
+                builder.context.get_operand(use_st_imm_id);
 
               auto old_imm = std::get<Immediate>(use_st_imm_operand->kind);
               auto old_imm_value = old_imm.value;
-              
+
               auto new_imm_value = add_immediate(old_imm_value, imm_value);
               auto new_imm = builder.fetch_immediate(new_imm_value);
-              auto new_rs_operand = builder.fetch_register(
-                backend::Register{backend::GeneralRegister::Sp}
-              );
+              auto new_rs_operand = builder.fetch_register(backend::Register{
+                backend::GeneralRegister::Sp});
 
-              use_inst->replace_operand(use_st_rs, new_rs_operand, builder.context);
-              use_inst->replace_operand(use_st_imm, new_imm, builder.context);
+              use_inst->replace_operand(
+                use_st_rs1_id, new_rs_operand, builder.context
+              );
+              use_inst->replace_operand(
+                use_st_imm_id, new_imm, builder.context
+              );
             } else {
               do_remove = false;
             }
@@ -99,7 +114,7 @@ void addr_simplification_basic_block(BasicBlockPtr basic_block, Builder& builder
 
           if (do_remove) {
             curr_instruction->remove(builder.context);
-            std::cout << "remove" << std::endl;
+            // std::cout << "remove" << std::endl;
           }
         }
       }
