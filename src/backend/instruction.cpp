@@ -1300,5 +1300,13 @@ bool Instruction::is_store() const {
   return std::holds_alternative<instruction::Store>(this->kind);
 }
 
+bool Instruction::is_float_load() const {
+  return std::holds_alternative<instruction::FloatLoad>(this->kind);
+}
+
+bool Instruction::is_float_store() const {
+  return std::holds_alternative<instruction::FloatStore>(this->kind);
+}
+
 }  // namespace backend
 }  // namespace syc

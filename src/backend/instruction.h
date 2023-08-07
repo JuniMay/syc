@@ -427,6 +427,10 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
 
   bool is_load() const;
 
+  bool is_float_store() const;
+
+  bool is_float_load() const;
+
   template <typename T>
   std::optional<T> as() {
     if (std::holds_alternative<T>(this->kind)) {
