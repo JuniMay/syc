@@ -146,51 +146,76 @@ void phi_elim_function(FunctionPtr function, Builder& builder) {
           }
         } else if (operand->is_local_memory()) {
           auto offset = std::get<LocalMemory>(operand->kind).offset;
-          auto asm_fp_id =
-            builder.fetch_register(Register{GeneralRegister::S0});
+          auto base_reg = std::get<LocalMemory>(operand->kind).reg;
+          auto asm_base_reg_id = builder.fetch_register(base_reg);
 
-          if (check_itype_immediate(offset)) {
-            if (phi_rd->is_float()) {
-              auto fld_instr = builder.fetch_float_load_instruction(
-                instruction::FloatLoad::Op::FLD, phi_tmp_rd_id, asm_fp_id,
-                builder.fetch_immediate(offset)
+          bool do_load = base_reg == Register{GeneralRegister::S0};
+
+          if (!do_load) {
+            if (check_itype_immediate(offset)) {
+              auto addi_instr = builder.fetch_binary_imm_instruction(
+                instruction::BinaryImm::Op::ADDI, phi_tmp_rd_id,
+                asm_base_reg_id, builder.fetch_immediate(offset)
               );
-              block_instr_map[block_to_insert].push_back(fld_instr);
+              block_instr_map[block_to_insert].push_back(addi_instr);
             } else {
-              auto ld_instr = builder.fetch_load_instruction(
-                instruction::Load::Op::LD, phi_tmp_rd_id, asm_fp_id,
-                builder.fetch_immediate(offset)
+              auto tmp_reg_id =
+                builder.fetch_virtual_register(VirtualRegisterKind::General);
+              auto li_instr = builder.fetch_li_instruction(
+                tmp_reg_id, builder.fetch_immediate(offset)
               );
-              block_instr_map[block_to_insert].push_back(ld_instr);
+              auto add_instr = builder.fetch_binary_instruction(
+                instruction::Binary::Op::ADD, phi_tmp_rd_id, asm_base_reg_id,
+                tmp_reg_id
+              );
+              block_instr_map[block_to_insert].push_back(li_instr);
+              block_instr_map[block_to_insert].push_back(add_instr);
             }
           } else {
-            auto tmp_reg_id =
-              builder.fetch_virtual_register(VirtualRegisterKind::General);
-            auto li_instruction = builder.fetch_li_instruction(
-              tmp_reg_id, builder.fetch_immediate(offset)
-            );
-            auto add_instruction = builder.fetch_binary_instruction(
-              backend::instruction::Binary::Op::ADD, tmp_reg_id, asm_fp_id,
-              tmp_reg_id
-            );
-
-            block_instr_map[block_to_insert].push_back(li_instruction);
-            block_instr_map[block_to_insert].push_back(add_instruction);
-
-            if (phi_rd->is_float()) {
-              auto fld_instr = builder.fetch_float_load_instruction(
-                instruction::FloatLoad::Op::FLD, phi_tmp_rd_id, tmp_reg_id,
-                builder.fetch_immediate(0)
-              );
-              block_instr_map[block_to_insert].push_back(fld_instr);
+            if (check_itype_immediate(offset)) {
+              if (phi_rd->is_float()) {
+                auto fld_instr = builder.fetch_float_load_instruction(
+                  instruction::FloatLoad::Op::FLD, phi_tmp_rd_id,
+                  asm_base_reg_id, builder.fetch_immediate(offset)
+                );
+                block_instr_map[block_to_insert].push_back(fld_instr);
+              } else {
+                auto ld_instr = builder.fetch_load_instruction(
+                  instruction::Load::Op::LD, phi_tmp_rd_id, asm_base_reg_id,
+                  builder.fetch_immediate(offset)
+                );
+                block_instr_map[block_to_insert].push_back(ld_instr);
+              }
             } else {
-              auto ld_instr = builder.fetch_load_instruction(
-                instruction::Load::Op::LD, phi_tmp_rd_id, tmp_reg_id,
-                builder.fetch_immediate(0)
+              auto tmp_reg_id =
+                builder.fetch_virtual_register(VirtualRegisterKind::General);
+              auto li_instruction = builder.fetch_li_instruction(
+                tmp_reg_id, builder.fetch_immediate(offset)
               );
-              block_instr_map[block_to_insert].push_back(ld_instr);
+              auto add_instruction = builder.fetch_binary_instruction(
+                backend::instruction::Binary::Op::ADD, tmp_reg_id,
+                asm_base_reg_id, tmp_reg_id
+              );
+
+              block_instr_map[block_to_insert].push_back(li_instruction);
+              block_instr_map[block_to_insert].push_back(add_instruction);
+
+              if (phi_rd->is_float()) {
+                auto fld_instr = builder.fetch_float_load_instruction(
+                  instruction::FloatLoad::Op::FLD, phi_tmp_rd_id, tmp_reg_id,
+                  builder.fetch_immediate(0)
+                );
+                block_instr_map[block_to_insert].push_back(fld_instr);
+              } else {
+                auto ld_instr = builder.fetch_load_instruction(
+                  instruction::Load::Op::LD, phi_tmp_rd_id, tmp_reg_id,
+                  builder.fetch_immediate(0)
+                );
+                block_instr_map[block_to_insert].push_back(ld_instr);
+              }
             }
           }
+
         } else if (operand->is_global()) {
           auto la_instruction = builder.fetch_pseudo_load_instruction(
             instruction::PseudoLoad::LA, phi_tmp_rd_id, operand_id

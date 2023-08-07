@@ -40,7 +40,8 @@ struct Builder {
 
   OperandID fetch_register(Register reg);
 
-  OperandID fetch_local_memory(int offset);
+  OperandID
+  fetch_local_memory(int offset, Register reg /*= Register{GeneralRegister::Sp}*/);
 
   BasicBlockPtr fetch_basic_block();
 

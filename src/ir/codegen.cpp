@@ -205,7 +205,9 @@ void codegen_function(
   }
   int offset = 0;
   for (auto ir_operand_id : ir_stack_param_id_list) {
-    auto asm_local_memory_id = builder.fetch_local_memory(offset);
+    auto asm_local_memory_id = builder.fetch_local_memory(
+      offset, backend::Register{backend::GeneralRegister::S0}
+    );
     codegen_context.operand_map[ir_operand_id] = asm_local_memory_id;
     offset += 8;
   }
@@ -546,7 +548,9 @@ void codegen_instruction(
         }
 
         auto asm_allocated_size = ir_allocated_size / 8;
-        auto asm_local_memory_id = builder.fetch_local_memory(curr_frame_size);
+        auto asm_local_memory_id = builder.fetch_local_memory(
+          curr_frame_size, backend::Register{backend::GeneralRegister::Sp}
+        );
         builder.curr_function->stack_frame_size += asm_allocated_size;
 
         codegen_context.operand_map[ir_alloca.dst_id] = asm_local_memory_id;
@@ -1285,23 +1289,10 @@ void codegen_instruction(
 
           AsmOperandID asm_operand_id;
 
-          if (ir_operand->is_parameter()) {
-            auto asm_param_id = codegen_context.operand_map.at(ir_operand_id);
-            auto asm_param = builder.context.get_operand(asm_param_id);
-            if (asm_param->is_local_memory()) {
-              asm_operand_id = asm_param_id;
-            } else {
-              asm_operand_id = codegen_operand(
-                ir_operand_id, ir_context, builder, codegen_context, false,
-                false, true
-              );
-            }
-          } else {
-            asm_operand_id = codegen_operand(
-              ir_operand_id, ir_context, builder, codegen_context, false, false,
-              true
-            );
-          }
+          asm_operand_id = codegen_operand(
+            ir_operand_id, ir_context, builder, codegen_context, false, false,
+            true, true
+          );
 
           auto asm_block_id = codegen_context.basic_block_map.at(ir_block_id);
 
@@ -1706,7 +1697,8 @@ AsmOperandID codegen_operand(
   CodegenContext& codegen_context,
   bool try_keep_imm,
   bool use_fmv,
-  bool force_keep_imm
+  bool force_keep_imm,
+  bool keep_local_memory
 ) {
   auto ir_operand = ir_context.get_operand(ir_operand_id);
   auto& ir_operand_kind = ir_operand->kind;
@@ -1729,7 +1721,7 @@ AsmOperandID codegen_operand(
 
           auto asm_temp = builder.context.get_operand(asm_temp_id);
 
-          if (asm_temp->is_local_memory()) {
+          if (asm_temp->is_local_memory() && !keep_local_memory) {
             int offset = std::get<backend::LocalMemory>(asm_temp->kind).offset;
 
             auto asm_sp_id = builder.fetch_register(backend::Register{
