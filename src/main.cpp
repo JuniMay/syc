@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
     ir::auto_inline(ir_builder);
     ir::global2local(ir_builder);
     ir::mem2reg(ir_builder);
-    // ir::gvn(ir_builder, aggressive_opt);
+    ir::gvn(ir_builder, aggressive_opt);
     ir::load_elim(ir_builder);
     ir::loop_invariant_motion(ir_builder);
     ir::peephole(ir_builder);
@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
     ir::loop_indvar_simplify(ir_builder);
     ir::loop_unrolling(ir_builder);
     ir::copyprop(ir_builder);
-    // ir::gvn(ir_builder, aggressive_opt);
+    ir::gvn(ir_builder, aggressive_opt);
     ir::copyprop(ir_builder);
     ir::load_elim(ir_builder);
     ir::loop_invariant_motion(ir_builder);
