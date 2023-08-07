@@ -24,17 +24,17 @@ using BinaryExprMap = std::map<
   std::tuple<instruction::BinaryOp, std::variant<int, OperandID>, std::variant<int, OperandID>>,
   OperandID>;
 using InvGetElementPtrExprMap = std::map<OperandID,
-  std::tuple<OperandID, std::vector<std::variant<int, OperandID>>>>;
-using GetElementPtrExprMap = std::map<std::tuple<OperandID, std::vector<std::variant<int, OperandID>>>,
+  std::tuple<std::string, OperandID, std::vector<std::variant<int, OperandID>>>>;
+using GetElementPtrExprMap = std::map<std::tuple<std::string, OperandID, std::vector<std::variant<int, OperandID>>>,
   OperandID>;
 using PhiExprMap = std::map<
   std::vector<std::tuple<OperandID, BasicBlockID>>,
   OperandID>;
 using LoadExprMap = std::map<
-  std::tuple<OperandID, std::vector<std::variant<int, OperandID>>>,
+  std::tuple<std::string, OperandID, std::vector<std::variant<int, OperandID>>>,
   OperandID>;
 using StoreExprMap = std::map<
-  std::tuple<OperandID, std::vector<std::variant<int, OperandID>>>,
+  std::tuple<std::string, OperandID, std::vector<std::variant<int, OperandID>>>,
   OperandID>;
 using ICmpExprMap = std::map<
   std::tuple<syc::ir::instruction::ICmpCond, std::variant<int, OperandID>, std::variant<int, OperandID>>,
@@ -217,6 +217,7 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
       }
     } else if (curr_instruction->is_getelementptr()) {
       auto curr_dst_id = curr_instruction->as<GetElementPtr>()->dst_id;
+      auto curr_basis_type = curr_instruction->as<GetElementPtr>()->basis_type;
       auto curr_ptr_id = curr_instruction->as<GetElementPtr>()->ptr_id;
       auto curr_index_id_list = curr_instruction->as<GetElementPtr>()->index_id_list;
 
@@ -238,6 +239,7 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
       }
 
       curr_dst_id = curr_instruction->as<GetElementPtr>()->dst_id;
+      curr_basis_type = curr_instruction->as<GetElementPtr>()->basis_type;
       curr_ptr_id = curr_instruction->as<GetElementPtr>()->ptr_id;
       curr_index_id_list = curr_instruction->as<GetElementPtr>()->index_id_list;
 
@@ -255,7 +257,8 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
           index_id_list_copy.push_back(curr_index_id);
         }
       }
-      auto instruction_value = std::make_tuple(curr_ptr_id, index_id_list_copy);
+      // std::cout << curr_basis_type->to_string() << std::endl;
+      auto instruction_value = std::make_tuple(curr_basis_type->to_string(), curr_ptr_id, index_id_list_copy);
       inv_getelementptr_expr_map[curr_dst_id] = instruction_value;
 
       if (getelementptr_expr_map.count(instruction_value) > 0) {
@@ -296,10 +299,10 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
         store_expr_map[related_gep_expr] = curr_value_id;
       } else if (curr_ptr_operand->is_global()) {
         // global variable, treat as a gep expr with no index
-        auto related_gep_expr = std::make_tuple(curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
+        auto related_gep_expr = std::make_tuple("", curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
         store_expr_map[related_gep_expr] = curr_value_id;
       } else if (is_aggressive) {
-        auto related_gep_expr = std::make_tuple(curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
+        auto related_gep_expr = std::make_tuple("", curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
         store_expr_map[related_gep_expr] = curr_value_id;
       } else {
         throw std::runtime_error("store instruction without gep pointer");
@@ -322,22 +325,22 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
       curr_ptr_id = curr_instruction->as<Load>()->ptr_id;
 
       // get related gep expr from inv_getelementptr_expr_map
-      std::tuple<syc::ir::OperandID, std::vector<std::variant<int, syc::ir::OperandID>>> related_gep_expr;
+      std::tuple<std::string, syc::ir::OperandID, std::vector<std::variant<int, syc::ir::OperandID>>> related_gep_expr;
       auto curr_ptr_operand = builder.context.get_operand(curr_ptr_id);
       if (inv_getelementptr_expr_map.count(curr_ptr_id) > 0) {
         related_gep_expr = inv_getelementptr_expr_map[curr_ptr_id];
       } else if (curr_ptr_operand->is_global()) {
         // global variable, treat as a gep expr with no index
-        related_gep_expr = std::make_tuple(curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
+        related_gep_expr = std::make_tuple("", curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
       } else if (is_aggressive) {
-        related_gep_expr = std::make_tuple(curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
+        related_gep_expr = std::make_tuple("", curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
       } else {
         throw std::runtime_error("load instruction without gep pointer");
       } 
 
       // more aggressive optimization
       if (!is_aggressive) {
-        auto related_gep_operand = builder.context.get_operand(std::get<0>(related_gep_expr));
+        auto related_gep_operand = builder.context.get_operand(std::get<1>(related_gep_expr));
         if (related_gep_operand->is_global()) {
           std::cout << "global variable load" << related_gep_operand->to_string() << std::endl;
           curr_instruction = next_instruction;
@@ -382,7 +385,7 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
       // remove all the load and store instructions related to the pointer of a global variable
       for (auto it = load_expr_map.begin(); it != load_expr_map.end(); ) {
         auto gep_expr = it->first;
-        auto gep_ptr_id = std::get<0>(gep_expr);
+        auto gep_ptr_id = std::get<1>(gep_expr);
         auto gep_ptr_operand = builder.context.get_operand(gep_ptr_id);
         if (gep_ptr_operand->is_global()) {
           // std::cout << "clear global load: " << gep_ptr_operand->to_string() << std::endl;
@@ -394,7 +397,7 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
 
       for (auto it = store_expr_map.begin(); it != store_expr_map.end(); ) {
         auto gep_expr = it->first;
-        auto gep_ptr_id = std::get<0>(gep_expr);
+        auto gep_ptr_id = std::get<1>(gep_expr);
         auto gep_ptr_operand = builder.context.get_operand(gep_ptr_id);
         if (gep_ptr_operand->is_global()) {
           // std::cout << "clear global store: " << gep_ptr_operand->to_string() << std::endl;

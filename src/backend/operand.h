@@ -16,6 +16,8 @@ struct LocalMemory {
   /// About sp and fp, see this discussion:
   /// https://stackoverflow.com/questions/74650564/is-frame-pointer-necessary-for-riscv-assembly
   int offset;
+  /// Base register, s0 or sp
+  Register reg;
 };
 
 enum class Modifier {

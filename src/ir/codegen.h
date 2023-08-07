@@ -98,7 +98,8 @@ AsmOperandID codegen_operand(
   CodegenContext& codegen_context,
   bool try_keep_imm = false,
   bool use_fmv = false,
-  bool force_keep_imm = false
+  bool force_keep_imm = false,
+  bool keep_local_memory = false
 );
 
 bool check_utype_immediate(uint32_t value);

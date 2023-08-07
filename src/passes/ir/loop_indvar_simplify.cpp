@@ -246,12 +246,10 @@ void loop_indvar_simplify_helper(LoopInfo& loop_info, Builder& builder) {
               }
 
               auto old_ptr = builder.context.get_operand(gep.ptr_id);
-              auto new_ptr_id = builder.fetch_arbitrary_operand(
-                builder.fetch_pointer_type(builder.fetch_i32_type())
-              );
-              auto phi_ptr_id = builder.fetch_arbitrary_operand(
-                builder.fetch_pointer_type(builder.fetch_i32_type())
-              );
+              auto new_ptr_id =
+                builder.fetch_arbitrary_operand(builder.fetch_pointer_type());
+              auto phi_ptr_id =
+                builder.fetch_arbitrary_operand(builder.fetch_pointer_type());
 
               builder.set_curr_basic_block(bb);
 
@@ -296,9 +294,8 @@ void loop_indvar_simplify_helper(LoopInfo& loop_info, Builder& builder) {
                   continue;
                 }
                 // Add a bitcast to i32* to the pred bb
-                auto bitcast_ptr_id = builder.fetch_arbitrary_operand(
-                  builder.fetch_pointer_type(builder.fetch_i32_type())
-                );
+                auto bitcast_ptr_id =
+                  builder.fetch_arbitrary_operand(builder.fetch_pointer_type());
                 auto bitcast_instr = builder.fetch_cast_instruction(
                   CastOp::BitCast, bitcast_ptr_id, old_ptr->id
                 );

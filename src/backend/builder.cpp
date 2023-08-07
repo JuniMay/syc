@@ -41,8 +41,8 @@ OperandID Builder::fetch_register(Register reg) {
   }
 }
 
-OperandID Builder::fetch_local_memory(int offset) {
-  auto kind = LocalMemory{offset};
+OperandID Builder::fetch_local_memory(int offset, Register reg) {
+  auto kind = LocalMemory{offset, reg};
   return fetch_operand(kind, Modifier::None);
 }
 
