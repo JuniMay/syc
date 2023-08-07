@@ -191,6 +191,11 @@ void phi_elim_function(FunctionPtr function, Builder& builder) {
               block_instr_map[block_to_insert].push_back(ld_instr);
             }
           }
+        } else if (operand->is_global()) {
+          auto la_instruction = builder.fetch_pseudo_load_instruction(
+            instruction::PseudoLoad::LA, phi_tmp_rd_id, operand_id
+          );
+          block_instr_map[block_to_insert].push_back(la_instruction);
         } else {
           if (phi_rd->is_float()) {
             auto fsgnjs_instr = builder.fetch_float_binary_instruction(

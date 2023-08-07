@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
     ir::auto_inline(ir_builder);
     ir::global2local(ir_builder);
     ir::mem2reg(ir_builder);
-    ir::gvn(ir_builder, aggressive_opt);
+    // ir::gvn(ir_builder, aggressive_opt);
     ir::load_elim(ir_builder);
     ir::loop_invariant_motion(ir_builder);
     ir::peephole(ir_builder);
@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
     ir::loop_indvar_simplify(ir_builder);
     ir::loop_unrolling(ir_builder);
     ir::copyprop(ir_builder);
-    ir::gvn(ir_builder, aggressive_opt);
+    // ir::gvn(ir_builder, aggressive_opt);
     ir::copyprop(ir_builder);
     ir::load_elim(ir_builder);
     ir::loop_invariant_motion(ir_builder);
@@ -123,17 +123,17 @@ int main(int argc, char* argv[]) {
 
   if (options.optimization_level > 0) {
     backend::phi_elim(asm_builder);
-    for (int i = 0; i < 3; i++) {
-      backend::peephole(asm_builder);
-      backend::dce(asm_builder);
-    }
-    backend::peephole_second(asm_builder);
-    backend::addr_simplification(asm_builder);
+    // for (int i = 0; i < 3; i++) {
+    //   backend::peephole(asm_builder);
+    //   backend::dce(asm_builder);
+    // }
+    // backend::peephole_second(asm_builder);
+    // backend::addr_simplification(asm_builder);
   }
 
   codegen_rest(ir_builder.context, asm_builder, codegen_context);
 
-  backend::peephole_final(asm_builder);
+  // backend::peephole_final(asm_builder);
 
   if (options.output_file.has_value()) {
     std::ofstream output_file(options.output_file.value());

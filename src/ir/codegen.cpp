@@ -1360,13 +1360,21 @@ void codegen_instruction(
               used_arg_reg_set.insert(reg);
               auto asm_reg_id = builder.fetch_register(reg);
 
-              // mv
-              auto addi_instruction = builder.fetch_binary_imm_instruction(
-                backend::instruction::BinaryImm::ADDI, asm_reg_id, asm_arg_id,
-                builder.fetch_immediate(0)
-              );
+              if (asm_arg->is_global()) {
+                // la
+                auto la_instruction = builder.fetch_pseudo_load_instruction(
+                  backend::instruction::PseudoLoad::LA, asm_reg_id, asm_arg_id
+                );
+                builder.append_instruction(la_instruction);
+              } else {
+                // mv
+                auto addi_instruction = builder.fetch_binary_imm_instruction(
+                  backend::instruction::BinaryImm::ADDI, asm_reg_id, asm_arg_id,
+                  builder.fetch_immediate(0)
+                );
 
-              builder.append_instruction(addi_instruction);
+                builder.append_instruction(addi_instruction);
+              }
 
               curr_general_reg++;
             } else {
@@ -1413,6 +1421,19 @@ void codegen_instruction(
 
           for (auto asm_arg_id : asm_stack_arg_id_list) {
             auto asm_arg = builder.context.get_operand(asm_arg_id);
+
+            if (asm_arg->is_global()) {
+              auto asm_load_dst_id = builder.fetch_virtual_register(
+                backend::VirtualRegisterKind::General
+              );
+              auto la_instruction = builder.fetch_pseudo_load_instruction(
+                backend::instruction::PseudoLoad::LA, asm_load_dst_id,
+                asm_arg_id
+              );
+              builder.append_instruction(la_instruction);
+              asm_arg_id = asm_load_dst_id;
+              asm_arg = builder.context.get_operand(asm_arg_id);
+            }
 
             if (asm_arg->is_float()) {
               if (check_itype_immediate(offset)) {
@@ -1617,10 +1638,7 @@ void codegen_instruction(
 
           asm_ptr_id = asm_add_dst_id;
 
-          if (ir_basis_type->as<ir::type::Pointer>().has_value()) {
-            ir_basis_type =
-              ir_basis_type->as<ir::type::Pointer>().value().value_type;
-          } else if (ir_basis_type->as<ir::type::Array>().has_value()) {
+          if (ir_basis_type->as<ir::type::Array>().has_value()) {
             ir_basis_type =
               ir_basis_type->as<ir::type::Array>().value().element_type;
           } else {
