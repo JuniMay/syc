@@ -368,6 +368,7 @@ bool loop_unrolling_helper(
             bb->remove_succ(header_bb->id);
             bb->add_succ(new_header_bb->id);
             new_header_bb->add_pred(bb->id);
+            header_bb->remove_pred(bb->id);
           }
         } else if (instr->as<CondBr>().has_value()) {
           auto& cond_br = instr->as_ref<CondBr>().value().get();
@@ -379,7 +380,7 @@ bool loop_unrolling_helper(
             bb->remove_succ(header_bb->id);
             bb->add_succ(new_header_bb->id);
             new_header_bb->add_pred(bb->id);
-
+            header_bb->remove_pred(bb->id);
           } else if (cond_br.else_block_id == header_bb->id) {
             cond_br.else_block_id = new_header_bb->id;
             new_header_bb->add_use(instr->id);
@@ -388,6 +389,7 @@ bool loop_unrolling_helper(
             bb->remove_succ(header_bb->id);
             bb->add_succ(new_header_bb->id);
             new_header_bb->add_pred(bb->id);
+            header_bb->remove_pred(bb->id);
           }
         }
       }
@@ -434,6 +436,21 @@ bool loop_unrolling_helper(
               );
             }
           }
+        }
+      }
+    }
+
+    // clean up header_bb's phi
+    for (auto instr = header_bb->head_instruction->next;
+         instr != header_bb->tail_instruction && instr->is_phi();
+         instr = instr->next) {
+      auto phi = instr->as<Phi>().value();
+      auto incoming_list_copy = phi.incoming_list;
+      for (auto [_, block_id] : incoming_list_copy) {
+        if (std::find(header_bb->pred_list.begin(),
+                      header_bb->pred_list.end(),
+                      block_id) == header_bb->pred_list.end()) {
+          instr->remove_phi_operand(block_id, builder.context);
         }
       }
     }
