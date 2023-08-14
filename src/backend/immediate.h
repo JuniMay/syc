@@ -15,6 +15,8 @@ struct Immediate {
   std::string to_string(int width = 0) const;
 
   bool is_zero() const;
+
+  __int128_t get_value() const;
 };
 
 }  // namespace backend

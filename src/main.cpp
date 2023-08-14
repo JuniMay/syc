@@ -13,6 +13,7 @@
 #include "passes/asm/peephole_second.h"
 #include "passes/asm/phi_elim.h"
 #include "passes/asm/addr_simplification.h"
+#include "passes/asm/fast_divmod.h"
 #include "passes/ir/auto_inline.h"
 #include "passes/ir/copyprop.h"
 #include "passes/ir/dce.h"
@@ -132,6 +133,7 @@ int main(int argc, char* argv[]) {
     }
     backend::peephole_second(asm_builder);
     backend::addr_simplification(asm_builder);
+    backend::fast_divmod(asm_builder);
   }
 
   codegen_rest(ir_builder.context, asm_builder, codegen_context);
