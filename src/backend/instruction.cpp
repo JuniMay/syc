@@ -1308,5 +1308,9 @@ bool Instruction::is_float_store() const {
   return std::holds_alternative<instruction::FloatStore>(this->kind);
 }
 
+bool Instruction::is_li() const {
+  return std::holds_alternative<instruction::Li>(this->kind);
+}
+
 }  // namespace backend
 }  // namespace syc
