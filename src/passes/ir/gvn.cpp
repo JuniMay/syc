@@ -225,7 +225,8 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
         // value_number_map[curr_dst_id] = curr_dst_id;
         icmp_expr_map[instruction_key] = curr_dst_id;
       }
-    } else if (curr_instruction->is_fcmp()) {
+    } 
+    else if (curr_instruction->is_fcmp()) {
       auto curr_dst_id = curr_instruction->as<FCmp>()->dst_id;
       auto curr_cond = curr_instruction->as<FCmp>()->cond;
       auto curr_lhs_id = curr_instruction->as<FCmp>()->lhs_id;
@@ -284,7 +285,8 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
         // value_number_map[curr_dst_id] = curr_dst_id;
         fcmp_expr_map[instruction_key] = curr_dst_id;
       }
-    } else if (curr_instruction->is_getelementptr()) {
+    } 
+    else if (curr_instruction->is_getelementptr()) {
       auto curr_dst_id = curr_instruction->as<GetElementPtr>()->dst_id;
       auto curr_basis_type = curr_instruction->as<GetElementPtr>()->basis_type;
       auto curr_ptr_id = curr_instruction->as<GetElementPtr>()->ptr_id;
@@ -340,46 +342,47 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
         getelementptr_expr_map[instruction_value] = curr_dst_id;
       }
       
-    } else if (curr_instruction->is_cast()) {
-      auto curr_dst_id = curr_instruction->as<Cast>()->dst_id;
-      auto curr_op = curr_instruction->as<Cast>()->op;
-      auto curr_src_id = curr_instruction->as<Cast>()->src_id;
+    } 
+    // else if (curr_instruction->is_cast()) {
+    //   auto curr_dst_id = curr_instruction->as<Cast>()->dst_id;
+    //   auto curr_op = curr_instruction->as<Cast>()->op;
+    //   auto curr_src_id = curr_instruction->as<Cast>()->src_id;
 
-      // replace operand with value number
-      if (value_number_map.count(curr_src_id) > 0 && curr_src_id != value_number_map[curr_src_id]) {
-        curr_instruction->replace_operand(
-          curr_src_id, value_number_map[curr_src_id], builder.context
-        );
-      }
+    //   // replace operand with value number
+    //   if (value_number_map.count(curr_src_id) > 0 && curr_src_id != value_number_map[curr_src_id]) {
+    //     curr_instruction->replace_operand(
+    //       curr_src_id, value_number_map[curr_src_id], builder.context
+    //     );
+    //   }
 
-      curr_dst_id = curr_instruction->as<Cast>()->dst_id;
-      curr_op = curr_instruction->as<Cast>()->op;
-      curr_src_id = curr_instruction->as<Cast>()->src_id;
+    //   curr_dst_id = curr_instruction->as<Cast>()->dst_id;
+    //   curr_op = curr_instruction->as<Cast>()->op;
+    //   curr_src_id = curr_instruction->as<Cast>()->src_id;
 
-      // generate instruction key
-      std::variant<int, OperandID> src_id_copy;
-      if (builder.context.get_operand(curr_src_id)->is_constant()
-          && builder.context.get_operand(curr_src_id)->is_int()) {
-        auto constant = std::get<operand::ConstantPtr>(
-          builder.context.get_operand(curr_src_id)->kind
-        );
-        auto constant_value = std::get<int>(constant->kind);
-        src_id_copy = constant_value;
-      } else {
-        src_id_copy = curr_src_id;
-      }
-      auto instruction_key = std::make_tuple(curr_op, src_id_copy);
+    //   // generate instruction key
+    //   std::variant<int, OperandID> src_id_copy;
+    //   if (builder.context.get_operand(curr_src_id)->is_constant()
+    //       && builder.context.get_operand(curr_src_id)->is_int()) {
+    //     auto constant = std::get<operand::ConstantPtr>(
+    //       builder.context.get_operand(curr_src_id)->kind
+    //     );
+    //     auto constant_value = std::get<int>(constant->kind);
+    //     src_id_copy = constant_value;
+    //   } else {
+    //     src_id_copy = curr_src_id;
+    //   }
+    //   auto instruction_key = std::make_tuple(curr_op, src_id_copy);
 
-      if (cast_expr_map.count(instruction_key) > 0) {
-        // redundant cast instruction
-        value_number_map[curr_dst_id] = cast_expr_map[instruction_key];
-        curr_instruction->remove(builder.context);
-      } else {
-        // for new cast instruction, the value number is the dst_id
-        // value_number_map[curr_dst_id] = curr_dst_id;
-        cast_expr_map[instruction_key] = curr_dst_id;
-      }
-    }
+    //   if (cast_expr_map.count(instruction_key) > 0) {
+    //     // redundant cast instruction
+    //     value_number_map[curr_dst_id] = cast_expr_map[instruction_key];
+    //     curr_instruction->remove(builder.context);
+    //   } else {
+    //     // for new cast instruction, the value number is the dst_id
+    //     // value_number_map[curr_dst_id] = curr_dst_id;
+    //     cast_expr_map[instruction_key] = curr_dst_id;
+    //   }
+    // }
     else if (is_aggressive && curr_instruction->is_store()) {
       auto curr_ptr_id = curr_instruction->as<Store>()->ptr_id;
       auto curr_value_id = curr_instruction->as<Store>()->value_id;

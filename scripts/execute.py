@@ -25,8 +25,12 @@ def check_file(file1, file2, diff_file):
 
         if len(diff_list) > 0:
             # compare float number with 1e-6 precision
+            f1.seek(0)
+            f2.seek(0)
             str1 = re.split(r'[ \n]', f1.read())
             str2 = re.split(r'[ \n]', f2.read())
+            str1 = list(filter(lambda x: x != '', str1))
+            str2 = list(filter(lambda x: x != '', str2))
             if (len(str1) != len(str2)):
                 return False
             for i in range(len(str1)):
