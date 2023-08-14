@@ -1191,7 +1191,7 @@ void codegen_instruction(
           cast.dst_id, ir_context, builder, codegen_context, false, false
         );
         auto asm_src = codegen_operand(
-          cast.src_id, ir_context, builder, codegen_context, false, false
+          cast.src_id, ir_context, builder, codegen_context, false, true
         );
 
         switch (op) {
