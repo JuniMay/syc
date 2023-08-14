@@ -383,6 +383,14 @@ bool Instruction::is_icmp() const {
   return std::holds_alternative<instruction::ICmp>(this->kind);
 }
 
+bool Instruction::is_fcmp() const {
+  return std::holds_alternative<instruction::FCmp>(this->kind);
+}
+
+bool Instruction::is_cast() const {
+  return std::holds_alternative<instruction::Cast>(this->kind);
+}
+
 void Instruction::add_phi_operand(
   OperandID incoming_operand_id,
   BasicBlockID incoming_block_id,
