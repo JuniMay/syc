@@ -7,13 +7,14 @@
 #include "ir/builder.h"
 #include "ir/codegen.h"
 #include "ir/instruction.h"
+#include "passes/asm/addr_simplification.h"
 #include "passes/asm/dce.h"
+#include "passes/asm/fast_divmod.h"
+#include "passes/asm/instr_fuse.h"
 #include "passes/asm/peephole.h"
 #include "passes/asm/peephole_final.h"
 #include "passes/asm/peephole_second.h"
 #include "passes/asm/phi_elim.h"
-#include "passes/asm/addr_simplification.h"
-#include "passes/asm/fast_divmod.h"
 #include "passes/ir/auto_inline.h"
 #include "passes/ir/copyprop.h"
 #include "passes/ir/dce.h"
@@ -27,11 +28,11 @@
 #include "passes/ir/math_opt.h"
 #include "passes/ir/mem2reg.h"
 #include "passes/ir/peephole.h"
+#include "passes/ir/ptr_opt.h"
 #include "passes/ir/purity_opt.h"
 #include "passes/ir/straighten.h"
 #include "passes/ir/strength_reduce.h"
 #include "passes/ir/unreach_elim.h"
-#include "passes/ir/ptr_opt.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -59,7 +60,7 @@ int main(int argc, char* argv[]) {
 
   irgen(compunit, ir_builder);
 
-  bool aggressive_opt = false;
+  bool aggressive_opt = options.aggressive_opt;
 
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
@@ -134,6 +135,10 @@ int main(int argc, char* argv[]) {
     backend::peephole_second(asm_builder);
     backend::addr_simplification(asm_builder);
     backend::fast_divmod(asm_builder);
+    if (aggressive_opt) {
+      backend::instr_fuse(asm_builder);
+      backend::dce(asm_builder);
+    }
   }
 
   codegen_rest(ir_builder.context, asm_builder, codegen_context);

@@ -101,6 +101,13 @@ Options parse_args(int argc, char** argv) {
     }
   }
 
+  // if aggresive
+  if (arguments.find("aggressive") != arguments.end()) {
+    options.aggressive_opt = true;
+  } else {
+    options.aggressive_opt = false;
+  }
+
   // Optimization level
   if (arguments.find("O0") != arguments.end()) {
     options.optimization_level = 0;
