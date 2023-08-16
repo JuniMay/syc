@@ -810,6 +810,32 @@ bool simplify(Builder& builder, MathOptContext& math_opt_ctx) {
           }
         }
       }
+    } else if (op == BinaryOp::SDiv) {
+      if (math_opt_ctx.expr_forest.count(lhs_id) 
+      && rhs->is_constant() && rhs->is_int()) {
+        // (x * c) / c -> x
+        auto [lhs_op, lhs_lhs_id, lhs_rhs_id] =
+          math_opt_ctx.expr_forest.at(lhs_id);
+        
+        auto lhs_lhs = builder.context.get_operand(lhs_lhs_id);
+        auto lhs_rhs = builder.context.get_operand(lhs_rhs_id);
+        if (lhs_op == BinaryOp::Mul) {
+          if (lhs_rhs->is_constant() && lhs_rhs->is_int() && lhs->use_id_list.size() == 1) {
+            auto rhs_constant = std::get<operand::ConstantPtr>(rhs->kind);
+            auto rhs_constant_value = std::get<int>(rhs_constant->kind);
+            auto lhs_rhs_constant = std::get<operand::ConstantPtr>(lhs_rhs->kind);
+            auto lhs_rhs_constant_value = std::get<int>(lhs_rhs_constant->kind);
+            if (rhs_constant_value == lhs_rhs_constant_value) {
+              auto use_id_list_copy = dst->use_id_list;
+              for (auto instr_id : use_id_list_copy) {
+                auto instr = builder.context.get_instruction(instr_id);
+                instr->replace_operand(dst_id, lhs_lhs_id, builder.context);
+              }
+              changed = true;
+            }
+          }
+        }
+      }
     }
   }
   return changed;

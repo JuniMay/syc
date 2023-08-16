@@ -7,7 +7,10 @@
 #include "ir__builder.h"
 #include "ir__codegen.h"
 #include "ir__instruction.h"
+#include "passes__asm__addr_simplification.h"
 #include "passes__asm__dce.h"
+#include "passes__asm__fast_divmod.h"
+#include "passes__asm__instr_fuse.h"
 #include "passes__asm__peephole.h"
 #include "passes__asm__peephole_final.h"
 #include "passes__asm__peephole_second.h"
@@ -21,9 +24,11 @@
 #include "passes__ir__load_elim.h"
 #include "passes__ir__loop_indvar_simplify.h"
 #include "passes__ir__loop_invariant_motion.h"
+#include "passes__ir__loop_unrolling.h"
 #include "passes__ir__math_opt.h"
 #include "passes__ir__mem2reg.h"
 #include "passes__ir__peephole.h"
+#include "passes__ir__ptr_opt.h"
 #include "passes__ir__purity_opt.h"
 #include "passes__ir__straighten.h"
 #include "passes__ir__strength_reduce.h"
@@ -55,7 +60,7 @@ int main(int argc, char* argv[]) {
 
   irgen(compunit, ir_builder);
 
-  bool aggressive_opt = true;
+  bool aggressive_opt = options.aggressive_opt;
 
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
@@ -77,8 +82,30 @@ int main(int argc, char* argv[]) {
     ir::math_opt(ir_builder);
     ir::dce(ir_builder);
     ir::copyprop(ir_builder);
-    ir::strength_reduce(ir_builder);
     ir::loop_indvar_simplify(ir_builder);
+    ir::loop_unrolling(ir_builder);
+    ir::copyprop(ir_builder);
+    ir::gvn(ir_builder, aggressive_opt);
+    ir::copyprop(ir_builder);
+    ir::load_elim(ir_builder);
+    ir::loop_invariant_motion(ir_builder);
+    ir::peephole(ir_builder);
+    ir::unreach_elim(ir_builder);
+    ir::straighten(ir_builder);
+    for (int i = 0; i < 3; i++) {
+      ir::peephole(ir_builder);
+      ir::dce(ir_builder);
+    }
+    ir::math_opt(ir_builder);
+    ir::straighten(ir_builder);
+    ir::peephole(ir_builder);
+    ir::dce(ir_builder);
+    ir::copyprop(ir_builder);
+    ir::math_opt(ir_builder);
+    ir::dce(ir_builder);
+    ir::strength_reduce(ir_builder);
+    ir::ptr_opt(ir_builder);
+    ir::dce(ir_builder);
   }
 
   if (options.ir_file.has_value()) {
@@ -106,6 +133,12 @@ int main(int argc, char* argv[]) {
       backend::dce(asm_builder);
     }
     backend::peephole_second(asm_builder);
+    backend::addr_simplification(asm_builder);
+    backend::fast_divmod(asm_builder);
+    if (aggressive_opt) {
+      backend::instr_fuse(asm_builder);
+      backend::dce(asm_builder);
+    }
   }
 
   codegen_rest(ir_builder.context, asm_builder, codegen_context);

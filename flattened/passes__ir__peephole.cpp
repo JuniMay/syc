@@ -80,8 +80,58 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           }
           curr_instruction->remove(builder.context);
         }
+      } else if (curr_op == BinaryOp::Add && curr_lhs->is_zero() && curr_rhs->is_int()) {
+        auto use_id_list_copy = curr_dst->use_id_list;
+        for (auto use_instruction_id : use_id_list_copy) {
+          auto instruction =
+            builder.context.get_instruction(use_instruction_id);
+          instruction->replace_operand(
+            curr_dst->id, curr_rhs->id, builder.context
+          );
+        }
+        curr_instruction->remove(builder.context);
+      } else if (curr_op == BinaryOp::FMul && (curr_rhs->is_zero() || curr_lhs->is_zero())) {
+        auto zero_id = builder.fetch_constant_operand(
+          builder.fetch_float_type(), 0.0f
+        );
+        auto use_id_list_copy = curr_dst->use_id_list;
+        for (auto use_instruction_id : use_id_list_copy) {
+          auto instruction =
+            builder.context.get_instruction(use_instruction_id);
+          instruction->replace_operand(
+            curr_dst->id, zero_id, builder.context
+          );
+        }
+      } else if (curr_op == BinaryOp::FAdd && (curr_rhs->is_zero() || curr_lhs->is_zero())) {
+        if (curr_rhs->is_zero()) {
+          auto use_id_list_copy = curr_dst->use_id_list;
+          for (auto use_instruction_id : use_id_list_copy) {
+            auto instruction =
+              builder.context.get_instruction(use_instruction_id);
+            instruction->replace_operand(
+              curr_dst->id, curr_lhs->id, builder.context
+            );
+          }
+        } else {
+          auto use_id_list_copy = curr_dst->use_id_list;
+          for (auto use_instruction_id : use_id_list_copy) {
+            auto instruction =
+              builder.context.get_instruction(use_instruction_id);
+            instruction->replace_operand(
+              curr_dst->id, curr_rhs->id, builder.context
+            );
+          }
+        }
+      } else if (curr_op == BinaryOp::FSub && curr_rhs->is_zero()) {
+        auto use_id_list_copy = curr_dst->use_id_list;
+        for (auto use_instruction_id : use_id_list_copy) {
+          auto instruction =
+            builder.context.get_instruction(use_instruction_id);
+          instruction->replace_operand(
+            curr_dst->id, curr_lhs->id, builder.context
+          );
+        }
       }
-
     } else if (maybe_getelementptr.has_value()) {
       auto curr_kind = maybe_getelementptr.value();
       auto curr_dst = builder.context.get_operand(curr_kind.dst_id);

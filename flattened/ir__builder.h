@@ -33,12 +33,12 @@ struct Builder {
 
   TypePtr fetch_void_type() { return std::make_shared<Type>(type::Void{}); }
 
-  TypePtr fetch_pointer_type(TypePtr value_type) {
-    return std::make_shared<Type>(type::Pointer{value_type});
+  TypePtr fetch_pointer_type() {
+    return std::make_shared<Type>(type::Pointer{});
   }
 
-  TypePtr fetch_array_type(size_t length, TypePtr value_type) {
-    return std::make_shared<Type>(type::Array{length, value_type});
+  TypePtr fetch_array_type(size_t length, TypePtr element_type) {
+    return std::make_shared<Type>(type::Array{length, element_type});
   }
 
   /// Make an operand and register it to the context.

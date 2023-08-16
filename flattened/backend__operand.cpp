@@ -46,7 +46,8 @@ std::string Operand::to_string(int width) const {
       [&result](const VirtualRegister& vreg) { result += vreg.to_string(); },
       [&result](const Global& global) { result += global.name; },
       [&result](const LocalMemory& local) {
-        result += "OFFSET" + std::to_string(local.offset);
+        result += "offset " + std::to_string(local.offset) + " from " +
+                  local.reg.to_string();
       },
     },
     kind

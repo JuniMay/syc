@@ -69,7 +69,7 @@ void irgen_stmt(
               auto ir_type = irgen_type(ast_type, builder).value();
 
               auto ir_dst_operand_id = builder.fetch_arbitrary_operand(
-                builder.fetch_pointer_type(ir_type)
+                builder.fetch_pointer_type()
               );
 
               auto alloca_instruction = builder.fetch_alloca_instruction(
@@ -103,7 +103,6 @@ void irgen_stmt(
                       // if the size of array is greater than 8, use memset to initialize
                       auto ir_cast_dest_operand_id = builder.fetch_arbitrary_operand(
                         builder.fetch_pointer_type(
-                          builder.fetch_i32_type()
                         )
                       );
                       auto call_cast_instruction = builder.fetch_cast_instruction(
@@ -134,7 +133,6 @@ void irgen_stmt(
                       curr_ast_type->get_element_type().value();
                     auto ir_tmp_ptr_id = builder.fetch_arbitrary_operand(
                       builder.fetch_pointer_type(
-                        irgen_type(ast_elem_type, builder).value()
                       )
                     );
                     auto gep_instruction =
@@ -227,7 +225,6 @@ void irgen_stmt(
 
                         auto ir_tmp_ptr_id = builder.fetch_arbitrary_operand(
                           builder.fetch_pointer_type(
-                            irgen_type(curr_ast_type, builder).value()
                           )
                         );
                         auto gep_instruction =
@@ -258,7 +255,6 @@ void irgen_stmt(
 
                         auto ir_tmp_ptr_id = builder.fetch_arbitrary_operand(
                           builder.fetch_pointer_type(
-                            irgen_type(curr_ast_type, builder).value()
                           )
                         );
                         auto gep_instruction =
@@ -367,7 +363,7 @@ void irgen_stmt(
               builder.context.get_operand(ir_param_operand_id);
 
             auto ir_alloca_dst_id = builder.fetch_arbitrary_operand(
-              builder.fetch_pointer_type(ir_param_operand->type)
+              builder.fetch_pointer_type()
             );
 
             auto alloca_instruction = builder.fetch_alloca_instruction(
@@ -394,7 +390,7 @@ void irgen_stmt(
           if (!ast_func_ret_type->is_void()) {
             builder.curr_function->maybe_return_operand_id =
               builder.fetch_arbitrary_operand(
-                builder.fetch_pointer_type(ir_func_ret_type)
+                builder.fetch_pointer_type()
               );
 
             auto alloca_instruction = builder.fetch_alloca_instruction(
@@ -918,7 +914,7 @@ std::optional<IrOperandID> irgen_expr(
           case AstBinaryOp::LogicalAnd: {
             // pointer of the address that store the result.
             auto ir_dst_pointer_operand_id = builder.fetch_arbitrary_operand(
-              builder.fetch_pointer_type(builder.fetch_i1_type())
+              builder.fetch_pointer_type()
             );
             auto alloca_instruction = builder.fetch_alloca_instruction(
               ir_dst_pointer_operand_id, builder.fetch_i1_type(), std::nullopt,
@@ -1001,7 +997,7 @@ std::optional<IrOperandID> irgen_expr(
           case AstBinaryOp::LogicalOr: {
             // pointer of the address that store the result.
             auto ir_dst_pointer_operand_id = builder.fetch_arbitrary_operand(
-              builder.fetch_pointer_type(builder.fetch_i1_type())
+              builder.fetch_pointer_type()
             );
             auto alloca_instruction = builder.fetch_alloca_instruction(
               ir_dst_pointer_operand_id, builder.fetch_i1_type(), std::nullopt,
@@ -1108,7 +1104,6 @@ std::optional<IrOperandID> irgen_expr(
             if (use_address) {
               ir_dst_operand_id =
                 builder.fetch_arbitrary_operand(builder.fetch_pointer_type(
-                  irgen_type(ast_dst_type, builder).value()
                 ));
               symbol->set_ir_operand_id(ir_dst_operand_id);
 
@@ -1140,7 +1135,6 @@ std::optional<IrOperandID> irgen_expr(
                 );
                 auto ir_tmp_pointer_operand_id =
                   builder.fetch_arbitrary_operand(builder.fetch_pointer_type(
-                    irgen_type(ast_dst_type, builder).value()
                   ));
                 auto gep_instruction = builder.fetch_getelementptr_instruction(
                   ir_tmp_pointer_operand_id, basis_type, ir_lhs_operand_id,
@@ -1154,7 +1148,6 @@ std::optional<IrOperandID> irgen_expr(
               } else if (ast_lhs_type->is_pointer()) {
                 auto ir_tmp_pointer_operand_id =
                   builder.fetch_arbitrary_operand(builder.fetch_pointer_type(
-                    irgen_type(ast_dst_type, builder).value()
                   ));
                 auto gep_instruction = builder.fetch_getelementptr_instruction(
                   ir_tmp_pointer_operand_id, basis_type, ir_lhs_operand_id,
@@ -1362,8 +1355,6 @@ std::optional<IrOperandID> irgen_expr(
             auto ir_arr_id = irgen_expr(arg, symtable, builder, true).value();
 
             auto ir_arg_type = builder.fetch_pointer_type(
-              irgen_type(arg->get_type()->get_element_type().value(), builder)
-                .value()
             );
             // pass the pointer to the first dimension of the array.
             ir_arg_id = builder.fetch_arbitrary_operand(ir_arg_type);
@@ -1454,7 +1445,6 @@ std::optional<IrTypePtr> irgen_type(AstTypePtr type, IrBuilder& builder) {
     return builder.fetch_void_type();
   } else if (type->is_pointer()) {
     return builder.fetch_pointer_type(
-      irgen_type(type->get_value_type().value(), builder).value()
     );
   } else if (type->is_array()) {
     auto element_type = type->get_element_type().value();

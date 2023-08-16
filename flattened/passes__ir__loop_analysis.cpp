@@ -105,16 +105,16 @@ void detect_natural_loop(
 
     // Update (initialize) exit set
     loop_opt_ctx.loop_info_map[header_id].exiting_id_set.clear();
-
+    std::optional<BasicBlockID> maybe_exit_id = std::nullopt;
     for (auto bb_id : loop_opt_ctx.loop_info_map[header_id].body_id_set) {
       auto bb = builder.context.get_basic_block(bb_id);
 
       bool is_exit = false;
 
       for (auto succ_id : bb->succ_list) {
-        if (loop_opt_ctx.loop_info_map[header_id].body_id_set.count(succ_id) == 0) {
+        if (!loop_opt_ctx.loop_info_map[header_id].body_id_set.count(succ_id)) {
+          loop_opt_ctx.loop_info_map[header_id].exit_id_set.insert(succ_id);
           is_exit = true;
-          break;
         }
       }
 
@@ -122,6 +122,120 @@ void detect_natural_loop(
         loop_opt_ctx.loop_info_map[header_id].exiting_id_set.insert(bb_id);
       }
     }
+  }
+
+  loop_opt_ctx.dom_map = std::move(dom_map);
+}
+
+void lcssa_transform(FunctionPtr function, Builder& builder) {
+  using namespace instruction;
+
+  auto loop_opt_ctx = LoopOptContext();
+  detect_natural_loop(function, builder, loop_opt_ctx);
+
+  // Sort loop by body size
+  std::vector<LoopInfo> loop_info_list;
+  for (const auto& [header_id, loop_info] : loop_opt_ctx.loop_info_map) {
+    loop_info_list.push_back(loop_info);
+  }
+
+  std::sort(
+    loop_info_list.begin(), loop_info_list.end(),
+    [](const LoopInfo& a, const LoopInfo& b) {
+      return a.body_id_set.size() < b.body_id_set.size();
+    }
+  );
+
+  std::set<BasicBlockID> new_exit_bb_set;
+
+  for (auto loop_info : loop_info_list) {
+    if (loop_info.exiting_id_set.size() > 1 || loop_info.exit_id_set.size() > 1) {
+      continue;
+    }
+
+    auto exit_bb =
+      builder.context.get_basic_block(*loop_info.exit_id_set.begin());
+    auto exiting_bb =
+      builder.context.get_basic_block(*loop_info.exiting_id_set.begin());
+
+    std::set<OperandID> unclosed_operand_id_set;
+
+    for (auto& bb_id : loop_info.body_id_set) {
+      auto bb = builder.context.get_basic_block(bb_id);
+      for (auto instr = bb->head_instruction->next;
+           instr != bb->tail_instruction; instr = instr->next) {
+        if (instr->maybe_def_id.has_value()) {
+          auto def_operand =
+            builder.context.get_operand(instr->maybe_def_id.value());
+          for (auto use_id : def_operand->use_id_list) {
+            auto use_instr = builder.context.get_instruction(use_id);
+            if (!loop_info.body_id_set.count(use_instr->parent_block_id) && 
+                !new_exit_bb_set.count(use_instr->parent_block_id)) {
+              unclosed_operand_id_set.insert(def_operand->id);
+            }
+          }
+        }
+      }
+    }
+
+    builder.switch_function(function->name);
+    auto new_exit_bb = builder.fetch_basic_block();
+    builder.set_curr_basic_block(new_exit_bb);
+
+    for (auto operand_id : unclosed_operand_id_set) {
+      auto operand = builder.context.get_operand(operand_id);
+      auto phi_dst_id = builder.fetch_arbitrary_operand(operand->get_type());
+      auto phi_instr = builder.fetch_phi_instruction(
+        phi_dst_id, {std::make_pair(operand->id, exiting_bb->id)}
+      );
+      builder.append_instruction(phi_instr);
+
+      auto use_id_list_copy = operand->use_id_list;
+      for (auto use_id : use_id_list_copy) {
+        auto use_instr = builder.context.get_instruction(use_id);
+        if (!loop_info.body_id_set.count(use_instr->parent_block_id) && 
+            use_instr->parent_block_id != new_exit_bb->id) {
+          use_instr->replace_operand(operand->id, phi_dst_id, builder.context);
+        }
+      }
+    }
+
+    auto br_instr = builder.fetch_br_instruction(exit_bb->id);
+    builder.append_instruction(br_instr);
+
+    auto exiting_instr = exiting_bb->tail_instruction->prev.lock();
+
+    auto maybe_condbr = exiting_instr->as<CondBr>();
+    auto maybe_br = exiting_instr->as<Br>();
+
+    if (maybe_condbr.has_value()) {
+      auto& condbr = exiting_instr->as_ref<CondBr>().value().get();
+      if (condbr.then_block_id == exit_bb->id) {
+        condbr.then_block_id = new_exit_bb->id;
+      } else {
+        condbr.else_block_id = new_exit_bb->id;
+      }
+    } else {
+      auto& br = exiting_instr->as_ref<Br>().value().get();
+      br.block_id = new_exit_bb->id;
+    }
+
+    exiting_bb->remove_succ(exit_bb->id);
+    exiting_bb->add_succ(new_exit_bb->id);
+    exit_bb->remove_pred(exiting_bb->id);
+    exit_bb->add_pred(new_exit_bb->id);
+    new_exit_bb->add_pred(exiting_bb->id);
+
+    exit_bb->remove_use(exiting_instr->id);
+    new_exit_bb->add_use(exiting_instr->id);
+
+    exiting_bb->insert_next(new_exit_bb);
+
+    loop_opt_ctx.loop_info_map[loop_info.header_id].exit_id_set.clear();
+    loop_opt_ctx.loop_info_map[loop_info.header_id].exit_id_set.insert(
+      new_exit_bb->id
+    );
+    new_exit_bb_set.insert(new_exit_bb->id);
   }
 }
 

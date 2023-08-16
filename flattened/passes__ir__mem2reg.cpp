@@ -40,6 +40,8 @@ void mem2reg(Builder& builder) {
         mem2reg_ctx.inserted_map[alloca.dst_id] = {};
         mem2reg_ctx.worklist_map[alloca.dst_id] = {};
         mem2reg_ctx.rename_stack_map[alloca.dst_id] = {};
+
+        mem2reg_ctx.type_map[alloca.dst_id] = allocated_type;
         // Remove alloca instruction
         curr_instr->remove(builder.context);
       }
@@ -101,9 +103,8 @@ void insert_phi(
         // insert phi to the start of dominance frontier block
         auto df_bb = builder.context.get_basic_block(df_id);
         builder.set_curr_basic_block(df_bb);
-        auto dst_id = builder.fetch_arbitrary_operand(
-          operand->type->as<type::Pointer>().value().value_type
-        );
+        auto dst_id =
+          builder.fetch_arbitrary_operand(mem2reg_ctx.type_map.at(operand_id));
         auto phi_instr = builder.fetch_phi_instruction(dst_id, {});
         builder.prepend_instruction_to_curr_basic_block(phi_instr);
 

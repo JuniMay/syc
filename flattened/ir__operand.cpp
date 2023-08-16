@@ -84,7 +84,7 @@ TypePtr Operand::get_type() const {
   return std::visit(
     overloaded{
       [this](const Global& k) {
-        return std::make_shared<Type>(type::Pointer{type});
+        return std::make_shared<Type>(type::Pointer{});
       },
       [this](const auto& k) { return type; }},
     kind

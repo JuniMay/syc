@@ -17,7 +17,7 @@ std::string Type::to_string() const {
       [&ss](const Array& a) {
         ss << "[" << a.length << " x " << a.element_type->to_string() << "]";
       },
-      [&ss](const Pointer& a) { ss << a.value_type->to_string() << "*"; }},
+      [&ss](const Pointer& a) { ss << "ptr"; }},
     kind
   );
   return ss.str();
@@ -34,7 +34,7 @@ bool operator==(const Type& lhs, const Type& rhs) {
         return a.length == b.length && *a.element_type == *b.element_type;
       },
       [](const Pointer& a, const Pointer& b) {
-        return *a.value_type == *b.value_type;
+        return true;
       },
       [](const auto& a, const auto& b) { return false; },
     },

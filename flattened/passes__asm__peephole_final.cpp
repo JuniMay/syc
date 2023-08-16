@@ -29,6 +29,7 @@ void peephole_final_basic_block(BasicBlockPtr basic_block, Builder& builder) {
     auto next_instr = curr_instr->next;
 
     auto maybe_binary_imm = curr_instr->as<BinaryImm>();
+    auto maybe_float_binary = curr_instr->as<FloatBinary>();
 
     if (maybe_binary_imm.has_value()) {
       if (maybe_binary_imm->op == BinaryImm::ADDI || maybe_binary_imm->op == BinaryImm::ADDIW) {
@@ -42,6 +43,22 @@ void peephole_final_basic_block(BasicBlockPtr basic_block, Builder& builder) {
         auto rs = std::get<Register>(lhs->kind);
 
         if (rd == rs && imm->is_zero()) {
+          curr_instr->remove(builder.context);
+        }
+      }
+    } if (maybe_float_binary.has_value()) {
+      if (maybe_float_binary->op == FloatBinary::FSGNJ) {
+        // Remove: fsgnj r, r, r
+        auto float_binary = maybe_float_binary.value();
+        auto dst = builder.context.get_operand(float_binary.rd_id);
+        auto lhs = builder.context.get_operand(float_binary.rs1_id);
+        auto rhs = builder.context.get_operand(float_binary.rs2_id);
+
+        auto rd = std::get<Register>(dst->kind);
+        auto rs1 = std::get<Register>(lhs->kind);
+        auto rs2 = std::get<Register>(rhs->kind);
+
+        if (rd == rs1 && rs1 == rs2) {
           curr_instr->remove(builder.context);
         }
       }

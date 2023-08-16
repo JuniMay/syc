@@ -58,22 +58,16 @@ void remove_unreach_block(FunctionPtr function, Builder& builder) {
     for (auto now_inst = now_bb->head_instruction->next;
          now_inst != now_bb->tail_instruction; now_inst = now_inst->next) {
       if (auto phi_inst = std::get_if<instruction::Phi>(&now_inst->kind)) {
-        phi_inst->incoming_list.erase(
-          std::remove_if(
-            phi_inst->incoming_list.begin(), phi_inst->incoming_list.end(),
-            [&](std::tuple<OperandID, BasicBlockID> incoming) {
-              if (reached_blocks.count(std::get<1>(incoming)) == 0) {
-                return true;
-              }
-              if (std::find(now_bb->pred_list.begin(), now_bb->pred_list.end(), 
-                std::get<1>(incoming)) == now_bb->pred_list.end()) {
-                return true;
-              }
-              return false;
-            }
-          ),
-          phi_inst->incoming_list.end()
-        );
+        auto incoming_list_copy = phi_inst->incoming_list;
+        for (auto& [_, block_id] : incoming_list_copy) {
+          if (reached_blocks.count(block_id) == 0) {
+            now_inst->remove_phi_operand(block_id, builder.context);
+          }
+          if (std::find(now_bb->pred_list.begin(), now_bb->pred_list.end(), 
+                block_id) == now_bb->pred_list.end()) {
+            now_inst->remove_phi_operand(block_id, builder.context);
+          }
+        }
       }
     }
   }
