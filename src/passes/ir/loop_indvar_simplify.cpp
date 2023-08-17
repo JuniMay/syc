@@ -51,6 +51,8 @@ void loop_indvar_simplify_helper(LoopInfo& loop_info, Builder& builder) {
 
   DisjointSet<OperandID> ivset;
   std::unordered_map<OperandID, IvRecord> ivrecord_map;
+  // Record the operand id of iv before update (dst of phi)
+  std::unordered_map<OperandID, OperandID> iv_before_map;
 
   // Only find simple indvars
   // 1. Appear in the phi instruction of the loop header, with one value coming
@@ -59,6 +61,7 @@ void loop_indvar_simplify_helper(LoopInfo& loop_info, Builder& builder) {
 
   // Find all phi instructions in the loop header
   auto header_bb = builder.context.get_basic_block(loop_info.header_id);
+  std::optional<BasicBlockID> maybe_preheader_id;
   for (auto instr = header_bb->head_instruction->next;
        instr != header_bb->tail_instruction && instr->is_phi();
        instr = instr->next) {
@@ -77,19 +80,16 @@ void loop_indvar_simplify_helper(LoopInfo& loop_info, Builder& builder) {
         maybe_alternative_id = operand_id;
       } else {
         maybe_start_id = operand_id;
+        maybe_preheader_id = block_id;
       }
     }
 
-    if (!maybe_alternative_id || !maybe_start_id) {
+    if (!maybe_alternative_id || !maybe_start_id || !maybe_preheader_id) {
       continue;
     }
 
     auto alternative_id = maybe_alternative_id.value();
     auto start_id = maybe_start_id.value();
-
-    ivset.make_set(phi.dst_id);
-    ivset.make_set(alternative_id);
-    ivset.union_set(phi.dst_id, alternative_id);
 
     auto alternative_operand = builder.context.get_operand(alternative_id);
 
@@ -119,16 +119,18 @@ void loop_indvar_simplify_helper(LoopInfo& loop_info, Builder& builder) {
         auto rhs = builder.context.get_operand(rhs_id);
 
         if (lhs_id == phi.dst_id && dst_id == alternative_id && rhs->is_constant()) {
+          ivset.make_set(phi.dst_id);
+          ivset.make_set(alternative_id);
+          ivset.union_set(phi.dst_id, alternative_id);
+
           auto representative = ivset.find_set(phi.dst_id).value();
           ivrecord_map[representative] =
             IvRecord{representative, start_id, binary.op, rhs_id};
+          iv_before_map[representative] = phi.dst_id;
         }
       }
     }
   }
-
-  // Strength reduction
-  std::unordered_set<OperandID> ivappeared_set;
 
   // The sequence of basic blocks in the loop body
   std::vector<BasicBlockID> ordered_bb_id_list;
@@ -160,19 +162,6 @@ void loop_indvar_simplify_helper(LoopInfo& loop_info, Builder& builder) {
     auto bb = builder.context.get_basic_block(bb_id);
     for (auto instr = bb->head_instruction->next; instr != bb->tail_instruction;
          instr = instr->next) {
-      auto maybe_def_id = instr->maybe_def_id;
-
-      if (maybe_def_id.has_value()) {
-        auto def_id = maybe_def_id.value();
-        auto maybe_iv = ivset.find_set(def_id);
-        if (maybe_iv.has_value() && !instr->is_phi()) {
-          // If the instruction defines an indvar and is not a phi instruction,
-          // mark the indvar as appeared (defined or updated)
-          ivappeared_set.insert(maybe_iv.value());
-          continue;
-        }
-      }
-
       auto maybe_gep = instr->as<GetElementPtr>();
 
       if (maybe_gep.has_value()) {
@@ -205,34 +194,55 @@ void loop_indvar_simplify_helper(LoopInfo& loop_info, Builder& builder) {
         // Check index list and types
         std::optional<OperandID> maybe_iv_id = std::nullopt;
 
-        for (auto indexer_id : gep.index_id_list) {
-          auto indexer = builder.context.get_operand(indexer_id);
+        for (size_t i = 0; i < gep.index_id_list.size() - 1; i++) {
           if (basis_type->as<type::Array>().has_value()) {
-            // Simple cases
-            if (!indexer->is_zero()) {
-              break;
-            }
             basis_type = basis_type->as<type::Array>().value().element_type;
-          } else {
-            // Check if the indexer is iv
-            maybe_iv_id = ivset.find_set(indexer_id);
           }
         }
+
+        // Check index list: the non-last indexers are zero, the last one is iv
+        bool all_zero = true;
+        std::vector<OperandID> init_index_id_list = {};
+        for (size_t i = 0; i < gep.index_id_list.size() - 1; i++) {
+          auto indexer = builder.context.get_operand(gep.index_id_list[i]);
+          init_index_id_list.push_back(indexer->id);
+          all_zero &= indexer->is_zero();
+        }
+
+        maybe_iv_id = ivset.find_set(gep.index_id_list.back());
 
         if (!maybe_iv_id.has_value()) {
           continue;
         }
 
-        auto ivrecord = ivrecord_map[maybe_iv_id.value()];
+        auto ivrecord = ivrecord_map.at(maybe_iv_id.value());
+        auto iv_before_id = iv_before_map.at(maybe_iv_id.value());
+
+        bool using_updated_iv = iv_before_id != gep.index_id_list.back();
 
         auto ivstart = builder.context.get_operand(ivrecord.start_id);
 
-        // Simple case
-        if (!ivstart->is_zero()) {
-          continue;
-        }
+        init_index_id_list.push_back(ivrecord.start_id);
+        all_zero &= ivstart->is_zero();
 
-        bool ivappeared = ivappeared_set.count(maybe_iv_id.value());
+        // If not all zero, a gep needs to be inserted into the preheader
+        if (!all_zero) {
+          auto preheader =
+            builder.context.get_basic_block(maybe_preheader_id.value());
+          builder.set_curr_basic_block(preheader);
+          auto insert_pos = preheader->tail_instruction->prev.lock();
+          while (insert_pos->is_terminator() &&
+                 insert_pos != preheader->head_instruction) {
+            insert_pos = insert_pos->prev.lock();
+          }
+          auto new_ptr_id =
+            builder.fetch_arbitrary_operand(builder.fetch_pointer_type());
+          auto new_gep_instr = builder.fetch_getelementptr_instruction(
+            new_ptr_id, gep.basis_type, ptr->id, init_index_id_list
+          );
+          insert_pos->insert_next(new_gep_instr);
+          ptr = builder.context.get_operand(new_ptr_id);
+        }
 
         // Phi dst
         auto phi_dst_ptr_id =
@@ -266,7 +276,7 @@ void loop_indvar_simplify_helper(LoopInfo& loop_info, Builder& builder) {
         auto use_id_list_copy = dst->use_id_list;
         for (auto use_id : use_id_list_copy) {
           auto use_instr = builder.context.get_instruction(use_id);
-          if (ivappeared) {
+          if (using_updated_iv) {
             use_instr->replace_operand(
               dst->id, new_gep_dst_id, builder.context
             );
