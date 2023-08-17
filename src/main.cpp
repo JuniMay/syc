@@ -28,7 +28,6 @@
 #include "passes/ir/math_opt.h"
 #include "passes/ir/mem2reg.h"
 #include "passes/ir/peephole.h"
-#include "passes/ir/ptr_opt.h"
 #include "passes/ir/purity_opt.h"
 #include "passes/ir/straighten.h"
 #include "passes/ir/strength_reduce.h"
@@ -105,7 +104,6 @@ int main(int argc, char* argv[]) {
     ir::math_opt(ir_builder);
     ir::dce(ir_builder);
     ir::strength_reduce(ir_builder);
-    ir::ptr_opt(ir_builder);
     ir::dce(ir_builder);
   }
 
