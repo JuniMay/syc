@@ -14,7 +14,7 @@ void loop_unrolling(Builder& builder) {
       continue;
     }
     lcssa_transform(function, builder);
-    // loop_unrolling_function(function, builder);
+    loop_unrolling_function(function, builder);
   }
 }
 
@@ -28,7 +28,7 @@ void loop_unrolling_function(FunctionPtr function, Builder& builder) {
     auto loop_opt_ctx = LoopOptContext();
     detect_natural_loop(function, builder, loop_opt_ctx);
 
-    if (loop_opt_ctx.loop_info_map.size() > 50) {
+    if (loop_opt_ctx.loop_info_map.size() > 20) {
       break;
     }
 
@@ -70,7 +70,7 @@ bool loop_unrolling_helper(
     return false;
   }
 
-  if (loop_info.body_id_set.size() > 30) {
+  if (loop_info.body_id_set.size() > 10) {
     return false;
   }
 
