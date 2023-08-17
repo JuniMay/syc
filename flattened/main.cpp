@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
     ir::dce(ir_builder);
     ir::copyprop(ir_builder);
     ir::peephole(ir_builder);
-    // ir::loop_unrolling(ir_builder);
+    ir::loop_unrolling(ir_builder);
     ir::copyprop(ir_builder);
     ir::gvn(ir_builder, aggressive_opt);
     ir::copyprop(ir_builder);

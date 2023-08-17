@@ -14,7 +14,7 @@ void loop_unrolling(Builder& builder) {
       continue;
     }
     lcssa_transform(function, builder);
-    loop_unrolling_function(function, builder);
+    // loop_unrolling_function(function, builder);
   }
 }
 
