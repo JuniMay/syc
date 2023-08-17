@@ -28,7 +28,6 @@
 #include "passes__ir__math_opt.h"
 #include "passes__ir__mem2reg.h"
 #include "passes__ir__peephole.h"
-#include "passes__ir__ptr_opt.h"
 #include "passes__ir__purity_opt.h"
 #include "passes__ir__straighten.h"
 #include "passes__ir__strength_reduce.h"
@@ -82,7 +81,7 @@ int main(int argc, char* argv[]) {
     ir::math_opt(ir_builder);
     ir::dce(ir_builder);
     ir::copyprop(ir_builder);
-    ir::loop_indvar_simplify(ir_builder);
+    ir::peephole(ir_builder);
     ir::loop_unrolling(ir_builder);
     ir::copyprop(ir_builder);
     ir::gvn(ir_builder, aggressive_opt);
@@ -96,6 +95,7 @@ int main(int argc, char* argv[]) {
       ir::peephole(ir_builder);
       ir::dce(ir_builder);
     }
+    ir::loop_indvar_simplify(ir_builder);
     ir::math_opt(ir_builder);
     ir::straighten(ir_builder);
     ir::peephole(ir_builder);
@@ -104,7 +104,6 @@ int main(int argc, char* argv[]) {
     ir::math_opt(ir_builder);
     ir::dce(ir_builder);
     ir::strength_reduce(ir_builder);
-    ir::ptr_opt(ir_builder);
     ir::dce(ir_builder);
   }
 
