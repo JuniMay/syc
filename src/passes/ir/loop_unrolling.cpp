@@ -76,6 +76,11 @@ bool loop_unrolling_helper(
 
   auto header_bb = builder.context.get_basic_block(loop_info.header_id);
 
+  std::optional<OperandID> maybe_loop_iv_id = std::nullopt;
+  std::optional<OperandID> maybe_loop_cond_id = std::nullopt;
+  std::optional<int> maybe_iv_st = std::nullopt;
+  std::optional<int> maybe_iv_ed = std::nullopt;
+
   OperandID loop_iv_id;
   OperandID loop_cond_id;
 
@@ -88,11 +93,6 @@ bool loop_unrolling_helper(
   for (auto instr = header_bb->head_instruction->next;
        instr != header_bb->tail_instruction && instr->is_phi();
        instr = instr->next) {
-    std::optional<OperandID> maybe_loop_iv_id = std::nullopt;
-    std::optional<OperandID> maybe_loop_cond_id = std::nullopt;
-    std::optional<int> maybe_iv_st = std::nullopt;
-    std::optional<int> maybe_iv_ed = std::nullopt;
-
     auto phi = instr->as<Phi>().value();
 
     if (phi.incoming_list.size() != 2) {
@@ -193,14 +193,26 @@ bool loop_unrolling_helper(
 
     // if all three conditions are satisfied, then we can do loop unrolling
     if (maybe_loop_iv_id.has_value() && maybe_iv_st.has_value() && maybe_iv_ed.has_value()) {
-      loop_iv_id = maybe_loop_iv_id.value();
-      loop_cond_id = maybe_loop_cond_id.value();
-      iv_st = maybe_iv_st.value();
-      iv_ed = maybe_iv_ed.value();
-      do_loop_unrolling = true;
       break;
+    } else {
+      continue;
     }
   }
+
+  if (maybe_loop_iv_id.has_value() && maybe_iv_st.has_value() && maybe_iv_ed.has_value()) {
+    loop_iv_id = maybe_loop_iv_id.value();
+    loop_cond_id = maybe_loop_cond_id.value();
+    iv_st = maybe_iv_st.value();
+    iv_ed = maybe_iv_ed.value();
+    do_loop_unrolling = true;
+  } else {
+    return false;
+  }
+
+  // DEBUG
+  std::cout << "iv_ed: " << iv_ed << std::endl;
+  std::cout << "iv_st: " << iv_st << std::endl;
+  std::cout << "iv_stride: " << iv_stride << std::endl;
 
   if ((iv_ed - iv_st) / iv_stride > 300 || iv_ed - iv_st <= 0) {
     return false;
