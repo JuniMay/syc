@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
     backend::peephole_second(asm_builder);
     backend::addr_simplification(asm_builder);
     backend::fast_divmod(asm_builder);
-    if (aggressive_opt) {
+    if (true) {
       backend::instr_fuse(asm_builder);
       backend::dce(asm_builder);
     }

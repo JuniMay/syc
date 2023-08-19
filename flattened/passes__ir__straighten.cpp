@@ -1,4 +1,5 @@
 #include "passes__ir__straighten.h"
+#include "ir__operand.h"
 
 namespace syc {
 namespace ir {
@@ -13,12 +14,12 @@ void straighten(Builder& builder) {
 }
 
 void straighten_function(FunctionPtr function, Builder& builder) {
+  // Policy: fuse blocks that has one succ and the succ has one pred
   auto curr_bb = function->head_basic_block->next;
   while (curr_bb != function->tail_basic_block &&
          curr_bb->next != function->tail_basic_block) {
     auto next_bb = curr_bb->next;
 
-    // Policy: fuse blocks that has one succ and the succ has one pred
     bool maybe_fuse = true;
 
     if (curr_bb->succ_list.size() == 1) {
@@ -87,6 +88,113 @@ void straighten_function(FunctionPtr function, Builder& builder) {
     // Remove succ_bb
     succ_bb->remove(builder.context);
   }
+
+  // Policy:
+  //     A
+  //    / \
+  //   B   C
+  //    \ /
+  //     D
+  // => if B has only one branch, then
+  //     A
+  //     |\
+  //     | C
+  //     |/
+  //     D
+  // B is removed
+
+  curr_bb = function->head_basic_block->next;
+  while (curr_bb != function->tail_basic_block) {
+    if (curr_bb->succ_list.size() != 2) {
+      curr_bb = curr_bb->next;
+      continue;
+    }
+
+    auto succ0_bb = builder.context.get_basic_block(curr_bb->succ_list[0]);
+    auto succ1_bb = builder.context.get_basic_block(curr_bb->succ_list[1]);
+
+    if (succ0_bb->succ_list.size() != 1 || succ1_bb->succ_list.size() != 1) {
+      curr_bb = curr_bb->next;
+      continue;
+    }
+
+    if (succ0_bb->succ_list[0] != succ1_bb->succ_list[0]) {
+      curr_bb = curr_bb->next;
+      continue;
+    }
+
+    auto merge_bb = builder.context.get_basic_block(succ0_bb->succ_list[0]);
+
+    // Decide block to-be-removed (only one branch instruction)
+    // succ0 is to-be-removed and succ1 is to-be-kept
+    // otherwise just swap
+    bool is_succ0_only_branch = true;
+    bool is_succ1_only_branch = true;
+
+    for (auto instr = succ0_bb->head_instruction->next;
+         instr != succ0_bb->tail_instruction; instr = instr->next) {
+      if (!instr->is_br()) {
+        is_succ0_only_branch = false;
+        break;
+      }
+    }
+
+    for (auto instr = succ1_bb->head_instruction->next;
+         instr != succ1_bb->tail_instruction; instr = instr->next) {
+      if (!instr->is_br()) {
+        is_succ1_only_branch = false;
+        break;
+      }
+    }
+
+    if (!is_succ0_only_branch && !is_succ1_only_branch) {
+      curr_bb = curr_bb->next;
+      continue;
+    }
+
+    if (!is_succ0_only_branch && is_succ1_only_branch) {
+      std::swap(succ0_bb, succ1_bb);
+    }
+
+    if (succ0_bb->pred_list.size() != 1) {
+      curr_bb = curr_bb->next;
+      continue;
+    }
+
+    // Modify curr_bb's branch
+    curr_bb->remove_succ(succ0_bb->id);
+    merge_bb->remove_pred(succ0_bb->id);
+    auto condbr_instr = curr_bb->tail_instruction->prev.lock();
+    auto& condbr = condbr_instr->as_ref<instruction::CondBr>().value().get();
+    if (condbr.then_block_id == succ0_bb->id) {
+      condbr.then_block_id = merge_bb->id;
+    } else {
+      condbr.else_block_id = merge_bb->id;
+    }
+    curr_bb->add_succ(merge_bb->id);
+    merge_bb->add_pred(curr_bb->id);
+
+    // Modify phi instructions
+    auto use_id_list_copy = succ0_bb->use_id_list;
+    for (auto use_id : use_id_list_copy) {
+      auto use = builder.context.get_instruction(use_id);
+      if (use->is_phi()) {
+        auto maybe_operand_id =
+          use->remove_phi_operand(succ0_bb->id, builder.context);
+        if (maybe_operand_id.has_value()) {
+          use->add_phi_operand(
+            maybe_operand_id.value(), curr_bb->id, builder.context
+          );
+        }
+      }
+    }
+
+    // Remove succ0_bb
+    succ0_bb->remove(builder.context);
+
+    curr_bb = curr_bb->next;
+  }
+
 }
 }  // namespace ir
 }  // namespace syc
