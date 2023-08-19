@@ -134,17 +134,22 @@ flowchart
 - [x] Try to use temporary register for temporary immediate loading.
   - t0, t1, ft0, ft1, ft2 is used in spilling virtual registers.
   - t2 is used in codegen for temporary immediate loading, pseudo load/store and comparison.
-- [x] Strength reduction
-  - [x] IR: integer multiplication to shift.
-  - [x] IR: integer division by 2 to shift.
-  - [x] IR: integer division by 2^k to shift.
-- [ ] Loop optimization
-  - [x] Unrolling
-  - [ ] Parallelization
-  - [ ] Loop variable induction
-    - [x] Basic for gep instruction
-    - [ ] Non-zero initial value
-    - [ ] More instructions
+- [ ] Graph-based DCE
+- [ ] Stronger straighten
+- [ ] `li v0, 0` --> `zero`
+- [ ] Continous store 0
+- [ ] LVN for asm
+- [ ] Instruction Scheduling
+- [ ] Pointer optimization
 - [ ] loop interchange for `performance/01_mmx.sy`
 - [ ] if condition simplification
   - [ ] if (a / c0 >= c1) -> if (a > c0 * c1 - 1)
+- [ ] Loop optimization
+  - [x] Unrolling
+  - [ ] Unrolling coefficient
+  - [ ] Parallelization
+  - [ ] Loop variable induction
+    - [x] Basic for gep instruction
+    - [x] Non-zero initial value
+    - [ ] Branch in loop
+    - [ ] More instructions
