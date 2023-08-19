@@ -177,102 +177,122 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
     auto maybe_li = curr_instruction->as<Li>();
 
     if (maybe_li.has_value()) {
-      auto next1_instr = curr_instruction->next;
-      auto next2_instr = next1_instr->next;
+      const auto& kind = maybe_li.value();
+      auto rd = builder.context.get_operand(kind.rd_id);
+      auto imm = builder.context.get_operand(kind.imm_id);
 
-      //          li v0, imm
-      //          li v1, imm
-      // Replace: mul v2, v0, v1
-      //      To: li v2, imm * imm
-      auto maybe_next1_li = next1_instr->as<Li>();
-      auto maybe_next2_mul = next2_instr->as<Binary>();
-      bool match0 = maybe_next1_li.has_value() && maybe_next2_mul.has_value() &&
-                    maybe_next2_mul->op == Binary::MUL &&
-                    ((maybe_next2_mul->rs1_id == maybe_li->rd_id &&
-                      maybe_next2_mul->rs2_id == maybe_next1_li->rd_id) ||
-                     (maybe_next2_mul->rs2_id == maybe_li->rd_id &&
-                      maybe_next2_mul->rs1_id == maybe_next1_li->rd_id));
-
-      //           li v0, imm (if i type)
-      //  Replace: add v2, v1, v0
-      //       To: addi v2, v1, imm
-      auto maybe_next1_add = next1_instr->as<Binary>();
-      bool match1 = maybe_next1_add.has_value() &&
-                    maybe_next1_add->op == Binary::ADD &&
-                    maybe_next1_add->rs2_id == maybe_li->rd_id;
-
-      //           li v0, 2^k
-      //  Replace: mul v2, v1, v0
-      //      To: slli v2, v1, k
-      auto maybe_next1_mul = next1_instr->as<Binary>();
-      bool match2 = maybe_next1_mul.has_value() &&
-                    maybe_next1_mul->op == Binary::MUL &&
-                    maybe_next1_mul->rs2_id == maybe_li->rd_id;
-
-      if (match0) {
-        auto mul_dst = builder.context.get_operand(maybe_next2_mul->rd_id);
-        if (mul_dst->is_vreg()) {
-          auto imm0_operand = builder.context.get_operand(maybe_li->imm_id);
-          auto imm1_operand =
-            builder.context.get_operand(maybe_next1_li->imm_id);
-
-          auto imm0 =
-            std::get<int32_t>(std::get<Immediate>(imm0_operand->kind).value);
-          auto imm1 =
-            std::get<int32_t>(std::get<Immediate>(imm1_operand->kind).value);
-
-          auto new_imm = imm0 * imm1;
-
-          auto new_imm_id = builder.fetch_immediate(imm0 * imm1);
-
-          builder.set_curr_basic_block(basic_block);
-          auto new_li_instr =
-            builder.fetch_li_instruction(maybe_next2_mul->rd_id, new_imm_id);
-          next1_instr->insert_next(new_li_instr);
-
-          // Remove mul
-          next2_instr->remove(builder.context);
+      if (rd->is_vreg() && imm->is_zero() && rd->def_id_list.size() == 1) {
+        // remove: li v0, 0
+        // make all the uses of v0 use zero instead
+        auto use_id_list_copy = rd->use_id_list;
+        for (auto use_instruction_id : use_id_list_copy) {
+          auto instruction =
+            builder.context.get_instruction(use_instruction_id);
+          instruction->replace_operand(
+            rd->id, builder.fetch_register(Register{GeneralRegister::Zero}),
+            builder.context
+          );
         }
-      } else if (match1) {
-        auto add_dst = builder.context.get_operand(maybe_next1_add->rd_id);
-        if (add_dst->is_vreg()) {
-          auto imm_operand = builder.context.get_operand(maybe_li->imm_id);
-          auto imm =
-            std::get<int32_t>(std::get<Immediate>(imm_operand->kind).value);
+        curr_instruction->remove(builder.context);
+        std::cout << "remove li" << std::endl;
+      } else {
+        auto next1_instr = curr_instruction->next;
+        auto next2_instr = next1_instr->next;
 
-          if (check_itype_immediate(imm)) {
-            auto new_imm_id = builder.fetch_immediate(imm);
+        //          li v0, imm
+        //          li v1, imm
+        // Replace: mul v2, v0, v1
+        //      To: li v2, imm * imm
+        auto maybe_next1_li = next1_instr->as<Li>();
+        auto maybe_next2_mul = next2_instr->as<Binary>();
+        bool match0 = maybe_next1_li.has_value() && maybe_next2_mul.has_value() &&
+                      maybe_next2_mul->op == Binary::MUL &&
+                      ((maybe_next2_mul->rs1_id == maybe_li->rd_id &&
+                        maybe_next2_mul->rs2_id == maybe_next1_li->rd_id) ||
+                      (maybe_next2_mul->rs2_id == maybe_li->rd_id &&
+                        maybe_next2_mul->rs1_id == maybe_next1_li->rd_id));
+
+        //           li v0, imm (if i type)
+        //  Replace: add v2, v1, v0
+        //       To: addi v2, v1, imm
+        auto maybe_next1_add = next1_instr->as<Binary>();
+        bool match1 = maybe_next1_add.has_value() &&
+                      maybe_next1_add->op == Binary::ADD &&
+                      maybe_next1_add->rs2_id == maybe_li->rd_id;
+
+        //           li v0, 2^k
+        //  Replace: mul v2, v1, v0
+        //      To: slli v2, v1, k
+        auto maybe_next1_mul = next1_instr->as<Binary>();
+        bool match2 = maybe_next1_mul.has_value() &&
+                      maybe_next1_mul->op == Binary::MUL &&
+                      maybe_next1_mul->rs2_id == maybe_li->rd_id;
+
+        if (match0) {
+          auto mul_dst = builder.context.get_operand(maybe_next2_mul->rd_id);
+          if (mul_dst->is_vreg()) {
+            auto imm0_operand = builder.context.get_operand(maybe_li->imm_id);
+            auto imm1_operand =
+              builder.context.get_operand(maybe_next1_li->imm_id);
+
+            auto imm0 =
+              std::get<int32_t>(std::get<Immediate>(imm0_operand->kind).value);
+            auto imm1 =
+              std::get<int32_t>(std::get<Immediate>(imm1_operand->kind).value);
+
+            auto new_imm = imm0 * imm1;
+
+            auto new_imm_id = builder.fetch_immediate(imm0 * imm1);
+
             builder.set_curr_basic_block(basic_block);
-            auto addi_instr = builder.fetch_binary_imm_instruction(
-              BinaryImm::ADDI, maybe_next1_add->rd_id, maybe_next1_add->rs1_id,
-              new_imm_id
-            );
-            curr_instruction->insert_next(addi_instr);
-            next1_instr->remove(builder.context);
-            next_instruction = addi_instr;
-          }
-        }
-      } else if (match2) {
-        auto mul_dst = builder.context.get_operand(maybe_next1_mul->rd_id);
-        if (mul_dst->is_vreg()) {
-          auto imm_operand = builder.context.get_operand(maybe_li->imm_id);
-          auto imm =
-            std::get<int32_t>(std::get<Immediate>(imm_operand->kind).value);
+            auto new_li_instr =
+              builder.fetch_li_instruction(maybe_next2_mul->rd_id, new_imm_id);
+            next1_instr->insert_next(new_li_instr);
 
-          int log2_imm = log2(imm);
-
-          if (pow(2, log2_imm) == imm && check_itype_immediate(log2_imm)) {
-            auto new_imm_id = builder.fetch_immediate(log2_imm);
-            builder.set_curr_basic_block(basic_block);
-            auto slli_instr = builder.fetch_binary_imm_instruction(
-              BinaryImm::SLLI, maybe_next1_mul->rd_id, maybe_next1_mul->rs1_id,
-              new_imm_id
-            );
-            curr_instruction->insert_next(slli_instr);
-            next1_instr->remove(builder.context);
-            next_instruction = slli_instr;
+            // Remove mul
+            next2_instr->remove(builder.context);
           }
-        }
+        } else if (match1) {
+          auto add_dst = builder.context.get_operand(maybe_next1_add->rd_id);
+          if (add_dst->is_vreg()) {
+            auto imm_operand = builder.context.get_operand(maybe_li->imm_id);
+            auto imm =
+              std::get<int32_t>(std::get<Immediate>(imm_operand->kind).value);
+
+            if (check_itype_immediate(imm)) {
+              auto new_imm_id = builder.fetch_immediate(imm);
+              builder.set_curr_basic_block(basic_block);
+              auto addi_instr = builder.fetch_binary_imm_instruction(
+                BinaryImm::ADDI, maybe_next1_add->rd_id, maybe_next1_add->rs1_id,
+                new_imm_id
+              );
+              curr_instruction->insert_next(addi_instr);
+              next1_instr->remove(builder.context);
+              next_instruction = addi_instr;
+            }
+          }
+        } else if (match2) {
+          auto mul_dst = builder.context.get_operand(maybe_next1_mul->rd_id);
+          if (mul_dst->is_vreg()) {
+            auto imm_operand = builder.context.get_operand(maybe_li->imm_id);
+            auto imm =
+              std::get<int32_t>(std::get<Immediate>(imm_operand->kind).value);
+
+            int log2_imm = log2(imm);
+
+            if (pow(2, log2_imm) == imm && check_itype_immediate(log2_imm)) {
+              auto new_imm_id = builder.fetch_immediate(log2_imm);
+              builder.set_curr_basic_block(basic_block);
+              auto slli_instr = builder.fetch_binary_imm_instruction(
+                BinaryImm::SLLI, maybe_next1_mul->rd_id, maybe_next1_mul->rs1_id,
+                new_imm_id
+              );
+              curr_instruction->insert_next(slli_instr);
+              next1_instr->remove(builder.context);
+              next_instruction = slli_instr;
+            }
+          }
+        } 
       }
     }
 
