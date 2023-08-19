@@ -453,7 +453,7 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
       if (!is_aggressive) {
         auto related_gep_operand = builder.context.get_operand(std::get<1>(related_gep_expr));
         if (related_gep_operand->is_global()) {
-          std::cout << "global variable load" << related_gep_operand->to_string() << std::endl;
+          // std::cout << "global variable load" << related_gep_operand->to_string() << std::endl;
           curr_instruction = next_instruction;
           continue;
         }

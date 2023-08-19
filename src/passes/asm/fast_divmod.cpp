@@ -90,7 +90,7 @@ void fast_divmod_basic_block(BasicBlockPtr basic_block, Builder& builder) {
         auto next_rs1 = builder.context.get_operand(next_binary->rs1_id);
         auto next_rs2 = builder.context.get_operand(next_binary->rs2_id);
         ms magic_number = magic(immediate_value);
-        std::cout << "magic number: " << magic_number.M << ", " << magic_number.s << std::endl;
+        // std::cout << "magic number: " << magic_number.M << ", " << magic_number.s << std::endl;
         if (immediate_value >= 2) {
           if (magic_number.s > 0) {
             // if magic_number.s > 0
@@ -297,7 +297,7 @@ void fast_divmod_basic_block(BasicBlockPtr basic_block, Builder& builder) {
         auto next_rs1 = builder.context.get_operand(next_binary->rs1_id);
         auto next_rs2 = builder.context.get_operand(next_binary->rs2_id);
         ms magic_number = magic(immediate_value);
-        std::cout << "magic number: " << magic_number.M << ", " << magic_number.s << std::endl;
+        // std::cout << "magic number: " << magic_number.M << ", " << magic_number.s << std::endl;
         if (immediate_value >= 2) {
           if (magic_number.s > 0) {
             // if magic_number.s > 0

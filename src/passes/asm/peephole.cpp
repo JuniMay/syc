@@ -194,7 +194,7 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           );
         }
         curr_instruction->remove(builder.context);
-        std::cout << "remove li" << std::endl;
+        // std::cout << "remove li" << std::endl;
       } else {
         auto next1_instr = curr_instruction->next;
         auto next2_instr = next1_instr->next;

@@ -15,6 +15,7 @@
 #include "passes/asm/peephole_final.h"
 #include "passes/asm/peephole_second.h"
 #include "passes/asm/phi_elim.h"
+#include "passes/asm/store_fuse.h"
 #include "passes/ir/auto_inline.h"
 #include "passes/ir/copyprop.h"
 #include "passes/ir/dce.h"
@@ -134,6 +135,7 @@ int main(int argc, char* argv[]) {
     backend::peephole_second(asm_builder);
     backend::addr_simplification(asm_builder);
     backend::fast_divmod(asm_builder);
+    backend::store_fuse(asm_builder);
     if (aggressive_opt) {
       backend::instr_fuse(asm_builder);
       backend::dce(asm_builder);
