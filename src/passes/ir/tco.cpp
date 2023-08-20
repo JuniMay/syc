@@ -114,7 +114,8 @@ bool is_inst_tail_call(
   return std::visit(overloaded {
     [&](instruction::Call& call_inst) {
       return is_inst_tail_call(inst->next, function, builder) &&
-        function->name == call_inst.function_name;
+        function->name == call_inst.function_name &&
+        function->parameter_id_list.size() < 30;
     },
     [&](instruction::Br& br_inst) {
       auto next_block = builder.context.basic_block_table[br_inst.block_id];

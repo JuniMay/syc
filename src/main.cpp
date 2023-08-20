@@ -106,6 +106,7 @@ int main(int argc, char* argv[]) {
     ir::dce(ir_builder);
     ir::strength_reduce(ir_builder);
     ir::tco(ir_builder);
+    ir::unreach_elim(ir_builder);
     ir::loop_invariant_motion(ir_builder);
     for (int i = 0; i < 3; i++) {
       ir::peephole(ir_builder);
