@@ -625,6 +625,15 @@ void Instruction::remove(Context& context) {
   }
 }
 
+void Instruction::raw_remove() {
+  if (auto prev = this->prev.lock()) {
+    prev->next = this->next;
+  }
+  if (this->next) {
+    this->next->prev = this->prev;
+  }
+}
+
 std::string Instruction::to_string(Context& context) {
   using namespace instruction;
 

@@ -392,6 +392,8 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
 
   void remove(Context& context);
 
+  void raw_remove();
+
   /// Convert the instruction to a string of assembly code.
   std::string to_string(Context& context);
 
