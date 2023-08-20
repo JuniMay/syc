@@ -45,17 +45,18 @@ struct PrioritizedAlloc {
   /// AllocID
   AllocID alloc_id;
   /// Block count and instruction count
-  std::tuple<size_t, InstrNum, AllocStage> priority;
+  std::tuple<size_t, InstrNum, AllocStage, bool> priority;
 
   PrioritizedAlloc(
     AllocID alloc_id,
-    std::tuple<size_t, InstrNum, AllocStage> priority
+    std::tuple<size_t, InstrNum, AllocStage, bool> priority
   )
     : alloc_id(alloc_id), priority(priority) {}
 
   bool operator<(const PrioritizedAlloc& other) const {
-    auto [block_cnt, instr_cnt, stage] = priority;
-    auto [other_block_cnt, other_instr_cnt, other_stage] = other.priority;
+    auto [block_cnt, instr_cnt, stage, hinted] = priority;
+    auto [other_block_cnt, other_instr_cnt, other_stage, other_hinted] =
+      other.priority;
 
     if (stage < other_stage) {
       return true;
@@ -65,8 +66,12 @@ struct PrioritizedAlloc {
       return true;
     } else if (block_cnt > other_block_cnt) {
       return false;
+    } else if (instr_cnt < other_instr_cnt) {
+      return true;
+    } else if (instr_cnt > other_instr_cnt) {
+      return false;
     } else {
-      return instr_cnt < other_instr_cnt;
+      return !hinted && other_hinted;
     }
   }
 };
@@ -98,6 +103,9 @@ struct GreedyAllocationContext {
   /// Record the used temporary registers in a instruction
   std::unordered_map<InstructionID, std::set<Register>> used_tmpreg_map;
 
+  std::unordered_map<OperandID, OperandID> coalesce_map;
+  std::unordered_map<OperandID, Register> hint_map;
+
   AllocID next_alloc_id = 0;
 
   AllocID get_next_alloc_id() { return next_alloc_id++; }
@@ -109,6 +117,12 @@ struct GreedyAllocationContext {
   void spill(AllocID, FunctionPtr, Builder&, LivenessAnalysisContext&);
   void modify_code(FunctionPtr, Builder&, LivenessAnalysisContext&);
 };
+
+void gen_alloc_hint(
+  FunctionPtr function,
+  Builder& builder,
+  GreedyAllocationContext& ga_ctx
+);
 
 /// Calculate the weight of each basic block
 /// The weight is initialized as 1.0.
@@ -127,7 +141,7 @@ float calc_range_weight(Range range, GreedyAllocationContext& ga_ctx);
 float calc_spill_weight(AllocID alloc_id, GreedyAllocationContext& ga_ctx);
 
 /// Calculate the priority in allocation
-std::tuple<size_t, InstrNum, AllocStage>
+std::tuple<size_t, InstrNum, AllocStage, bool>
 calc_alloc_priority(AllocID alloc_id, GreedyAllocationContext& ga_ctx);
 
 void greedy_allocation(FunctionPtr function, Builder& builder);

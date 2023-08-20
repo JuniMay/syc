@@ -1,4 +1,4 @@
-
+#pragma comment(linker, "/STACK:1024000000,1024000000")
 #include <fstream>
 #include <iostream>
 #include "backend__builder.h"
@@ -15,6 +15,8 @@
 #include "passes__asm__peephole_final.h"
 #include "passes__asm__peephole_second.h"
 #include "passes__asm__phi_elim.h"
+#include "passes__asm__store_fuse.h"
+#include "passes__asm__lvn.h"
 #include "passes__ir__auto_inline.h"
 #include "passes__ir__copyprop.h"
 #include "passes__ir__dce.h"
@@ -32,6 +34,7 @@
 #include "passes__ir__straighten.h"
 #include "passes__ir__strength_reduce.h"
 #include "passes__ir__unreach_elim.h"
+#include "passes__ir__tco.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -104,6 +107,15 @@ int main(int argc, char* argv[]) {
     ir::math_opt(ir_builder);
     ir::dce(ir_builder);
     ir::strength_reduce(ir_builder);
+    ir::tco(ir_builder);
+    ir::unreach_elim(ir_builder);
+    ir::loop_invariant_motion(ir_builder);
+    for (int i = 0; i < 3; i++) {
+      ir::peephole(ir_builder);
+      ir::dce(ir_builder);
+    }
+    ir::straighten(ir_builder);
+    ir::strength_reduce(ir_builder);
     ir::dce(ir_builder);
   }
 
@@ -134,10 +146,11 @@ int main(int argc, char* argv[]) {
     backend::peephole_second(asm_builder);
     backend::addr_simplification(asm_builder);
     backend::fast_divmod(asm_builder);
-    if (true) {
-      backend::instr_fuse(asm_builder);
-      backend::dce(asm_builder);
-    }
+    backend::store_fuse(asm_builder);
+    backend::instr_fuse(asm_builder);
+    backend::dce(asm_builder);
+    backend::lvn(asm_builder);
+    backend::dce(asm_builder);
   }
 
   codegen_rest(ir_builder.context, asm_builder, codegen_context);

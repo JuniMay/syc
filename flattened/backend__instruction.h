@@ -392,6 +392,8 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
 
   void remove(Context& context);
 
+  void raw_remove();
+
   /// Convert the instruction to a string of assembly code.
   std::string to_string(Context& context);
 
@@ -432,6 +434,8 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
   bool is_float_load() const;
 
   bool is_li() const;
+
+  bool is_lui() const;
 
   template <typename T>
   std::optional<T> as() {

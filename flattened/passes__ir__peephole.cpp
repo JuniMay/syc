@@ -90,6 +90,32 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
           );
         }
         curr_instruction->remove(builder.context);
+      } else if (curr_op == BinaryOp::SDiv && curr_rhs->is_constant() && curr_rhs->is_int()) {
+        // dest = sdiv lhs, 1
+        // ->
+        // make all uses of dest to lhs
+        auto constant = std::get<operand::ConstantPtr>(curr_rhs->kind);
+        auto constant_value = std::get<int>(constant->kind);
+        if (constant_value == 1) {
+          auto use_id_list_copy = curr_dst->use_id_list;
+          for (auto use_instruction_id : use_id_list_copy) {
+            auto instruction =
+              builder.context.get_instruction(use_instruction_id);
+            instruction->replace_operand(
+              curr_dst->id, curr_lhs->id, builder.context
+            );
+          }
+          curr_instruction->remove(builder.context);
+        } else if (constant_value == -1) {
+          auto neg_instruction = builder.fetch_binary_instruction(
+            BinaryOp::Sub, curr_dst->id, builder.fetch_constant_operand(
+              builder.fetch_i32_type(), 0
+            ), curr_lhs->id
+          );
+          curr_instruction->insert_next(neg_instruction);
+          next_instruction = curr_instruction->next;
+          curr_instruction->remove(builder.context);
+        }
       } else if (curr_op == BinaryOp::FMul && (curr_rhs->is_zero() || curr_lhs->is_zero())) {
         auto zero_id = builder.fetch_constant_operand(
           builder.fetch_float_type(), 0.0f
