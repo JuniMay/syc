@@ -40,7 +40,8 @@ struct Builder {
 
   OperandID fetch_register(Register reg);
 
-  OperandID fetch_local_memory(int offset);
+  OperandID
+  fetch_local_memory(int offset, Register reg /*= Register{GeneralRegister::Sp}*/);
 
   BasicBlockPtr fetch_basic_block();
 
@@ -164,7 +165,10 @@ struct Builder {
     std::vector<std::tuple<OperandID, BasicBlockID>> incoming_list
   );
 
-  InstructionPtr fetch_call_instruction(std::string function_name);
+  InstructionPtr fetch_call_instruction(
+    std::string function_name,
+    std::set<Register> used_arg_reg_set
+  );
 
   InstructionPtr fetch_branch_instruction(
     instruction::Branch::Op op,

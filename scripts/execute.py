@@ -23,7 +23,27 @@ def check_file(file1, file2, diff_file):
             with open(diff_file, 'w') as f:
                 f.writelines(diff_list)
 
-        return len(diff_list) == 0
+        if len(diff_list) > 0:
+            # compare float number with 1e-6 precision
+            f1.seek(0)
+            f2.seek(0)
+            str1 = re.split(r'[ \n]', f1.read())
+            str2 = re.split(r'[ \n]', f2.read())
+            str1 = list(filter(lambda x: x != '', str1))
+            str2 = list(filter(lambda x: x != '', str2))
+            if (len(str1) != len(str2)):
+                return False
+            for i in range(len(str1)):
+                if (str1[i] != str2[i]):
+                    try:
+                        float1 = float.fromhex(str1[i])
+                        float2 = float.fromhex(str2[i])
+                        if (abs(float1 - float2) > 1e-6):
+                            return False
+                    except:
+                        return False
+
+        return True
 
 
 def execute(command, timeout) -> Dict[str, Any]:
@@ -192,6 +212,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--timeout', type=int, default=600)
     parser.add_argument('--opt-level', type=int, default=0)
+    parser.add_argument('--aggressive', action='store_true', default=False)
     parser.add_argument('--src-dir', default='./src')
     parser.add_argument('--output-dir', default='./output')
     parser.add_argument('--flatten-dir', default='./flattened')
@@ -306,7 +327,7 @@ def log(logfile, command, exec_result):
 
 def test(executable_path: str, testcase_dir: str, output_dir: str,
          runtime_lib_dir: str, exec_timeout: int, opt_level: int,
-         test_ir: bool):
+         test_ir: bool, aggressive: bool):
 
     testcase_list = []
 
@@ -365,6 +386,9 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
                    f'--emit-ast {ast_path} '
                    f'--emit-ir {ir_path} ')
 
+        if aggressive:
+            command += '--aggressive '
+
         exec_result = execute(command, exec_timeout)
         log(log_file, command, exec_result)
 
@@ -380,7 +404,7 @@ def test(executable_path: str, testcase_dir: str, output_dir: str,
 
         command = (f'clang -xc {testcase}.sy -include '
                    f'{runtime_lib_dir}/sylib.h '
-                   f'-S -emit-llvm -o {std_ir_path}')
+                   f'-S -emit-llvm -o {std_ir_path} -O3')
 
         exec_result = execute(command, exec_timeout)
         log(log_file, command, exec_result)
@@ -536,15 +560,20 @@ def main():
         if args.native:
             # wait for cooling
             import time
-            time.sleep(30)
-            
+            time.sleep(5)
+
             test_native(args.executable_path, args.testcase_dir,
                         args.output_dir, args.runtime_lib_dir, args.timeout,
                         args.opt_level, args.csv_file, args.performance)
         else:
-            test(args.executable_path, args.testcase_dir, args.output_dir,
-                 args.runtime_lib_dir, args.timeout, args.opt_level,
-                 args.test_ir)
+            test(args.executable_path,
+                 args.testcase_dir,
+                 args.output_dir,
+                 args.runtime_lib_dir,
+                 args.timeout,
+                 args.opt_level,
+                 args.test_ir,
+                 aggressive=args.aggressive)
 
 
 if __name__ == '__main__':

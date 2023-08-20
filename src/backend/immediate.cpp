@@ -37,5 +37,17 @@ bool Immediate::is_zero() const {
   );
 }
 
+__int128_t Immediate::get_value() const {
+   return std::visit(
+    overloaded{
+      [](int32_t v) { return (__int128_t)v; },
+      [](int64_t v) { return (__int128_t)v; },
+      [](uint32_t v) { return (__int128_t)v; },
+      [](uint64_t v) { return (__int128_t)v; },
+    },
+    value
+  );
+}
+
 }  // namespace backend
 }  // namespace syc

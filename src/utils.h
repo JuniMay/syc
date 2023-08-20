@@ -16,6 +16,7 @@ bool starts_with(const std::string& str, const std::string& prefix);
 struct Options {
   std::string input_filename;
   int optimization_level;
+  bool aggressive_opt;
   std::optional<std::string> output_file;
   std::optional<std::string> token_file;
   std::optional<std::string> ast_file;

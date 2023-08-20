@@ -20,6 +20,8 @@ struct Mem2regContext {
   std::map<InstructionID, OperandID> phi_map;
   /// Sets of worklist
   std::map<OperandID, std::queue<BasicBlockID>> worklist_map;
+  /// Type map
+  std::map<OperandID, TypePtr> type_map;
   /// Rename stacks
   std::map<OperandID, std::stack<OperandID>> rename_stack_map;
 

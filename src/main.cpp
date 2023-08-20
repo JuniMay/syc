@@ -7,7 +7,10 @@
 #include "ir/builder.h"
 #include "ir/codegen.h"
 #include "ir/instruction.h"
+#include "passes/asm/addr_simplification.h"
 #include "passes/asm/dce.h"
+#include "passes/asm/fast_divmod.h"
+#include "passes/asm/instr_fuse.h"
 #include "passes/asm/peephole.h"
 #include "passes/asm/peephole_final.h"
 #include "passes/asm/peephole_second.h"
@@ -15,13 +18,17 @@
 #include "passes/ir/auto_inline.h"
 #include "passes/ir/copyprop.h"
 #include "passes/ir/dce.h"
+#include "passes/ir/func_ret_opt.h"
 #include "passes/ir/global2local.h"
 #include "passes/ir/gvn.h"
 #include "passes/ir/load_elim.h"
+#include "passes/ir/loop_indvar_simplify.h"
 #include "passes/ir/loop_invariant_motion.h"
+#include "passes/ir/loop_unrolling.h"
 #include "passes/ir/math_opt.h"
 #include "passes/ir/mem2reg.h"
 #include "passes/ir/peephole.h"
+#include "passes/ir/purity_opt.h"
 #include "passes/ir/straighten.h"
 #include "passes/ir/strength_reduce.h"
 #include "passes/ir/unreach_elim.h"
@@ -53,10 +60,12 @@ int main(int argc, char* argv[]) {
 
   irgen(compunit, ir_builder);
 
-  bool aggressive_opt = false;
+  bool aggressive_opt = options.aggressive_opt;
 
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
+    ir::func_ret_opt(ir_builder);
+    ir::purity_opt(ir_builder);
     ir::auto_inline(ir_builder);
     ir::global2local(ir_builder);
     ir::mem2reg(ir_builder);
@@ -73,6 +82,28 @@ int main(int argc, char* argv[]) {
     ir::math_opt(ir_builder);
     ir::dce(ir_builder);
     ir::copyprop(ir_builder);
+    ir::peephole(ir_builder);
+    ir::loop_unrolling(ir_builder);
+    ir::copyprop(ir_builder);
+    ir::gvn(ir_builder, aggressive_opt);
+    ir::copyprop(ir_builder);
+    ir::load_elim(ir_builder);
+    ir::loop_invariant_motion(ir_builder);
+    ir::peephole(ir_builder);
+    ir::unreach_elim(ir_builder);
+    ir::straighten(ir_builder);
+    for (int i = 0; i < 3; i++) {
+      ir::peephole(ir_builder);
+      ir::dce(ir_builder);
+    }
+    ir::loop_indvar_simplify(ir_builder);
+    ir::math_opt(ir_builder);
+    ir::straighten(ir_builder);
+    ir::peephole(ir_builder);
+    ir::dce(ir_builder);
+    ir::copyprop(ir_builder);
+    ir::math_opt(ir_builder);
+    ir::dce(ir_builder);
     ir::strength_reduce(ir_builder);
     ir::tco(ir_builder);
     ir::loop_invariant_motion(ir_builder);
@@ -81,6 +112,7 @@ int main(int argc, char* argv[]) {
       ir::dce(ir_builder);
     }
     ir::strength_reduce(ir_builder);
+    ir::dce(ir_builder);
   }
 
   if (options.ir_file.has_value()) {
@@ -108,6 +140,12 @@ int main(int argc, char* argv[]) {
       backend::dce(asm_builder);
     }
     backend::peephole_second(asm_builder);
+    backend::addr_simplification(asm_builder);
+    backend::fast_divmod(asm_builder);
+    if (aggressive_opt) {
+      backend::instr_fuse(asm_builder);
+      backend::dce(asm_builder);
+    }
   }
 
   codegen_rest(ir_builder.context, asm_builder, codegen_context);

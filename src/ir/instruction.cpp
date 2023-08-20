@@ -57,6 +57,13 @@ void Instruction::add_use(OperandID use_id) {
   }
 }
 
+void Instruction::remove_use(OperandID use_id) {
+  this->use_id_list.erase(
+    std::remove(this->use_id_list.begin(), this->use_id_list.end(), use_id),
+    this->use_id_list.end()
+  );
+}
+
 void Instruction::replace_operand(
   OperandID old_operand_id,
   OperandID new_operand_id,
@@ -376,6 +383,14 @@ bool Instruction::is_icmp() const {
   return std::holds_alternative<instruction::ICmp>(this->kind);
 }
 
+bool Instruction::is_fcmp() const {
+  return std::holds_alternative<instruction::FCmp>(this->kind);
+}
+
+bool Instruction::is_cast() const {
+  return std::holds_alternative<instruction::Cast>(this->kind);
+}
+
 void Instruction::add_phi_operand(
   OperandID incoming_operand_id,
   BasicBlockID incoming_block_id,
@@ -389,6 +404,41 @@ void Instruction::add_phi_operand(
   context.operand_table[incoming_operand_id]->add_use(this->id);
   context.basic_block_table[incoming_block_id]->add_use(this->id);
   this->add_use(incoming_operand_id);
+}
+
+std::optional<OperandID> Instruction::remove_phi_operand(
+  BasicBlockID incoming_block_id,
+  Context& context
+) {
+  if (!is_phi()) {
+    return std::nullopt;
+  }
+  // Remove the use of block and operand and this instruction
+  auto& incoming_list = std::get<instruction::Phi>(this->kind).incoming_list;
+  auto it = std::find_if(
+    incoming_list.begin(), incoming_list.end(),
+    [incoming_block_id](const auto& pair) {
+      return std::get<1>(pair) == incoming_block_id;
+    }
+  );
+
+  if (it == incoming_list.end()) {
+    return std::nullopt;
+  }
+
+  auto operand_id = std::get<0>(*it);
+  context.operand_table[operand_id]->remove_use(this->id);
+  context.basic_block_table[incoming_block_id]->remove_use(this->id);
+  this->remove_use(operand_id);
+  
+  // Erase from the incoming list
+  incoming_list.erase(
+    std::remove(incoming_list.begin(), incoming_list.end(), *it),
+    incoming_list.end()
+  );
+
+
+  return operand_id;
 }
 
 Instruction::Instruction(

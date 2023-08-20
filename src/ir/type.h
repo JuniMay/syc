@@ -20,9 +20,7 @@ struct Array {
   TypePtr element_type;
 };
 
-struct Pointer {
-  TypePtr value_type;
-};
+struct Pointer {};
 
 }  // namespace type
 

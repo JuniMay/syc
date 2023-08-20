@@ -4,17 +4,24 @@
 
 ### Development
 
-1. `sudo apt install flex cmake clang`
-2. install bison 3.8
-   1. `wget http://ftp.gnu.org/gnu/bison/bison-3.8.tar.gz`
-   2. `tar -zxvf bison-3.8.tar.gz`
-   3. `cd bison-3.8`
-   4. `./configure`
-   5. `make`
-   6. `sudo make install`
-   7. `sudo ln -s /usr/local/bin/bison /usr/bin/bison`
-3. Generate the parser and lexer using `yacc_gen.sh` under scripts directory.
-4. Build using cmake.
+```shell
+sudo apt install flex cmake clang
+
+# Install bison 3.8
+wget http://ftp.gnu.org/gnu/bison/bison-3.8.tar.gz
+tar -zxvf bison-3.8.tar.gz
+cd bison-3.8
+./configure
+make
+sudo make install
+sudo ln -s /usr/local/bin/bison /usr/bin/bison
+
+# Generate parser and lexer
+./scripts/yacc_gen.sh
+
+# Build using cmake
+...
+```
 
 ### Tests
 
@@ -60,23 +67,89 @@ target remote :1234
 
 Then just debug.
 
+## Architecture
+
+```mermaid
+flowchart 
+    subgraph Frontend
+      Lexer
+      Lexer --> |Tokens| Parser
+    end
+    subgraph IR
+      irgen(IR Generator) --> |IR| io(IR Optimizers)
+    end
+    subgraph Backend
+      apo(Optimizers) --> |Pseudo RISC-V Assembly| ra(Register Allocation)
+      ra(Register Allocation) --> |RISC-V Assembly| aao(Final-Optimizers)
+    end
+    ui(Compiler Input) --> |SysY Code| Frontend
+    copt(Compiler Options) --> Frontend
+    Frontend --> |AST| IR
+    IR --> |Optimized IR| Backend
+    Backend --> |Optimized RISC-V Assembly| co(Compiler Output)  
+```
+
+## Optimizations
+
+- Frontend
+  - Simple common subexpression elimination.
+- IR
+  - Mem2reg
+  - Function return value optimization
+    - If return value is not used, change function return type to void
+  - Purity optimization
+    - Common subexpression elimination for call
+    - Remove unused call if the function is pure
+  - Auto inlining
+    - Inline non-recursive function
+  - Simple global to local
+    - Make global value local in main after inlining
+  - Global value numbering
+  - Unreachable code elimination
+  - Straighten control flow
+  - Algebraic simplification
+  - Constant folding
+  - Constant propagation
+  - Strength reduction
+  - Loop invariant code motion
+  - Loop unrolling
+    - Full unroll for loop with constant trip count
+  - Simple loop induction variable
+  - Peephole optimization
+  - Dead code elimination
+- Backend
+  - Register allocation
+    - Based on greedy allocator
+    - Remove split stage and simplify spill stage
+    - Loop-based spill weight calculation
+  - Phi elimination (in cooperation with IR mem2reg)
+  - Simple dead code elimination
+  - Strength reduction
+  - Peephole optimization
+  - Redundant code elimination
+  - Aggressive floating-point instruction fusion
+
 ## Todo List
 
 - [x] Try to use temporary register for temporary immediate loading.
   - t0, t1, ft0, ft1, ft2 is used in spilling virtual registers.
   - t2 is used in codegen for temporary immediate loading, pseudo load/store and comparison.
-- [ ] Unreachable elimination.
-  - [ ] Fix `functional/51_short_circuit`
-  - [ ] Fix `functional/75_max_flow`
-  - [ ] Fix `functional/82_long_func`
-- [ ] Strength reduction
-  - [x] IR: integer multiplication to shift.
-  - [x] IR: integer division by 2 to shift.
-  - [x] IR: integer division by 2^k to shift.
-- [ ] unmodified variable to constant
+- [ ] Graph-based DCE
+- [ ] Stronger straighten
+- [ ] `li v0, 0` --> `zero`
+- [ ] Continous store 0
+- [ ] LVN for asm
+- [ ] Instruction Scheduling
+- [ ] Pointer optimization
+- [ ] loop interchange for `performance/01_mmx.sy`
+- [ ] if condition simplification
+  - [ ] if (a / c0 >= c1) -> if (a > c0 * c1 - 1)
 - [ ] Loop optimization
-  - [x] Loop invariant code motion
-  - [ ] Loop induction variable optimization
-  - [ ] Unrolling
+  - [x] Unrolling
+  - [ ] Unrolling coefficient
   - [ ] Parallelization
-- [ ] Redundant code elimination after register allocation
+  - [ ] Loop variable induction
+    - [x] Basic for gep instruction
+    - [x] Non-zero initial value
+    - [ ] Branch in loop
+    - [ ] More instructions

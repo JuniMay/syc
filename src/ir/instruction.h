@@ -53,8 +53,7 @@ struct Binary {
   OperandID rhs_id;
 
   bool operator==(const Binary& other) const {
-    return op == other.op && lhs_id == other.lhs_id
-           && rhs_id == other.rhs_id;
+    return op == other.op && lhs_id == other.lhs_id && rhs_id == other.rhs_id;
   }
 };
 
@@ -81,8 +80,8 @@ struct ICmp {
   OperandID rhs_id;
 
   bool operator==(const ICmp& other) const {
-    return cond == other.cond && lhs_id == other.lhs_id
-           && rhs_id == other.rhs_id;
+    return cond == other.cond && lhs_id == other.lhs_id &&
+           rhs_id == other.rhs_id;
   }
 };
 
@@ -109,8 +108,8 @@ struct FCmp {
   OperandID rhs_id;
 
   bool operator==(const FCmp& other) const {
-    return cond == other.cond && lhs_id == other.lhs_id
-           && rhs_id == other.rhs_id;
+    return cond == other.cond && lhs_id == other.lhs_id &&
+           rhs_id == other.rhs_id;
   }
 };
 
@@ -164,9 +163,8 @@ struct CondBr {
   BasicBlockID else_block_id;
 
   bool operator==(const CondBr& other) const {
-    return cond_id == other.cond_id
-           && then_block_id == other.then_block_id
-           && else_block_id == other.else_block_id;
+    return cond_id == other.cond_id && then_block_id == other.then_block_id &&
+           else_block_id == other.else_block_id;
   }
 };
 
@@ -175,9 +173,7 @@ struct Br {
   /// Label ID of the branch.
   BasicBlockID block_id;
 
-  bool operator==(const Br& other) const {
-    return block_id == other.block_id;
-  }
+  bool operator==(const Br& other) const { return block_id == other.block_id; }
 };
 
 /// Phi instruction.
@@ -210,11 +206,11 @@ struct Alloca {
   bool alloca_for_param;
 
   bool operator==(const Alloca& other) const {
-    return allocated_type == other.allocated_type
-           && maybe_size_id == other.maybe_size_id
-           && maybe_align_id == other.maybe_align_id
-           && maybe_addrspace_id == other.maybe_addrspace_id
-           && alloca_for_param == other.alloca_for_param;
+    return allocated_type == other.allocated_type &&
+           maybe_size_id == other.maybe_size_id &&
+           maybe_align_id == other.maybe_align_id &&
+           maybe_addrspace_id == other.maybe_addrspace_id &&
+           alloca_for_param == other.alloca_for_param;
   }
 };
 
@@ -228,8 +224,7 @@ struct Load {
   std::optional<OperandID> maybe_align_id;
 
   bool operator==(const Load& other) const {
-    return ptr_id == other.ptr_id
-           && maybe_align_id == other.maybe_align_id;
+    return ptr_id == other.ptr_id && maybe_align_id == other.maybe_align_id;
   }
 };
 
@@ -243,8 +238,8 @@ struct Store {
   std::optional<OperandID> maybe_align_id;
 
   bool operator==(const Store& other) const {
-    return value_id == other.value_id && ptr_id == other.ptr_id
-           && maybe_align_id == other.maybe_align_id;
+    return value_id == other.value_id && ptr_id == other.ptr_id &&
+           maybe_align_id == other.maybe_align_id;
   }
 };
 
@@ -258,8 +253,8 @@ struct Call {
   std::vector<OperandID> arg_id_list;
 
   bool operator==(const Call& other) const {
-    return function_name == other.function_name
-           && arg_id_list == other.arg_id_list;
+    return function_name == other.function_name &&
+           arg_id_list == other.arg_id_list;
   }
 };
 
@@ -282,9 +277,7 @@ struct GetElementPtr {
 
 /// Dummy instruction for head/tail guard.
 struct Dummy {
-  bool operator==(const Dummy& other) const {
-    return true;
-  }
+  bool operator==(const Dummy& other) const { return true; }
 };
 
 }  // namespace instruction
@@ -308,6 +301,8 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
 
   void set_def(OperandID def_id);
   void add_use(OperandID use_id);
+
+  void remove_use(OperandID use_id);
 
   void replace_operand(
     OperandID old_operand_id,
@@ -363,11 +358,18 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
 
   bool is_icmp() const;
 
+  bool is_fcmp() const;
+
+  bool is_cast() const;
+
   void add_phi_operand(
     OperandID incoming_operand_id,
     BasicBlockID incoming_block_id,
     Context& context
   );
+
+  std::optional<OperandID>
+  remove_phi_operand(BasicBlockID incoming_block_id, Context& context);
 
   template <typename T>
   std::optional<std::reference_wrapper<T>> as_ref() {
@@ -385,9 +387,7 @@ struct Instruction : std::enable_shared_from_this<Instruction> {
     return std::nullopt;
   }
 
-  bool operator==(const Instruction& other) const {
-    return kind == other.kind;
-  }
+  bool operator==(const Instruction& other) const { return kind == other.kind; }
 };
 
 /// Create an instruction.
