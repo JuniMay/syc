@@ -22,11 +22,11 @@ void store_fuse_function(FunctionPtr function, Builder& builder) {
     curr_basic_block = curr_basic_block->next;
   }
 
-  curr_basic_block = function->head_basic_block->next;
-  while (curr_basic_block != function->tail_basic_block) {
-    store_fuse_compl_basic_block(curr_basic_block, builder);
-    curr_basic_block = curr_basic_block->next;
-  }
+  // curr_basic_block = function->head_basic_block->next;
+  // while (curr_basic_block != function->tail_basic_block) {
+  //   store_fuse_compl_basic_block(curr_basic_block, builder);
+  //   curr_basic_block = curr_basic_block->next;
+  // }
 }
 
 void store_fuse_simple_basic_block(BasicBlockPtr basic_block, Builder& builder) {
