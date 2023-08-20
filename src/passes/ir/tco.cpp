@@ -59,8 +59,10 @@ void tail_call_elim_func(
   {
     builder.set_curr_basic_block(builder.context.basic_block_table[tail_call->parent_block_id]);
     auto new_jump_inst = builder.fetch_br_instruction(old_entry_block->id);
-    tail_call->insert_next(new_jump_inst);
+    // tail_call->insert_next(new_jump_inst);
+    tail_call->insert_prev(new_jump_inst);
     builder.context.basic_block_table[tail_call->parent_block_id]->add_succ(old_entry_block->id);
+    old_entry_block->add_pred(tail_call->parent_block_id);
     // tail_call->remove(builder.context);
   }
 
@@ -95,7 +97,11 @@ void tail_call_elim_func(
   // Delete tail calls
   for (auto tail_call : tail_calls)
   {
-    tail_call->remove(builder.context);
+    auto tail_call_prev = tail_call->prev;
+    auto parent_block = builder.context.basic_block_table[tail_call->parent_block_id];
+    while(tail_call_prev.lock()->next != parent_block->tail_instruction)
+      tail_call_prev.lock()->next->remove(builder.context);
+    // tail_call->remove(builder.context);
   }
 }
 
