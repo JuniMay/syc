@@ -1312,5 +1312,8 @@ bool Instruction::is_li() const {
   return std::holds_alternative<instruction::Li>(this->kind);
 }
 
+bool Instruction::is_lui() const {
+  return std::holds_alternative<instruction::Lui>(this->kind);
+}
 }  // namespace backend
 }  // namespace syc

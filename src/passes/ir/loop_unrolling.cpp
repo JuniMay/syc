@@ -210,9 +210,9 @@ bool loop_unrolling_helper(
   }
 
   // DEBUG
-  std::cout << "iv_ed: " << iv_ed << std::endl;
-  std::cout << "iv_st: " << iv_st << std::endl;
-  std::cout << "iv_stride: " << iv_stride << std::endl;
+  // std::cout << "iv_ed: " << iv_ed << std::endl;
+  // std::cout << "iv_st: " << iv_st << std::endl;
+  // std::cout << "iv_stride: " << iv_stride << std::endl;
 
   if ((iv_ed - iv_st) / iv_stride > 300 || iv_ed - iv_st <= 0) {
     return false;

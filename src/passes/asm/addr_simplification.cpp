@@ -103,7 +103,7 @@ void addr_simplification_basic_block(
               use_inst->replace_operand(use_st_rs1_id, new_rs_operand, builder.context);
               use_inst->replace_operand(use_st_imm_id, new_imm, builder.context);
             } else if (use_inst->is_float_load()) {
-              std::cout << "replace float load" << std::endl;
+              // std::cout << "replace float load" << std::endl;
               auto use_ld_inst = std::get<FloatLoad>(use_inst->kind);
               auto use_ld_rd = use_ld_inst.rd_id;
               auto use_ld_rs = use_ld_inst.rs_id;
@@ -125,7 +125,7 @@ void addr_simplification_basic_block(
               use_inst->replace_operand(use_ld_rs, new_rs_operand, builder.context);
               use_inst->replace_operand(use_ld_imm, new_imm, builder.context);
             } else if (use_inst->is_float_store()) {
-              std::cout << "replace float store" << std::endl;
+              // std::cout << "replace float store" << std::endl;
               auto use_st_inst = std::get<FloatStore>(use_inst->kind);
               auto use_st_rs1_id = use_st_inst.rs1_id;
               auto use_st_imm_id = use_st_inst.imm_id;

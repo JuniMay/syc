@@ -134,9 +134,6 @@ flowchart
 - [x] Try to use temporary register for temporary immediate loading.
   - t0, t1, ft0, ft1, ft2 is used in spilling virtual registers.
   - t2 is used in codegen for temporary immediate loading, pseudo load/store and comparison.
-- [ ] Graph-based DCE
-- [ ] Stronger straighten
-- [ ] `li v0, 0` --> `zero`
 - [ ] Continous store 0
 - [ ] LVN for asm
 - [ ] Instruction Scheduling
