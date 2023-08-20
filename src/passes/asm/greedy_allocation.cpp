@@ -109,10 +109,16 @@ float calc_spill_weight(AllocID alloc_id, GreedyAllocationContext& ga_ctx) {
   for (auto range : ga_ctx.alloc_range_map[alloc_id]) {
     weight += calc_range_weight(range, ga_ctx);
   }
+  auto operand_id = ga_ctx.alloc_operand_map.at(alloc_id);
+  if (ga_ctx.coalesce_map.count(operand_id)) {
+    weight *= 1.5f;
+  } else if (ga_ctx.hint_map.count(operand_id)) {
+    weight *= 2.0f;
+  }
   return weight;
 }
 
-std::tuple<size_t, InstrNum, AllocStage>
+std::tuple<size_t, InstrNum, AllocStage, bool>
 calc_alloc_priority(AllocID alloc_id, GreedyAllocationContext& ga_ctx) {
   size_t block_cnt = 0;
   InstrNum instr_cnt = 0;
@@ -122,8 +128,13 @@ calc_alloc_priority(AllocID alloc_id, GreedyAllocationContext& ga_ctx) {
     instr_cnt += range.instr_cnt;
   }
 
+  auto operand_id = ga_ctx.alloc_operand_map.at(alloc_id);
+
+  bool hinted =
+    ga_ctx.coalesce_map.count(operand_id) || ga_ctx.hint_map.count(operand_id);
+
   return std::make_tuple(
-    block_cnt, instr_cnt, ga_ctx.alloc_stage_map[alloc_id]
+    block_cnt, instr_cnt, ga_ctx.alloc_stage_map[alloc_id], hinted
   );
 }
 
@@ -142,7 +153,23 @@ void GreedyAllocationContext::try_allocate(
 
   auto hard_conflict_set = std::set<Register>();
 
-  for (auto reg : REG_ALLOC) {
+  std::vector<Register> reg_alloc_seq = {};
+
+  if (hint_map.count(operand->id)) {
+    if (std::find(REG_ALLOC.begin(), REG_ALLOC.end(), hint_map[operand->id]) != 
+        REG_ALLOC.end()) {
+      reg_alloc_seq.push_back(hint_map[operand->id]);
+    }
+    for (auto reg : REG_ALLOC) {
+      if (!(reg == hint_map[operand->id])) {
+        reg_alloc_seq.push_back(reg);
+      }
+    }
+  } else {
+    reg_alloc_seq = REG_ALLOC;
+  }
+
+  for (auto reg : reg_alloc_seq) {
     if (reg.is_float() != operand->is_float()) {
       continue;
     }
@@ -214,6 +241,12 @@ void GreedyAllocationContext::try_allocate(
     alloc_map[alloc_id] = allocated_reg;
     // Update alloc_stage_map
     alloc_stage_map[alloc_id] = AllocStage::Assign;
+
+    if (coalesce_map.count(operand->id)) {
+      auto coalesce_target_id = coalesce_map[operand->id];
+      auto coalesce_target = builder.context.get_operand(coalesce_target_id);
+      hint_map[coalesce_target->id] = allocated_reg;
+    }
 
   } else {
     // Try to evict
@@ -512,6 +545,7 @@ void greedy_allocation(FunctionPtr function, Builder& builder) {
   auto la_ctx = LivenessAnalysisContext();
 
   liveness_analysis(function, builder, la_ctx);
+  gen_alloc_hint(function, builder, ga_ctx);
 
   // Clear alloc_map
   ga_ctx.alloc_map.clear();
@@ -576,6 +610,86 @@ void greedy_allocation(FunctionPtr function, Builder& builder) {
 
   // Modify code
   ga_ctx.modify_code(function, builder, la_ctx);
+}
+
+void gen_alloc_hint(
+  FunctionPtr function,
+  Builder& builder,
+  GreedyAllocationContext& ga_ctx
+) {
+  using namespace instruction;
+  for (auto bb = function->head_basic_block->next;
+       bb != function->tail_basic_block; bb = bb->next) {
+    for (auto instr = bb->head_instruction->next; instr != bb->tail_instruction;
+         instr = instr->next) {
+      auto maybe_binary = instr->as<Binary>();
+      auto maybe_binary_imm = instr->as<BinaryImm>();
+      auto maybe_float_binary = instr->as<FloatBinary>();
+
+      if (maybe_binary.has_value()) {
+        auto binary = maybe_binary.value();
+
+        auto op = binary.op;
+        auto rd = builder.context.get_operand(binary.rd_id);
+        auto rs1 = builder.context.get_operand(binary.rs1_id);
+        auto rs2 = builder.context.get_operand(binary.rs2_id);
+
+        if (binary.op == Binary::ADD || binary.op == Binary::ADDW) {
+          if (rd->is_vreg() && rs1->is_vreg() && rs2->is_zero()) {
+            ga_ctx.coalesce_map[rd->id] = rs1->id;
+            ga_ctx.coalesce_map[rs1->id] = rd->id;
+          } else if (rd->is_vreg() && rs1->is_zero() && rs2->is_vreg()) {
+            ga_ctx.coalesce_map[rd->id] = rs2->id;
+            ga_ctx.coalesce_map[rs2->id] = rd->id;
+          } else if (rd->is_reg() && rs1->is_vreg() && rs2->is_zero()) {
+            ga_ctx.hint_map[rs1->id] = std::get<Register>(rd->kind);
+          } else if (rd->is_reg() && rs1->is_zero() && rs2->is_vreg()) {
+            ga_ctx.hint_map[rs2->id] = std::get<Register>(rd->kind);
+          } else if (rd->is_vreg() && rs1->is_reg() && rs2->is_zero()) {
+            ga_ctx.hint_map[rd->id] = std::get<Register>(rs1->kind);
+          } else if (rd->is_vreg() && rs1->is_zero() && rs2->is_reg()) {
+            ga_ctx.hint_map[rd->id] = std::get<Register>(rs2->kind);
+          }
+        }
+      } else if (maybe_binary_imm.has_value()) {
+        auto binary_imm = maybe_binary_imm.value();
+
+        auto op = binary_imm.op;
+        auto rd = builder.context.get_operand(binary_imm.rd_id);
+        auto rs = builder.context.get_operand(binary_imm.rs_id);
+        auto imm = builder.context.get_operand(binary_imm.imm_id);
+
+        if (op == BinaryImm::ADDI || BinaryImm::ADDIW) {
+          if (rd->is_vreg() && rs->is_vreg() && imm->is_zero()) {
+            ga_ctx.coalesce_map[rd->id] = rs->id;
+            ga_ctx.coalesce_map[rs->id] = rd->id;
+          } else if (rd->is_reg() && rs->is_vreg() && imm->is_zero()) {
+            ga_ctx.hint_map[rs->id] = std::get<Register>(rd->kind);
+          } else if (rd->is_vreg() && rs->is_reg() && imm->is_zero()) {
+            ga_ctx.hint_map[rd->id] = std::get<Register>(rs->kind);
+          }
+        }
+      } else if (maybe_float_binary.has_value()) {
+        auto float_binary = maybe_float_binary.value();
+
+        auto op = float_binary.op;
+        auto rd = builder.context.get_operand(float_binary.rd_id);
+        auto rs1 = builder.context.get_operand(float_binary.rs1_id);
+        auto rs2 = builder.context.get_operand(float_binary.rs2_id);
+
+        if (float_binary.op == FloatBinary::FSGNJ && rs1->id == rs2->id) {
+          if (rd->is_vreg() && rs1->is_vreg()) {
+            ga_ctx.coalesce_map[rd->id] = rs1->id;
+            ga_ctx.coalesce_map[rs1->id] = rd->id;
+          } else if (rd->is_reg() && rs1->is_vreg()) {
+            ga_ctx.hint_map[rs1->id] = std::get<Register>(rd->kind);
+          } else if (rd->is_vreg() && rs1->is_reg()) {
+            ga_ctx.hint_map[rd->id] = std::get<Register>(rs1->kind);
+          }
+        }
+      }
+    }
+  }
 }
 
 }  // namespace backend
