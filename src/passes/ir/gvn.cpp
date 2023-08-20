@@ -16,7 +16,7 @@ void gvn_function(FunctionPtr function, Builder& builder, bool is_aggressive) {
   }
   auto cfa_ctx = ControlFlowAnalysisContext();
   control_flow_analysis(function, builder.context, cfa_ctx);
-  gvn_basic_block(function, curr_basic_block, builder, cfa_ctx, is_aggressive);
+  gvn_basic_block(function, curr_basic_block, builder, cfa_ctx, is_aggressive, 0);
 }
 
 using ValueNumMap = std::map<OperandID, OperandID>;
@@ -57,8 +57,13 @@ ICmpExprMap icmp_expr_map;
 FCmpExprMap fcmp_expr_map;
 CastExprMap cast_expr_map;
 
-void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& builder, ControlFlowAnalysisContext cfa_ctx, bool is_aggressive) {
+void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& builder, ControlFlowAnalysisContext cfa_ctx, bool is_aggressive, size_t depth) {
   using namespace instruction;
+
+  if (depth >= 500) {
+    return;
+  }
+
   builder.set_curr_basic_block(basic_block);
   
   // save old maps for restoring
@@ -546,7 +551,7 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
 
   // recursively gvn for children basic blocks
   for (auto child_bb : cfa_ctx.dom_tree[basic_block->id]) {
-    gvn_basic_block(function, builder.context.get_basic_block(child_bb), builder, cfa_ctx, is_aggressive);
+    gvn_basic_block(function, builder.context.get_basic_block(child_bb), builder, cfa_ctx, is_aggressive, depth + 1);
   }
 
   // restore maps

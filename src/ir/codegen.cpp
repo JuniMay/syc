@@ -755,9 +755,13 @@ void codegen_instruction(
               ir_rhs_id, ir_context, builder, codegen_context, false, true
             );
 
+            auto op = backend::instruction::Binary::Op::MULW;
+            if (ir_binary.indvar_overflow_hint) {
+              op = backend::instruction::Binary::Op::MUL;
+            }
+
             auto mul_instruction = builder.fetch_binary_instruction(
-              backend::instruction::Binary::Op::MULW, asm_dst_id, asm_lhs_id,
-              asm_rhs_id
+              op, asm_dst_id, asm_lhs_id, asm_rhs_id
             );
             builder.append_instruction(mul_instruction);
             break;
@@ -779,9 +783,13 @@ void codegen_instruction(
               ir_rhs_id, ir_context, builder, codegen_context, false, true
             );
 
+            auto op = backend::instruction::Binary::Op::REMW;
+            if (ir_binary.indvar_overflow_hint) {
+              op = backend::instruction::Binary::Op::REM;
+            }
+
             auto rem_instruction = builder.fetch_binary_instruction(
-              backend::instruction::Binary::Op::REMW, asm_dst_id, asm_lhs_id,
-              asm_rhs_id
+              op, asm_dst_id, asm_lhs_id, asm_rhs_id
             );
             builder.append_instruction(rem_instruction);
 

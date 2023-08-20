@@ -52,6 +52,8 @@ struct Binary {
   /// Right hand side operand ID.
   OperandID rhs_id;
 
+  bool indvar_overflow_hint = false;
+
   bool operator==(const Binary& other) const {
     return op == other.op && lhs_id == other.lhs_id && rhs_id == other.rhs_id;
   }

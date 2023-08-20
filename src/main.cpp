@@ -10,12 +10,12 @@
 #include "passes/asm/dce.h"
 #include "passes/asm/fast_divmod.h"
 #include "passes/asm/instr_fuse.h"
+#include "passes/asm/lvn.h"
 #include "passes/asm/peephole.h"
 #include "passes/asm/peephole_final.h"
 #include "passes/asm/peephole_second.h"
 #include "passes/asm/phi_elim.h"
 #include "passes/asm/store_fuse.h"
-#include "passes/asm/lvn.h"
 #include "passes/asm/unused_store_elim.h"
 #include "passes/ir/auto_inline.h"
 #include "passes/ir/copyprop.h"
@@ -31,10 +31,11 @@
 #include "passes/ir/mem2reg.h"
 #include "passes/ir/peephole.h"
 #include "passes/ir/purity_opt.h"
+#include "passes/ir/store_elim.h"
 #include "passes/ir/straighten.h"
 #include "passes/ir/strength_reduce.h"
-#include "passes/ir/unreach_elim.h"
 #include "passes/ir/tco.h"
+#include "passes/ir/unreach_elim.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -63,6 +64,7 @@ int main(int argc, char* argv[]) {
   irgen(compunit, ir_builder);
 
   bool aggressive_opt = options.aggressive_opt;
+  aggressive_opt = true;
 
   if (options.optimization_level > 0) {
     ir::mem2reg(ir_builder);
@@ -107,6 +109,11 @@ int main(int argc, char* argv[]) {
     ir::copyprop(ir_builder);
     ir::math_opt(ir_builder);
     ir::dce(ir_builder);
+    ir::store_elim(ir_builder);
+    ir::dce(ir_builder);
+    ir::loop_indvar_simplify(ir_builder);
+    ir::dce(ir_builder);
+    ir::straighten(ir_builder);
     ir::strength_reduce(ir_builder);
     ir::tco(ir_builder);
     ir::unreach_elim(ir_builder);
@@ -148,8 +155,10 @@ int main(int argc, char* argv[]) {
     backend::fast_divmod(asm_builder);
     backend::unused_store_elim(asm_builder);
     backend::store_fuse(asm_builder);
-    backend::instr_fuse(asm_builder);
-    backend::dce(asm_builder);
+    if (aggressive_opt) {
+      backend::instr_fuse(asm_builder);
+      backend::dce(asm_builder);
+    }
     backend::lvn(asm_builder);
     for (int i = 0; i < 3; i++) {
       backend::peephole(asm_builder);
