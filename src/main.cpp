@@ -148,8 +148,7 @@ int main(int argc, char* argv[]) {
     backend::peephole_second(asm_builder);
     backend::addr_simplification(asm_builder);
     backend::fast_divmod(asm_builder);
-    if (options.optimization_level > 1)
-      backend::unused_store_elim(asm_builder);
+    backend::unused_store_elim(asm_builder);
     backend::store_fuse(asm_builder);
     backend::instr_fuse(asm_builder);
     backend::dce(asm_builder);
