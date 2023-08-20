@@ -113,6 +113,7 @@ int main(int argc, char* argv[]) {
       ir::peephole(ir_builder);
       ir::dce(ir_builder);
     }
+    ir::straighten(ir_builder);
     ir::strength_reduce(ir_builder);
     ir::dce(ir_builder);
   }
