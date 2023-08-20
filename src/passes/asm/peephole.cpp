@@ -219,6 +219,10 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
         bool match1 = maybe_next1_add.has_value() &&
                       maybe_next1_add->op == Binary::ADD &&
                       maybe_next1_add->rs2_id == maybe_li->rd_id;
+        
+        bool match3 = maybe_next1_add.has_value() &&
+                      maybe_next1_add->op == Binary::ADDW &&
+                      maybe_next1_add->rs2_id == maybe_li->rd_id;
 
         //           li v0, 2^k
         //  Replace: mul v2, v1, v0
@@ -292,7 +296,26 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
               next_instruction = slli_instr;
             }
           }
-        } 
+        } else if (match3) {
+          auto add_dst = builder.context.get_operand(maybe_next1_add->rd_id);
+          if (add_dst->is_vreg()) {
+            auto imm_operand = builder.context.get_operand(maybe_li->imm_id);
+            auto imm =
+              std::get<int32_t>(std::get<Immediate>(imm_operand->kind).value);
+
+            if (check_itype_immediate(imm)) {
+              auto new_imm_id = builder.fetch_immediate(imm);
+              builder.set_curr_basic_block(basic_block);
+              auto addi_instr = builder.fetch_binary_imm_instruction(
+                BinaryImm::ADDIW, maybe_next1_add->rd_id, maybe_next1_add->rs1_id,
+                new_imm_id
+              );
+              curr_instruction->insert_next(addi_instr);
+              next1_instr->remove(builder.context);
+              next_instruction = addi_instr;
+            }
+          }
+        }
       }
     }
 
