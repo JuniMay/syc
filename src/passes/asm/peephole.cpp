@@ -99,6 +99,98 @@ void peephole_basic_block(BasicBlockPtr basic_block, Builder& builder) {
             }
           }
         }
+      } else if (rd->is_vreg() && rs->is_zero() && (op == BinaryImm::SLLI || op == BinaryImm::SLLIW)) {
+        std::cout << "remove slli" << std::endl;
+        if (rd->def_id_list.size() == 1) {
+          std::cout << "remove slli" << std::endl;
+          // remove: slli(w) v0, zero, imm
+          // make all the uses of v0 use zero instead
+          auto use_id_list_copy = rd->use_id_list;
+          for (auto use_instruction_id : use_id_list_copy) {
+            auto instruction =
+              builder.context.get_instruction(use_instruction_id);
+            instruction->replace_operand(
+              rd->id, builder.fetch_register(Register{GeneralRegister::Zero}),
+              builder.context
+            );
+          }
+          curr_instruction->remove(builder.context);
+        }
+      } else if (rd->is_vreg() && rs->is_zero() && op == BinaryImm::SRLI || op == BinaryImm::SRLIW) {
+        if (rd->def_id_list.size() == 1) {
+          // remove: srli v0, zero, imm
+          // make all the uses of v0 use zero instead
+          auto use_id_list_copy = rd->use_id_list;
+          for (auto use_instruction_id : use_id_list_copy) {
+            auto instruction =
+              builder.context.get_instruction(use_instruction_id);
+            instruction->replace_operand(
+              rd->id, builder.fetch_register(Register{GeneralRegister::Zero}),
+              builder.context
+            );
+          }
+          curr_instruction->remove(builder.context);
+        }
+      } else if (rd->is_vreg() && rs->is_zero() && op == BinaryImm::SRAI || op == BinaryImm::SRAIW) {
+        if (rd->def_id_list.size() == 1) {
+          // remove: srai v0, zero, imm
+          // make all the uses of v0 use zero instead
+          auto use_id_list_copy = rd->use_id_list;
+          for (auto use_instruction_id : use_id_list_copy) {
+            auto instruction =
+              builder.context.get_instruction(use_instruction_id);
+            instruction->replace_operand(
+              rd->id, builder.fetch_register(Register{GeneralRegister::Zero}),
+              builder.context
+            );
+          }
+          curr_instruction->remove(builder.context);
+        }
+      } else if (rd->is_vreg() && rs->is_zero() && op == BinaryImm::ANDI) {
+        if (rd->def_id_list.size() == 1) {
+          // remove: andi v0, zero, imm
+          // make all the uses of v0 use zero instead
+          auto use_id_list_copy = rd->use_id_list;
+          for (auto use_instruction_id : use_id_list_copy) {
+            auto instruction =
+              builder.context.get_instruction(use_instruction_id);
+            instruction->replace_operand(
+              rd->id, builder.fetch_register(Register{GeneralRegister::Zero}),
+              builder.context
+            );
+          }
+          curr_instruction->remove(builder.context);
+        }
+      } else if (rd->is_vreg() && rs->is_zero() && op == BinaryImm::ORI) {
+        if (rd->def_id_list.size() == 1) {
+          // remove: ori v0, zero, imm
+          // make all the uses of v0 use zero instead
+          auto use_id_list_copy = rd->use_id_list;
+          for (auto use_instruction_id : use_id_list_copy) {
+            auto instruction =
+              builder.context.get_instruction(use_instruction_id);
+            instruction->replace_operand(
+              rd->id, builder.fetch_register(Register{GeneralRegister::Zero}),
+              builder.context
+            );
+          }
+          curr_instruction->remove(builder.context);
+        }
+      } else if (rd->is_vreg() && rs->is_zero() && op == BinaryImm::XORI) {
+        if (rd->def_id_list.size() == 1) {
+          // remove: xori v0, zero, imm
+          // make all the uses of v0 use zero instead
+          auto use_id_list_copy = rd->use_id_list;
+          for (auto use_instruction_id : use_id_list_copy) {
+            auto instruction =
+              builder.context.get_instruction(use_instruction_id);
+            instruction->replace_operand(
+              rd->id, builder.fetch_register(Register{GeneralRegister::Zero}),
+              builder.context
+            );
+          }
+          curr_instruction->remove(builder.context);
+        }
       }
     }
 
