@@ -145,7 +145,6 @@ int main(int argc, char* argv[]) {
       backend::peephole(asm_builder);
       backend::dce(asm_builder);
     }
-    backend::peephole_second(asm_builder);
     backend::addr_simplification(asm_builder);
     backend::fast_divmod(asm_builder);
     backend::unused_store_elim(asm_builder);
@@ -157,6 +156,8 @@ int main(int argc, char* argv[]) {
       backend::peephole(asm_builder);
       backend::dce(asm_builder);
     }
+
+    backend::peephole_second(asm_builder);
   }
 
   codegen_rest(ir_builder.context, asm_builder, codegen_context);
