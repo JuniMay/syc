@@ -1,4 +1,4 @@
-
+#pragma comment(linker, "/STACK:1024000000,1024000000")
 #include <fstream>
 #include <iostream>
 #include "backend/builder.h"
@@ -16,6 +16,7 @@
 #include "passes/asm/peephole_second.h"
 #include "passes/asm/phi_elim.h"
 #include "passes/asm/store_fuse.h"
+#include "passes/asm/lvn.h"
 #include "passes/ir/auto_inline.h"
 #include "passes/ir/copyprop.h"
 #include "passes/ir/dce.h"
@@ -146,10 +147,10 @@ int main(int argc, char* argv[]) {
     backend::addr_simplification(asm_builder);
     backend::fast_divmod(asm_builder);
     backend::store_fuse(asm_builder);
-    if (aggressive_opt) {
-      backend::instr_fuse(asm_builder);
-      backend::dce(asm_builder);
-    }
+    backend::instr_fuse(asm_builder);
+    backend::dce(asm_builder);
+    backend::lvn(asm_builder);
+    backend::dce(asm_builder);
   }
 
   codegen_rest(ir_builder.context, asm_builder, codegen_context);
