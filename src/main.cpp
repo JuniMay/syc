@@ -156,11 +156,11 @@ int main(int argc, char* argv[]) {
     backend::fast_divmod(asm_builder);
     backend::unused_store_elim(asm_builder);
     backend::store_fuse(asm_builder);
-    if (options.aggressive_opt) {
+    if (aggressive_opt) {
       backend::instr_fuse(asm_builder);
       backend::dce(asm_builder);
     }
-    // backend::lvn(asm_builder);
+    backend::lvn(asm_builder);
     for (int i = 0; i < 3; i++) {
       backend::peephole(asm_builder);
       backend::dce(asm_builder);
