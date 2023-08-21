@@ -475,9 +475,41 @@ void loop_indvar_simplify_helper(
           );
         }
 
+        bool can_remove_instr = true;
+
+        if (lcssa_phi_dst->use_id_list.size() == 0 && lcssa_phi_dst->maybe_def_id.has_value()) {
+          auto def_instr =
+            builder.context.get_instruction(lcssa_phi_dst->maybe_def_id.value()
+            );
+          def_instr->remove(builder.context);
+        }
+
         for (auto instr_id : ivrecord.iv_instr_id_list) {
           auto instr = builder.context.get_instruction(instr_id);
-          instr->remove(builder.context);
+          if (instr->maybe_def_id.has_value()) {
+            auto def = builder.context.get_operand(instr->maybe_def_id.value());
+            for (auto use_id : def->use_id_list) {
+              auto use_instr = builder.context.get_instruction(use_id);
+              if (std::find(ivrecord.iv_instr_id_list.begin(),
+                            ivrecord.iv_instr_id_list.end(),
+                            use_instr->id) == ivrecord.iv_instr_id_list.end()) {
+                std::cout << "CANNOT remove instr: "
+                          << use_instr->to_string(builder.context) << std::endl;
+                can_remove_instr = false;
+                break;
+              }
+            }
+          }
+        }
+
+        if (can_remove_instr) {
+          for (auto instr_id : ivrecord.iv_instr_id_list) {
+            auto instr = builder.context.get_instruction(instr_id);
+            instr->remove(builder.context);
+          }
+        } else {
+          // DEBUG
+          std::cout << "CANNOT remove instr" << std::endl;
         }
       }
     }

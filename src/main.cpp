@@ -160,7 +160,7 @@ int main(int argc, char* argv[]) {
       backend::instr_fuse(asm_builder);
       backend::dce(asm_builder);
     }
-    backend::lvn(asm_builder);
+    // backend::lvn(asm_builder);
     for (int i = 0; i < 3; i++) {
       backend::peephole(asm_builder);
       backend::dce(asm_builder);
