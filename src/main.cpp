@@ -17,6 +17,8 @@
 #include "passes/asm/peephole_second.h"
 #include "passes/asm/phi_elim.h"
 #include "passes/asm/store_fuse.h"
+#include "passes/asm/lvn.h"
+#include "passes/asm/unused_store_elim.h"
 #include "passes/ir/auto_inline.h"
 #include "passes/ir/copyprop.h"
 #include "passes/ir/dce.h"
@@ -101,6 +103,7 @@ int main(int argc, char* argv[]) {
     ir::loop_indvar_simplify(ir_builder);
     ir::math_opt(ir_builder);
     ir::straighten(ir_builder);
+    ir::gvn(ir_builder, aggressive_opt);
     ir::peephole(ir_builder);
     ir::dce(ir_builder);
     ir::copyprop(ir_builder);
@@ -143,16 +146,21 @@ int main(int argc, char* argv[]) {
       backend::peephole(asm_builder);
       backend::dce(asm_builder);
     }
-    backend::peephole_second(asm_builder);
     backend::addr_simplification(asm_builder);
     backend::fast_divmod(asm_builder);
+    backend::unused_store_elim(asm_builder);
     backend::store_fuse(asm_builder);
     if (options.aggressive_opt) {
       backend::instr_fuse(asm_builder);
       backend::dce(asm_builder);
     }
     backend::lvn(asm_builder);
-    backend::dce(asm_builder);
+    for (int i = 0; i < 3; i++) {
+      backend::peephole(asm_builder);
+      backend::dce(asm_builder);
+    }
+
+    backend::peephole_second(asm_builder);
   }
 
   codegen_rest(ir_builder.context, asm_builder, codegen_context);

@@ -407,23 +407,25 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
       curr_ptr_id = curr_instruction->as<Store>()->ptr_id;
       curr_value_id = curr_instruction->as<Store>()->value_id;
       auto curr_ptr_operand = builder.context.get_operand(curr_ptr_id);
-
-      // TODO: maybe we can optimize better??
-      if (inv_getelementptr_expr_map.count(curr_ptr_id)) {
-        // get related gep expr from inv_getelementptr_expr_map
-        auto related_gep_expr = inv_getelementptr_expr_map[curr_ptr_id];
-        store_expr_map[related_gep_expr] = curr_value_id;
-      } else if (curr_ptr_operand->is_global()) {
-        // global variable, treat as a gep expr with no index
-        auto related_gep_expr = std::make_tuple("", curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
-        store_expr_map[related_gep_expr] = curr_value_id;
-      } else if (is_aggressive) {
-        auto related_gep_expr = std::make_tuple("", curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
-        store_expr_map[related_gep_expr] = curr_value_id;
-      } else {
-        throw std::runtime_error("store instruction without gep pointer");
-      }
+      auto curr_value_operand = builder.context.get_operand(curr_value_id);
       
+      if (curr_value_operand->is_constant()){
+        // TODO: maybe we can optimize better??
+        if (inv_getelementptr_expr_map.count(curr_ptr_id)) {
+          // get related gep expr from inv_getelementptr_expr_map
+          auto related_gep_expr = inv_getelementptr_expr_map[curr_ptr_id];
+          store_expr_map[related_gep_expr] = curr_value_id;
+        } else if (curr_ptr_operand->is_global()) {
+          // global variable, treat as a gep expr with no index
+          auto related_gep_expr = std::make_tuple(std::string(""), curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
+          store_expr_map[related_gep_expr] = curr_value_id;
+        } else if (is_aggressive) {
+          auto related_gep_expr = std::make_tuple(std::string(""), curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
+          store_expr_map[related_gep_expr] = curr_value_id;
+        } else {
+          throw std::runtime_error("store instruction without gep pointer");
+        }
+      }
     } 
     else if (is_aggressive && curr_instruction->is_load()) {
       auto curr_dst_id = curr_instruction->as<Load>()->dst_id;
@@ -447,9 +449,9 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
         related_gep_expr = inv_getelementptr_expr_map[curr_ptr_id];
       } else if (curr_ptr_operand->is_global()) {
         // global variable, treat as a gep expr with no index
-        related_gep_expr = std::make_tuple("", curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
+        related_gep_expr = std::make_tuple(std::string(""), curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
       } else if (is_aggressive) {
-        related_gep_expr = std::make_tuple("", curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
+        related_gep_expr = std::make_tuple(std::string(""), curr_ptr_id, std::vector<std::variant<int, OperandID>>{});
       } else {
         throw std::runtime_error("load instruction without gep pointer");
       } 
@@ -469,11 +471,13 @@ void gvn_basic_block(FunctionPtr function, BasicBlockPtr basic_block, Builder& b
         // just treat it as a operand should be fine
         value_number_map[curr_dst_id] = store_expr_map[related_gep_expr];
         curr_instruction->remove(builder.context);
-      } else if (load_expr_map.count(related_gep_expr) > 0) {
-        // redundant load instruction
-        value_number_map[curr_dst_id] = load_expr_map[related_gep_expr];
-        curr_instruction->remove(builder.context);
-      } else {
+      } 
+      // else if (load_expr_map.count(related_gep_expr) > 0) {
+      //   // redundant load instruction
+      //   value_number_map[curr_dst_id] = load_expr_map[related_gep_expr];
+      //   curr_instruction->remove(builder.context);
+      // } 
+      else {
         auto curr_ptr_operand = builder.context.get_operand(curr_ptr_id);
         // for new load instruction, the value number is the dst_id
         // value_number_map[curr_dst_id] = curr_dst_id;
