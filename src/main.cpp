@@ -17,7 +17,6 @@
 #include "passes/asm/peephole_second.h"
 #include "passes/asm/phi_elim.h"
 #include "passes/asm/store_fuse.h"
-#include "passes/asm/lvn.h"
 #include "passes/asm/unused_store_elim.h"
 #include "passes/ir/auto_inline.h"
 #include "passes/ir/copyprop.h"
@@ -33,6 +32,7 @@
 #include "passes/ir/mem2reg.h"
 #include "passes/ir/peephole.h"
 #include "passes/ir/purity_opt.h"
+#include "passes/ir/store_elim.h"
 #include "passes/ir/straighten.h"
 #include "passes/ir/strength_reduce.h"
 #include "passes/ir/tco.h"
@@ -110,6 +110,11 @@ int main(int argc, char* argv[]) {
     ir::copyprop(ir_builder);
     ir::math_opt(ir_builder);
     ir::dce(ir_builder);
+    ir::store_elim(ir_builder);
+    ir::dce(ir_builder);
+    ir::loop_indvar_simplify(ir_builder);
+    ir::dce(ir_builder);
+    ir::straighten(ir_builder);
     ir::strength_reduce(ir_builder);
     ir::tco(ir_builder);
     ir::unreach_elim(ir_builder);

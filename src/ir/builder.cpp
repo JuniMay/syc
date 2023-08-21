@@ -49,11 +49,13 @@ InstructionPtr Builder::fetch_binary_instruction(
   instruction::BinaryOp op,
   OperandID dst_id,
   OperandID lhs_id,
-  OperandID rhs_id
+  OperandID rhs_id,
+  bool indvar_overflow_hint
 ) {
   auto id = context.get_next_instruction_id();
 
-  auto kind = InstructionKind(instruction::Binary{op, dst_id, lhs_id, rhs_id});
+  auto kind = InstructionKind(instruction::Binary{
+    op, dst_id, lhs_id, rhs_id, indvar_overflow_hint});
 
   auto instruction = create_instruction(id, kind, curr_basic_block->id);
 

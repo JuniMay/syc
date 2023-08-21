@@ -67,7 +67,8 @@ struct Builder {
     instruction::BinaryOp op,
     OperandID dst_id,
     OperandID lhs_id,
-    OperandID rhs_id
+    OperandID rhs_id,
+  bool indvar_overflow_hint = false
   );
 
   /// Make an icmp instruction and register it to the context.
