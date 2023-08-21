@@ -11,12 +11,12 @@
 #include "passes/asm/dce.h"
 #include "passes/asm/fast_divmod.h"
 #include "passes/asm/instr_fuse.h"
+#include "passes/asm/lvn.h"
 #include "passes/asm/peephole.h"
 #include "passes/asm/peephole_final.h"
 #include "passes/asm/peephole_second.h"
 #include "passes/asm/phi_elim.h"
 #include "passes/asm/store_fuse.h"
-#include "passes/asm/lvn.h"
 #include "passes/ir/auto_inline.h"
 #include "passes/ir/copyprop.h"
 #include "passes/ir/dce.h"
@@ -33,8 +33,8 @@
 #include "passes/ir/purity_opt.h"
 #include "passes/ir/straighten.h"
 #include "passes/ir/strength_reduce.h"
-#include "passes/ir/unreach_elim.h"
 #include "passes/ir/tco.h"
+#include "passes/ir/unreach_elim.h"
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
@@ -147,8 +147,10 @@ int main(int argc, char* argv[]) {
     backend::addr_simplification(asm_builder);
     backend::fast_divmod(asm_builder);
     backend::store_fuse(asm_builder);
-    backend::instr_fuse(asm_builder);
-    backend::dce(asm_builder);
+    if (options.aggressive_opt) {
+      backend::instr_fuse(asm_builder);
+      backend::dce(asm_builder);
+    }
     backend::lvn(asm_builder);
     backend::dce(asm_builder);
   }

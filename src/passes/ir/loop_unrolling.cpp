@@ -93,6 +93,11 @@ bool loop_unrolling_helper(
   for (auto instr = header_bb->head_instruction->next;
        instr != header_bb->tail_instruction && instr->is_phi();
        instr = instr->next) {
+    maybe_loop_iv_id = std::nullopt;
+    maybe_loop_cond_id = std::nullopt;
+    maybe_iv_st = std::nullopt;
+    maybe_iv_ed = std::nullopt;
+
     auto phi = instr->as<Phi>().value();
 
     if (phi.incoming_list.size() != 2) {
@@ -214,11 +219,31 @@ bool loop_unrolling_helper(
   // std::cout << "iv_st: " << iv_st << std::endl;
   // std::cout << "iv_stride: " << iv_stride << std::endl;
 
+  bool use_coefficient = false;
+  std::optional<size_t> maybe_coefficient = std::nullopt;
+
   if ((iv_ed - iv_st) / iv_stride > 300 || iv_ed - iv_st <= 0) {
-    return false;
+    // Round up
+    size_t trip_count = (iv_ed - iv_st) / iv_stride + 1;
+
+    std::cout << iv_st << " " << iv_ed << " " << trip_count << std::endl;
+
+    size_t coefficient = 200;
+    while (trip_count % coefficient != 0) {
+      coefficient--;
+    }
+
+    if (coefficient > 1) {
+      use_coefficient = true;
+      maybe_coefficient = coefficient;
+      std::cout << "UNROLLING BY: " << coefficient << std::endl;
+
+    } else {
+      return false;
+    }
   }
 
-  if (do_loop_unrolling) {
+  if (do_loop_unrolling && !use_coefficient) {
     // remove phi, icmp, br instructions
     auto loop_iv_operand = builder.context.get_operand(loop_iv_id);
     auto loop_iv_def_instr =
@@ -498,7 +523,270 @@ bool loop_unrolling_helper(
     }
 
     return true;
+  } else if (do_loop_unrolling && use_coefficient) {
+    // remove phi, icmp, br instructions
+    auto loop_iv_operand = builder.context.get_operand(loop_iv_id);
+    auto loop_iv_def_instr =
+      builder.context.get_instruction(loop_iv_operand->maybe_def_id.value());
+    auto loop_cond_operand = builder.context.get_operand(loop_cond_id);
+    auto loop_cond_def_instr =
+      builder.context.get_instruction(loop_cond_operand->maybe_def_id.value());
+
+    builder.set_curr_basic_block(header_bb);
+
+    auto br_instr = header_bb->tail_instruction->prev.lock();
+    auto then_bb_id = br_instr->as<CondBr>()->then_block_id;
+    auto else_bb_id = br_instr->as<CondBr>()->else_block_id;
+
+    auto then_bb = builder.context.get_basic_block(then_bb_id);
+    auto else_bb = builder.context.get_basic_block(else_bb_id);
+
+    std::vector<BasicBlockPtr> new_bb_list;
+    auto curr_loop_unroll_ctx = LoopUnrollingContext();
+    auto prev_loop_unroll_ctx = LoopUnrollingContext();
+
+    curr_loop_unroll_ctx.loop_info = loop_info;
+    prev_loop_unroll_ctx.loop_info = loop_info;
+
+    // Map header id
+    auto new_header_bb = builder.fetch_basic_block();
+    curr_loop_unroll_ctx.basic_block_id_map[header_bb->id] = new_header_bb->id;
+    new_bb_list.push_back(new_header_bb);
+
+    BasicBlockPtr insert_pos_bb = nullptr;
+
+    // Get initial mapping
+    for (auto bb_id : loop_info.body_id_set) {
+      auto bb = builder.context.get_basic_block(bb_id);
+      for (auto instr = bb->head_instruction->next;
+           instr != bb->tail_instruction; instr = instr->next) {
+        if (instr->maybe_def_id.has_value()) {
+          prev_loop_unroll_ctx.operand_id_map[instr->maybe_def_id.value()] =
+            instr->maybe_def_id.value();
+        }
+      }
+    }
+
+    size_t coefficient = maybe_coefficient.value();
+
+    for (int loop_index = 1; loop_index < coefficient; loop_index++) {
+      // Map basic blocks
+      for (auto bb_id : loop_info.body_id_set) {
+        if (bb_id == header_bb->id) {
+          continue;
+        }
+        auto new_bb = builder.fetch_basic_block();
+        curr_loop_unroll_ctx.basic_block_id_map[bb_id] = new_bb->id;
+        new_bb_list.push_back(new_bb);
+      }
+
+      BasicBlockID old_header_bb_id;
+
+      for (auto bb_id : loop_info.body_id_set) {
+        auto bb = builder.context.get_basic_block(bb_id);
+        auto unroll_bb = builder.context.get_basic_block(
+          curr_loop_unroll_ctx.basic_block_id_map.at(bb_id)
+        );
+
+        builder.set_curr_basic_block(unroll_bb);
+
+        if (bb->id == header_bb->id) {
+          // Skip phi instruction and re-map
+          for (auto instr = bb->head_instruction->next;
+               instr != bb->tail_instruction; instr = instr->next) {
+            if (instr->is_phi()) {
+              auto phi = instr->as<Phi>().value();
+              for (auto [operand_id, block_id] : phi.incoming_list) {
+                auto operand = builder.context.get_operand(operand_id);
+                if (loop_info.body_id_set.count(block_id)) {
+                  if (operand->maybe_def_id.has_value()) {
+                    auto def_instr = builder.context.get_instruction(
+                      operand->maybe_def_id.value()
+                    );
+                    if (!loop_info.body_id_set.count(def_instr->parent_block_id
+                        )) {
+                      curr_loop_unroll_ctx.operand_id_map[phi.dst_id] =
+                        operand_id;
+                    } else {
+                      curr_loop_unroll_ctx.operand_id_map[phi.dst_id] =
+                        prev_loop_unroll_ctx.operand_id_map.at(operand_id);
+                    }
+                  } else {
+                    curr_loop_unroll_ctx.operand_id_map[phi.dst_id] =
+                      operand_id;
+                  }
+                }
+              }
+            } else if (instr->as<CondBr>().has_value()) {
+              auto condbr = instr->as<CondBr>().value();
+              BasicBlockID dst_bb_id;
+              if (loop_info.body_id_set.count(condbr.then_block_id)) {
+                dst_bb_id = condbr.then_block_id;
+              } else {
+                dst_bb_id = condbr.else_block_id;
+              }
+              auto new_instr = builder.fetch_br_instruction(
+                curr_loop_unroll_ctx.basic_block_id_map.at(dst_bb_id)
+              );
+              builder.append_instruction(new_instr);
+            } else {
+              auto new_instr =
+                clone_instruction(instr, builder, curr_loop_unroll_ctx);
+              builder.append_instruction(new_instr);
+            }
+          }
+          // Actually record the exiting bb
+          old_header_bb_id = unroll_bb->id;
+          // Map header bb, the mapped header is for next iteration
+          auto new_header_bb = builder.fetch_basic_block();
+          curr_loop_unroll_ctx.basic_block_id_map[header_bb->id] =
+            new_header_bb->id;
+          new_bb_list.push_back(new_header_bb);
+        } else {
+          // Directly map
+          for (auto instr = bb->head_instruction->next;
+               instr != bb->tail_instruction; instr = instr->next) {
+            auto new_instr =
+              clone_instruction(instr, builder, curr_loop_unroll_ctx);
+            builder.append_instruction(new_instr);
+          }
+        }
+      }
+
+      // Patch exit bb
+      auto exit_bb =
+        builder.context.get_basic_block(*loop_info.exit_id_set.begin());
+
+      for (auto instr = exit_bb->head_instruction->next;
+           instr != exit_bb->tail_instruction && instr->is_phi();
+           instr = instr->next) {
+        auto phi = instr->as<Phi>().value();
+        auto incoming_list_copy = phi.incoming_list;
+        for (auto [operand_id, block_id] : incoming_list_copy) {
+          if (loop_info.body_id_set.count(block_id)) {
+            instr->add_phi_operand(
+              curr_loop_unroll_ctx.operand_id_map.at(operand_id),
+              old_header_bb_id, builder.context
+            );
+          }
+        }
+      }
+
+      prev_loop_unroll_ctx.operand_id_map = curr_loop_unroll_ctx.operand_id_map;
+      prev_loop_unroll_ctx.basic_block_id_map =
+        curr_loop_unroll_ctx.basic_block_id_map;
+
+      curr_loop_unroll_ctx.operand_id_map.clear();
+      curr_loop_unroll_ctx.basic_block_id_map.clear();
+
+      curr_loop_unroll_ctx.basic_block_id_map[header_bb->id] =
+        prev_loop_unroll_ctx.basic_block_id_map.at(header_bb->id);
+    }
+
+    // Patch back the initial condbr
+    for (auto bb_id : loop_info.body_id_set) {
+      auto bb = builder.context.get_basic_block(bb_id);
+      for (auto instr = bb->head_instruction->next;
+           instr != bb->tail_instruction; instr = instr->next) {
+        if (instr->is_br()) {
+          auto& br = instr->as_ref<Br>().value().get();
+          if (br.block_id == header_bb->id) {
+            br.block_id = new_header_bb->id;
+            new_header_bb->add_use(instr->id);
+            header_bb->remove_use(instr->id);
+            insert_pos_bb = bb;
+            bb->remove_succ(header_bb->id);
+            bb->add_succ(new_header_bb->id);
+            new_header_bb->add_pred(bb->id);
+            header_bb->remove_pred(bb->id);
+          }
+        } else if (instr->as<CondBr>().has_value()) {
+          auto& cond_br = instr->as_ref<CondBr>().value().get();
+          if (cond_br.then_block_id == header_bb->id) {
+            cond_br.then_block_id = new_header_bb->id;
+            new_header_bb->add_use(instr->id);
+            header_bb->remove_use(instr->id);
+            insert_pos_bb = bb;
+            bb->remove_succ(header_bb->id);
+            bb->add_succ(new_header_bb->id);
+            new_header_bb->add_pred(bb->id);
+            header_bb->remove_pred(bb->id);
+          } else if (cond_br.else_block_id == header_bb->id) {
+            cond_br.else_block_id = new_header_bb->id;
+            new_header_bb->add_use(instr->id);
+            header_bb->remove_use(instr->id);
+            insert_pos_bb = bb;
+            bb->remove_succ(header_bb->id);
+            bb->add_succ(new_header_bb->id);
+            new_header_bb->add_pred(bb->id);
+            header_bb->remove_pred(bb->id);
+          }
+        }
+      }
+    }
+
+    // One last header
+    auto new_header_bb_id =
+      prev_loop_unroll_ctx.basic_block_id_map.at(header_bb->id);
+    new_header_bb = builder.context.get_basic_block(new_header_bb_id);
+    builder.set_curr_basic_block(new_header_bb);
+
+    for (auto instr = header_bb->head_instruction->next;
+         instr != header_bb->tail_instruction && instr->is_phi();
+         instr = instr->next) {
+      auto phi = instr->as<Phi>().value();
+
+      for (auto [operand_id, block_id] : phi.incoming_list) {
+        auto operand = builder.context.get_operand(operand_id);
+        if (loop_info.body_id_set.count(block_id)) {
+          if (operand->maybe_def_id.has_value()) {
+            auto def_instr =
+              builder.context.get_instruction(operand->maybe_def_id.value());
+            if (!loop_info.body_id_set.count(def_instr->parent_block_id)) {
+              prev_loop_unroll_ctx.operand_id_map[phi.dst_id] = operand_id;
+            } else {
+              prev_loop_unroll_ctx.operand_id_map[phi.dst_id] =
+                prev_loop_unroll_ctx.operand_id_map.at(operand_id);
+            }
+          } else {
+            prev_loop_unroll_ctx.operand_id_map[phi.dst_id] = operand_id;
+          }
+        }
+      }
+    }
+
+    // Modify header_bb's phi
+    for (auto instr = header_bb->head_instruction->next;
+         instr != header_bb->tail_instruction && instr->is_phi();
+         instr = instr->next) {
+      auto phi = instr->as<Phi>().value();
+      auto incoming_list_copy = phi.incoming_list;
+      for (auto [operand_id, block_id] : incoming_list_copy) {
+        if (std::find(header_bb->pred_list.begin(),
+                      header_bb->pred_list.end(),
+                      block_id) == header_bb->pred_list.end()) {
+          instr->remove_phi_operand(block_id, builder.context);
+          instr->add_phi_operand(
+            prev_loop_unroll_ctx.operand_id_map.at(operand_id),
+            new_header_bb_id, builder.context
+          );
+        }
+      }
+    }
+
+    auto new_br_instr = builder.fetch_br_instruction(header_bb->id);
+    builder.append_instruction(new_br_instr);
+
+    // Modify code, append blocks
+    if (insert_pos_bb != nullptr) {
+      for (auto bb : new_bb_list) {
+        insert_pos_bb->insert_next(bb);
+        insert_pos_bb = bb;
+      }
+    }
+    return true;
   }
+
   return false;
 }
 
