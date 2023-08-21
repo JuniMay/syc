@@ -224,23 +224,23 @@ bool loop_unrolling_helper(
 
   if ((iv_ed - iv_st) / iv_stride > 300 || iv_ed - iv_st <= 0) {
     // Round up
-    size_t trip_count = (iv_ed - iv_st) / iv_stride + 1;
+    // size_t trip_count = (iv_ed - iv_st) / iv_stride + 1;
 
-    std::cout << iv_st << " " << iv_ed << " " << trip_count << std::endl;
+    // std::cout << iv_st << " " << iv_ed << " " << trip_count << std::endl;
 
-    size_t coefficient = 200;
-    while (trip_count % coefficient != 0) {
-      coefficient--;
-    }
+    // size_t coefficient = 200;
+    // while (trip_count % coefficient != 0) {
+    //   coefficient--;
+    // }
 
-    if (coefficient > 1) {
-      use_coefficient = true;
-      maybe_coefficient = coefficient;
-      std::cout << "UNROLLING BY: " << coefficient << std::endl;
+    // if (coefficient > 1) {
+    //   use_coefficient = true;
+    //   maybe_coefficient = coefficient;
+    //   std::cout << "UNROLLING BY: " << coefficient << std::endl;
 
-    } else {
+    // } else {
       return false;
-    }
+    // }
   }
 
   if (do_loop_unrolling && !use_coefficient) {
